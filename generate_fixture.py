@@ -11,6 +11,7 @@ Transformations:
 import yaml
 import json
 import re
+from datetime import datetime, timezone
 
 
 def clean_trigger(trigger):
@@ -93,6 +94,7 @@ def generate_fixture(yaml_file, output_file, set_id=1):
                 "value": value,
                 "html_value": html_value,
                 "sets": [set_id],  # Birou set
+                "updated_at": datetime.now(timezone.utc).isoformat(),
                 "updated_by": None
             }
         }
