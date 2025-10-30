@@ -20,6 +20,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Load environment variables from .env file
 load_dotenv(BASE_DIR / '.env')
 
+# Ensure logs directory exists
+LOGS_DIR = BASE_DIR / "logs"
+LOGS_DIR.mkdir(exist_ok=True)
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -40,6 +44,8 @@ else:
 if not DEBUG:
     # Force HTTPS
     SECURE_SSL_REDIRECT = True
+    # Trust X-Forwarded-Proto header from nginx reverse proxy
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     # HSTS Settings - tells browsers to only use HTTPS
     SECURE_HSTS_SECONDS = 31536000  # 1 year
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
@@ -47,6 +53,9 @@ if not DEBUG:
     # Session/CSRF cookies only over HTTPS
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+    # SameSite cookies for CSRF protection
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    CSRF_COOKIE_SAMESITE = 'Lax'
     # Prevent browsers from guessing content type
     SECURE_CONTENT_TYPE_NOSNIFF = True
     # Enable XSS filter in browsers
@@ -66,7 +75,6 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     # Third-party
     "rest_framework",
-    "rest_framework.authtoken",
     "corsheaders",
     # Local
     "textsync",
@@ -156,7 +164,7 @@ CORS_ALLOW_CREDENTIALS = True
 # Django REST Framework Configuration
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework.authentication.TokenAuthentication",
+        "textsync.authentication.ExpiringTokenAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
@@ -184,14 +192,18 @@ LOGGING = {
     "handlers": {
         "file": {
             "level": "WARNING",
-            "class": "logging.FileHandler",
-            "filename": BASE_DIR / "logs" / "django.log",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": LOGS_DIR / "django.log",
+            "maxBytes": 10 * 1024 * 1024,  # 10MB
+            "backupCount": 5,  # Keep 5 backup files
             "formatter": "verbose",
         },
         "security_file": {
             "level": "WARNING",
-            "class": "logging.FileHandler",
-            "filename": BASE_DIR / "logs" / "security.log",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": LOGS_DIR / "security.log",
+            "maxBytes": 10 * 1024 * 1024,  # 10MB
+            "backupCount": 5,  # Keep 5 backup files
             "formatter": "verbose",
         },
         "console": {

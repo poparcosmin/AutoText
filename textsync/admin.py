@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Shortcut, ShortcutSet
+from .models import Shortcut, ShortcutSet, ExpiringToken
 
 
 @admin.register(ShortcutSet)
@@ -42,3 +42,24 @@ class ShortcutAdmin(admin.ModelAdmin):
         if not obj.pk:
             obj.updated_by = request.user
         super().save_model(request, obj, form, change)
+
+
+@admin.register(ExpiringToken)
+class ExpiringTokenAdmin(admin.ModelAdmin):
+    list_display = ["user", "key_preview", "created", "expires_at", "is_valid"]
+    list_filter = ["created", "expires_at"]
+    search_fields = ["user__username", "key"]
+    readonly_fields = ["key", "created", "expires_at"]
+
+    def key_preview(self, obj):
+        """Show first 10 chars of token"""
+        return f"{obj.key[:10]}..."
+
+    key_preview.short_description = "Token"
+
+    def is_valid(self, obj):
+        """Check if token is still valid"""
+        return not obj.is_expired()
+
+    is_valid.boolean = True
+    is_valid.short_description = "Valid"

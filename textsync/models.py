@@ -1,5 +1,41 @@
 from django.contrib.auth.models import User
 from django.db import models
+from django.utils import timezone
+from datetime import timedelta
+import binascii
+import os
+
+
+class ExpiringToken(models.Model):
+    """
+    Custom token model with expiration.
+    Tokens expire after 180 days.
+    """
+    key = models.CharField(max_length=40, primary_key=True)
+    user = models.OneToOneField(User, related_name='auth_token', on_delete=models.CASCADE)
+    created = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+
+    class Meta:
+        verbose_name = 'Expiring Token'
+        verbose_name_plural = 'Expiring Tokens'
+
+    def save(self, *args, **kwargs):
+        if not self.key:
+            self.key = self.generate_key()
+        if not self.expires_at:
+            self.expires_at = timezone.now() + timedelta(days=180)
+        return super().save(*args, **kwargs)
+
+    @classmethod
+    def generate_key(cls):
+        return binascii.hexlify(os.urandom(20)).decode()
+
+    def is_expired(self):
+        return timezone.now() > self.expires_at
+
+    def __str__(self):
+        return f"Token for {self.user.username} (expires {self.expires_at.strftime('%Y-%m-%d')})"
 
 
 class ShortcutSet(models.Model):

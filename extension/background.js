@@ -1,23 +1,21 @@
 // Import configuration
 importScripts('config.js');
 
-// Use CONFIG.API_URL and CONFIG.DEV_TOKEN from config.js
-
-// Sync shortcuts from Django backend with multi-set support
+// Sync shortcuts from Django backend with multi-set support and authentication
 async function syncShortcuts() {
   try {
-    let { auth_token, active_sets, api_url } = await chrome.storage.local.get([
+    let { auth_token, active_sets, api_url, last_sync } = await chrome.storage.local.get([
       "auth_token",
       "active_sets",
-      "api_url"
+      "api_url",
+      "last_sync"
     ]);
 
-    // Auto-set token for development if not present
+    // Check if user is authenticated
     if (!auth_token) {
-      console.log("AutoText: No token found, using development token...");
-      auth_token = CONFIG.DEV_TOKEN;
-      await chrome.storage.local.set({ auth_token: CONFIG.DEV_TOKEN });
-      console.log("AutoText: Development token saved to storage.");
+      console.log("AutoText: No auth token found. User needs to login via Options page.");
+      notifyUserToLogin();
+      return;
     }
 
     // Get active sets (default to 'birou' if none selected)
@@ -27,13 +25,27 @@ async function syncShortcuts() {
     // Build API URL with sets query parameter
     const baseUrl = api_url || `${CONFIG.API_URL}/shortcuts/`;
     const setsParam = sets.join(',');
-    const url = `${baseUrl}?sets=${encodeURIComponent(setsParam)}`;
+
+    // Delta sync: only fetch changes since last sync
+    let url = `${baseUrl}?sets=${encodeURIComponent(setsParam)}`;
+    if (last_sync) {
+      const lastSyncDate = new Date(last_sync).toISOString();
+      url += `&updated_after=${encodeURIComponent(lastSyncDate)}`;
+      console.log(`AutoText: Delta sync since ${lastSyncDate}`);
+    }
 
     console.log(`AutoText: Fetching from: ${url}`);
 
     const res = await fetch(url, {
       headers: { Authorization: `Token ${auth_token}` }
     });
+
+    // Handle authentication errors
+    if (res.status === 401) {
+      console.error("AutoText: Authentication failed - token expired or invalid");
+      await handleAuthenticationFailure();
+      return;
+    }
 
     if (!res.ok) {
       console.error("AutoText: Failed to sync shortcuts:", res.status, res.statusText);
@@ -43,8 +55,23 @@ async function syncShortcuts() {
     const serverShortcuts = await res.json();
     console.log(`AutoText: Received ${serverShortcuts.length} shortcuts from server`);
 
-    // Merge shortcuts with conflict resolution (personal > general)
-    const shortcutsMap = mergeShortcutsWithPriority(serverShortcuts);
+    // If delta sync and we have existing shortcuts, merge with them
+    let shortcutsMap;
+    if (last_sync && serverShortcuts.length > 0) {
+      // Delta sync - merge with existing shortcuts
+      const { shortcuts: existingShortcuts } = await chrome.storage.local.get('shortcuts');
+      const existingMap = existingShortcuts || {};
+
+      // Update existing map with new/changed shortcuts
+      const newShortcutsMap = mergeShortcutsWithPriority(serverShortcuts);
+      shortcutsMap = { ...existingMap, ...newShortcutsMap };
+
+      console.log(`AutoText: Delta sync - merged ${serverShortcuts.length} changes with existing shortcuts`);
+    } else {
+      // Full sync - replace all shortcuts
+      shortcutsMap = mergeShortcutsWithPriority(serverShortcuts);
+      console.log(`AutoText: Full sync - loaded ${Object.keys(shortcutsMap).length} shortcuts`);
+    }
 
     // Store indexed shortcuts and sync timestamp
     await chrome.storage.local.set({
@@ -52,10 +79,43 @@ async function syncShortcuts() {
       last_sync: Date.now()
     });
 
-    console.log(`AutoText: Synced ${Object.keys(shortcutsMap).length} unique shortcuts (after conflict resolution)`);
+    console.log(`AutoText: Sync complete. Total shortcuts: ${Object.keys(shortcutsMap).length}`);
   } catch (error) {
     console.error("AutoText: Error during sync:", error);
   }
+}
+
+/**
+ * Handle authentication failure (401)
+ * Clear auth token and notify user to login again
+ */
+async function handleAuthenticationFailure() {
+  // Clear auth token
+  await chrome.storage.local.remove(['auth_token', 'username']);
+
+  // Notify user
+  chrome.notifications.create('autotext-auth-error', {
+    type: 'basic',
+    iconUrl: 'icon48.png',
+    title: 'AutoText - Session Expired',
+    message: 'Your session has expired. Please open Options to login again.',
+    priority: 2
+  });
+
+  console.log("AutoText: Auth token cleared. User needs to re-login.");
+}
+
+/**
+ * Notify user they need to login
+ */
+function notifyUserToLogin() {
+  chrome.notifications.create('autotext-login-required', {
+    type: 'basic',
+    iconUrl: 'icon48.png',
+    title: 'AutoText - Login Required',
+    message: 'Please open AutoText Options to login.',
+    priority: 1
+  });
 }
 
 /**

@@ -1,12 +1,136 @@
-// AutoText Options Page Logic
+// AutoText Options Page Logic with Authentication
 // CONFIG is imported from config.js (loaded in options.html)
 
 let availableSets = [];
 let selectedSets = [];
+let currentUser = null;
+let authToken = null;
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('AutoText Options: Initializing...');
+
+  try {
+    // Check if user is authenticated
+    await checkAuthentication();
+  } catch (error) {
+    showError(`Failed to load: ${error.message}`);
+  }
+});
+
+// Check if user has valid auth token
+async function checkAuthentication() {
+  const result = await chrome.storage.local.get(['auth_token', 'username']);
+  authToken = result.auth_token;
+  currentUser = result.username;
+
+  if (!authToken) {
+    // No token - show login form
+    showLoginForm();
+    return;
+  }
+
+  // Verify token is still valid
+  try {
+    const response = await fetch(`${CONFIG.API_URL}/auth/verify/`, {
+      headers: {
+        'Authorization': `Token ${authToken}`
+      }
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data.valid) {
+        // Token is valid - proceed to show sets
+        currentUser = data.user.username;
+        await loadSetsView();
+      } else {
+        // Token expired
+        console.log('Token expired');
+        await chrome.storage.local.remove(['auth_token', 'username']);
+        showLoginForm();
+      }
+    } else {
+      // 401 or other error - show login
+      await chrome.storage.local.remove(['auth_token', 'username']);
+      showLoginForm();
+    }
+  } catch (error) {
+    console.error('Failed to verify token:', error);
+    showLoginForm();
+  }
+}
+
+// Show login form
+function showLoginForm() {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('login-section').style.display = 'block';
+  document.getElementById('sets-container').style.display = 'none';
+
+  // Attach login form handler
+  document.getElementById('login-form').addEventListener('submit', handleLogin);
+}
+
+// Handle login form submission
+async function handleLogin(e) {
+  e.preventDefault();
+
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+  const loginBtn = document.getElementById('login');
+
+  if (!username || !password) {
+    showError('Please enter username and password');
+    return;
+  }
+
+  // Disable button during login
+  loginBtn.disabled = true;
+  loginBtn.textContent = 'Logging in...';
+
+  try {
+    const response = await fetch(`${CONFIG.API_URL}/auth/login/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ username, password })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Login failed');
+    }
+
+    // Save token and username
+    authToken = data.token;
+    currentUser = data.user.username;
+
+    await chrome.storage.local.set({
+      auth_token: authToken,
+      username: currentUser
+    });
+
+    console.log('Login successful for user:', currentUser);
+
+    // Hide login form, show sets
+    document.getElementById('login-section').style.display = 'none';
+    await loadSetsView();
+
+    // Trigger initial sync
+    await triggerBackgroundSync();
+
+  } catch (error) {
+    showError(error.message || 'Login failed');
+    loginBtn.disabled = false;
+    loginBtn.textContent = 'Login';
+  }
+}
+
+// Load sets view after authentication
+async function loadSetsView() {
+  document.getElementById('loading').style.display = 'block';
 
   try {
     // Load available sets from API
@@ -21,10 +145,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Attach event listeners
     attachEventListeners();
 
+    // Show user info
+    document.getElementById('current-user').textContent = currentUser;
+
   } catch (error) {
-    showError(`Failed to load: ${error.message}`);
+    showError(`Failed to load sets: ${error.message}`);
   }
-});
+}
 
 // Fetch available sets from Django API
 async function loadAvailableSets() {
@@ -32,11 +159,16 @@ async function loadAvailableSets() {
 
   const response = await fetch(`${CONFIG.API_URL}/sets/`, {
     headers: {
-      'Authorization': `Token ${CONFIG.DEV_TOKEN}`
+      'Authorization': `Token ${authToken}`
     }
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      // Token invalid - logout
+      await handleLogout();
+      throw new Error('Session expired. Please login again.');
+    }
     throw new Error(`API returned ${response.status}: ${response.statusText}`);
   }
 
@@ -140,6 +272,40 @@ function createSetOption(set) {
 function attachEventListeners() {
   document.getElementById('save').addEventListener('click', saveAndSync);
   document.getElementById('sync').addEventListener('click', syncNow);
+  document.getElementById('logout').addEventListener('click', handleLogout);
+}
+
+// Handle logout
+async function handleLogout() {
+  try {
+    // Call logout endpoint
+    await fetch(`${CONFIG.API_URL}/auth/logout/`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Token ${authToken}`
+      }
+    });
+  } catch (error) {
+    console.error('Logout API call failed:', error);
+    // Continue with local logout anyway
+  }
+
+  // Clear local storage
+  await chrome.storage.local.remove(['auth_token', 'username']);
+
+  // Reset state
+  authToken = null;
+  currentUser = null;
+  availableSets = [];
+  selectedSets = [];
+
+  // Hide sets container
+  document.getElementById('sets-container').style.display = 'none';
+
+  // Show login form
+  showLoginForm();
+
+  console.log('Logged out successfully');
 }
 
 // Save selected sets and trigger sync

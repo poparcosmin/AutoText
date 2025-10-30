@@ -5,7 +5,8 @@
   "description": "Seamless text expansion system - type shortcuts and press Tab to expand",
   "permissions": [
     "storage",
-    "alarms"
+    "alarms",
+    "notifications"
   ],
   "host_permissions": [
     "<all_urls>"

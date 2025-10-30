@@ -176,6 +176,95 @@
     .status.hidden {
       display: none;
     }
+
+    /* Login Form Styles */
+    .login-section {
+      padding: 20px 0;
+    }
+
+    .login-section h2 {
+      font-size: 18px;
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 8px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 12px;
+      font-size: 14px;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      box-sizing: border-box;
+      transition: border-color 0.2s;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: #4285f4;
+    }
+
+    button#login {
+      width: 100%;
+      background: #4285f4;
+      color: white;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 600;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button#login:hover {
+      background: #3367d6;
+    }
+
+    button#login:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    button#logout {
+      background: #ea4335;
+      color: white;
+    }
+
+    button#logout:hover {
+      background: #d33426;
+    }
+
+    .user-info {
+      background: #e8f0fe;
+      border: 2px solid #4285f4;
+      border-radius: 6px;
+      padding: 15px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .user-info .username {
+      font-weight: 600;
+      color: #333;
+    }
+
+    .user-info .username::before {
+      content: "👤 ";
+    }
   </style>
 </head>
 <body>
@@ -184,12 +273,33 @@
     <p class="subtitle">Select which shortcut sets you want to use</p>
 
     <div id="loading" class="loading">
-      Loading available sets...
+      Loading...
     </div>
 
     <div id="error" class="error" style="display: none;"></div>
 
+    <!-- Login Section -->
+    <div id="login-section" class="login-section" style="display: none;">
+      <h2>🔐 Login to AutoText</h2>
+      <form id="login-form">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input type="text" id="username" name="username" required autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" required autocomplete="current-password">
+        </div>
+        <button type="submit" id="login">Login</button>
+      </form>
+    </div>
+
+    <!-- Sets Selection Section (shown after login) -->
     <div id="sets-container" style="display: none;">
+      <div class="user-info">
+        <span class="username" id="current-user"></span>
+        <button id="logout">Logout</button>
+      </div>
       <div class="set-section" id="general-sets">
         <h2>📋 General Sets (Team)</h2>
         <div id="general-list"></div>
