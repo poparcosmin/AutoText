@@ -2,6 +2,7 @@ from rest_framework import permissions, viewsets, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from django.contrib.auth import authenticate
+from django.db.models import Q
 from django.utils import timezone
 from datetime import timedelta
 
@@ -13,10 +14,21 @@ class ShortcutSetViewSet(viewsets.ReadOnlyModelViewSet):
     """
     API endpoint for listing available shortcut sets.
     Read-only - sets are managed via Django admin.
+    Staff users see only their own sets + sets shared with them.
+    Superusers see all sets.
     """
-    queryset = ShortcutSet.objects.all().order_by('set_type', 'name')
     serializer_class = ShortcutSetSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_superuser:
+            # Superusers see all sets
+            return ShortcutSet.objects.all().order_by('set_type', 'name')
+        # Staff users see: sets they own OR sets shared with them
+        return ShortcutSet.objects.filter(
+            Q(owner=user) | Q(visible_to=user)
+        ).distinct().order_by('set_type', 'name')
 
 
 class ShortcutViewSet(viewsets.ModelViewSet):

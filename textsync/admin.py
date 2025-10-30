@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib import admin
+from django.db.models import Q
 from django.utils.html import format_html
 from tinymce.widgets import TinyMCE
 from .models import Shortcut, ShortcutSet, ExpiringToken
@@ -7,15 +8,60 @@ from .models import Shortcut, ShortcutSet, ExpiringToken
 
 @admin.register(ShortcutSet)
 class ShortcutSetAdmin(admin.ModelAdmin):
-    list_display = ["name", "set_type", "get_shortcut_count", "created_at"]
-    list_filter = ["set_type", "created_at"]
+    list_display = ["name", "set_type", "owner", "get_visible_to", "get_shortcut_count", "created_at"]
+    list_filter = ["set_type", "created_at", "owner"]
     search_fields = ["name", "description"]
     readonly_fields = ["created_at"]
+    filter_horizontal = ["visible_to"]
+
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('name', 'set_type', 'description')
+        }),
+        ('Ownership & Sharing', {
+            'fields': ('owner', 'visible_to'),
+            'description': 'Set owner and share with specific users. Only superusers can modify these fields.'
+        }),
+        ('Metadata', {
+            'fields': ('created_at',),
+            'classes': ('collapse',)
+        }),
+    )
 
     def get_shortcut_count(self, obj):
         return obj.shortcuts.count()
 
     get_shortcut_count.short_description = "Shortcuts"
+
+    def get_visible_to(self, obj):
+        """Display users who can see this set"""
+        users = obj.visible_to.all()
+        if not users:
+            return "-"
+        return ", ".join([u.username for u in users])
+
+    get_visible_to.short_description = "Shared With"
+
+    def get_readonly_fields(self, request, obj=None):
+        """Make owner and visible_to readonly for staff users"""
+        readonly = list(super().get_readonly_fields(request, obj))
+        if not request.user.is_superuser:
+            readonly.extend(['owner', 'visible_to'])
+        return readonly
+
+    def get_queryset(self, request):
+        """Filter queryset: staff users see their own sets + sets shared with them, superusers see all"""
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        # Staff users see: sets they own OR sets they're in visible_to
+        return qs.filter(Q(owner=request.user) | Q(visible_to=request.user)).distinct()
+
+    def save_model(self, request, obj, form, change):
+        """Auto-assign owner to current user if not set"""
+        if not obj.pk and not obj.owner:
+            obj.owner = request.user
+        super().save_model(request, obj, form, change)
 
 
 class ShortcutAdminForm(forms.ModelForm):
@@ -32,8 +78,8 @@ class ShortcutAdminForm(forms.ModelForm):
 @admin.register(Shortcut)
 class ShortcutAdmin(admin.ModelAdmin):
     form = ShortcutAdminForm
-    list_display = ["key", "content_type", "value_preview", "get_sets", "updated_at", "updated_by"]
-    list_filter = ["content_type", "updated_at", "sets"]
+    list_display = ["key", "content_type", "value_preview", "owner", "get_sets", "updated_at", "updated_by"]
+    list_filter = ["content_type", "owner", "updated_at", "sets"]
     search_fields = ["key", "value"]
     readonly_fields = ["updated_at"]
     filter_horizontal = ["sets"]  # Nice UI for ManyToMany selection
@@ -101,8 +147,19 @@ class ShortcutAdmin(admin.ModelAdmin):
 
     get_sets.short_description = "Sets"
 
+    def get_queryset(self, request):
+        """Filter queryset: staff users see only their own shortcuts, superusers see all"""
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        return qs.filter(owner=request.user)
+
     def save_model(self, request, obj, form, change):
+        """Auto-assign owner and updated_by to current user"""
         if not obj.pk:
+            # New object - set both owner and updated_by
+            if not obj.owner:
+                obj.owner = request.user
             obj.updated_by = request.user
         super().save_model(request, obj, form, change)
 

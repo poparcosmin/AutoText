@@ -49,6 +49,12 @@ class ShortcutSet(models.Model):
     name = models.CharField(max_length=50, unique=True)
     set_type = models.CharField(max_length=10, choices=SET_TYPES, default='general')
     description = models.TextField(blank=True)
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True,
+                              related_name='owned_sets',
+                              help_text='User who owns this set. Staff can only see/edit their own sets.')
+    visible_to = models.ManyToManyField(User, blank=True,
+                                        related_name='visible_sets',
+                                        help_text='Staff users who can see this set (in addition to the owner). Only superusers can set this.')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -73,8 +79,12 @@ class Shortcut(models.Model):
     value = models.TextField(blank=True)
     html_value = models.TextField(blank=True, null=True)
     sets = models.ManyToManyField(ShortcutSet, related_name='shortcuts', blank=True)
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True,
+                              related_name='owned_shortcuts',
+                              help_text='User who owns this shortcut. Staff can only see/edit their own shortcuts.')
     updated_at = models.DateTimeField(auto_now=True)
-    updated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    updated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
+                                   related_name='updated_shortcuts')
 
     class Meta:
         ordering = ['key']
