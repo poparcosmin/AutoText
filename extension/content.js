@@ -1,0 +1,213 @@
+// AutoText Content Script - Core text expansion logic
+// Listens for Tab key, detects shortcuts, and replaces with expansions
+
+let shortcuts = {};
+
+// Load shortcuts from storage on initialization
+async function loadShortcuts() {
+  try {
+    const result = await chrome.storage.local.get("shortcuts");
+    shortcuts = result.shortcuts || {};
+    console.log("AutoText: Loaded", Object.keys(shortcuts).length, "shortcuts");
+  } catch (error) {
+    console.error("AutoText: Error loading shortcuts:", error);
+  }
+}
+
+// Listen for storage changes (when background syncs new shortcuts)
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName === "local" && changes.shortcuts) {
+    shortcuts = changes.shortcuts.newValue || {};
+    console.log("AutoText: Shortcuts updated,", Object.keys(shortcuts).length, "available");
+  }
+});
+
+// Get text before cursor in different element types
+function getTextBeforeCursor(element) {
+  // For input and textarea elements
+  if (element.tagName === "INPUT" || element.tagName === "TEXTAREA") {
+    const cursorPos = element.selectionStart;
+    const textBefore = element.value.substring(0, cursorPos);
+
+    // Extract the last word (everything after last space/newline)
+    const match = textBefore.match(/(\S+)$/);
+    return match ? match[1] : "";
+  }
+
+  // For contenteditable elements (Gmail, rich text editors)
+  if (element.isContentEditable) {
+    try {
+      const selection = window.getSelection();
+      if (!selection.rangeCount) return "";
+
+      const range = selection.getRangeAt(0);
+
+      // For Gmail and complex contenteditable, we need to find the actual editable ancestor
+      let editableElement = element;
+      let node = range.startContainer;
+
+      // Walk up to find the contenteditable element
+      while (node && node !== document.body) {
+        if (node.isContentEditable && node.nodeType === 1) {
+          editableElement = node;
+          break;
+        }
+        node = node.parentNode;
+      }
+
+      const preCaretRange = range.cloneRange();
+      preCaretRange.selectNodeContents(editableElement);
+      preCaretRange.setEnd(range.endContainer, range.endOffset);
+
+      const textBefore = preCaretRange.toString();
+
+      // Extract the last word
+      const match = textBefore.match(/(\S+)$/);
+      return match ? match[1] : "";
+    } catch (error) {
+      console.error("AutoText: Error getting text in contenteditable:", error);
+      return "";
+    }
+  }
+
+  return "";
+}
+
+// Replace text in input/textarea
+function replaceInTextInput(element, shortcutKey, expansion) {
+  const cursorPos = element.selectionStart;
+  const textBefore = element.value.substring(0, cursorPos);
+  const textAfter = element.value.substring(cursorPos);
+
+  // Remove the shortcut key and add expansion
+  const newTextBefore = textBefore.slice(0, -shortcutKey.length) + expansion;
+
+  element.value = newTextBefore + textAfter;
+
+  // Set cursor position after the expansion
+  const newCursorPos = newTextBefore.length;
+  element.selectionStart = element.selectionEnd = newCursorPos;
+
+  // Trigger input event for frameworks (React, Vue, etc.)
+  element.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+// Replace text in contenteditable (Gmail, rich text editors)
+function replaceInContentEditable(element, shortcutKey, expansion, htmlExpansion) {
+  try {
+    const selection = window.getSelection();
+    if (!selection.rangeCount) return;
+
+    const range = selection.getRangeAt(0);
+
+    // Delete the shortcut key
+    range.setStart(range.endContainer, range.endOffset - shortcutKey.length);
+    range.deleteContents();
+
+    // Insert the expansion (HTML if available, otherwise plain text)
+    if (htmlExpansion) {
+      // Create a document fragment from HTML
+      const template = document.createElement('template');
+      template.innerHTML = htmlExpansion;
+      const fragment = template.content;
+
+      range.insertNode(fragment);
+
+      // Move cursor to end of inserted content
+      range.collapse(false);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    } else {
+      // Insert plain text
+      const textNode = document.createTextNode(expansion);
+      range.insertNode(textNode);
+
+      // Move cursor after inserted text
+      range.setStartAfter(textNode);
+      range.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+
+    // Trigger input event for the editor
+    element.dispatchEvent(new Event('input', { bubbles: true }));
+  } catch (error) {
+    console.error("AutoText: Error replacing in contenteditable:", error);
+  }
+}
+
+// Main handler for Tab key press
+function handleTabKey(event) {
+  // Only handle Tab key
+  if (event.key !== 'Tab') {
+    return;
+  }
+
+  let element = event.target;
+
+  // Check if element is inside a contenteditable (for Gmail and complex editors)
+  let isInContentEditable = false;
+  let contentEditableParent = null;
+  let node = element;
+
+  while (node && node !== document.body) {
+    if (node.isContentEditable && node.nodeType === 1) {
+      isInContentEditable = true;
+      contentEditableParent = node;
+      break;
+    }
+    node = node.parentNode;
+  }
+
+  // Only process in text input elements or contenteditable
+  if (
+    element.tagName !== "INPUT" &&
+    element.tagName !== "TEXTAREA" &&
+    !isInContentEditable
+  ) {
+    return;
+  }
+
+  // If inside contenteditable, use the contenteditable parent as the element
+  if (isInContentEditable && contentEditableParent) {
+    element = contentEditableParent;
+  }
+
+  // Get the text before cursor
+  const textBefore = getTextBeforeCursor(element);
+
+  if (!textBefore) return;
+
+  // Check if it matches a shortcut
+  const shortcut = shortcuts[textBefore];
+
+  if (!shortcut) return;
+
+  // We found a match! Prevent default Tab behavior
+  event.preventDefault();
+  event.stopPropagation();
+
+  console.log(`AutoText: Expanding "${textBefore}" -> "${shortcut.value}"`);
+
+  // Replace based on element type
+  if (element.tagName === "INPUT" || element.tagName === "TEXTAREA") {
+    // For input/textarea, use plain text only
+    replaceInTextInput(element, textBefore, shortcut.value);
+  } else if (element.isContentEditable) {
+    // For contenteditable, use HTML if available
+    replaceInContentEditable(
+      element,
+      textBefore,
+      shortcut.value,
+      shortcut.html_value
+    );
+  }
+}
+
+// Listen for Tab key press
+document.addEventListener("keydown", handleTabKey, true);
+
+// Initialize: load shortcuts
+loadShortcuts();
+
+console.log("AutoText: Content script loaded and ready");
