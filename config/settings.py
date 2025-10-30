@@ -76,6 +76,7 @@ INSTALLED_APPS = [
     # Third-party
     "rest_framework",
     "corsheaders",
+    "tinymce",
     # Local
     "textsync",
 ]
@@ -253,3 +254,24 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# TinyMCE Configuration
+TINYMCE_DEFAULT_CONFIG = {
+    "height": "400px",
+    "width": "100%",
+    "menubar": "file edit view insert format tools table",
+    "plugins": "advlist autolink lists link image charmap preview anchor "
+               "searchreplace visualblocks code fullscreen "
+               "insertdatetime media table paste code help wordcount",
+    "toolbar": "undo redo | bold italic underline strikethrough | "
+               "fontselect fontsizeselect formatselect | alignleft aligncenter "
+               "alignright alignjustify | outdent indent | numlist bullist | "
+               "forecolor backcolor removeformat | pagebreak | charmap emoticons | "
+               "fullscreen preview save print | insertfile image media template link anchor "
+               "codesample | ltr rtl",
+    "toolbar_mode": "sliding",
+    "contextmenu": "link image table",
+    "content_css": "default",
+    "branding": False,
+    "promotion": False,
+}

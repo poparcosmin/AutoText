@@ -1,4 +1,7 @@
+from django import forms
 from django.contrib import admin
+from django.utils.html import format_html
+from tinymce.widgets import TinyMCE
 from .models import Shortcut, ShortcutSet, ExpiringToken
 
 
@@ -15,12 +18,24 @@ class ShortcutSetAdmin(admin.ModelAdmin):
     get_shortcut_count.short_description = "Shortcuts"
 
 
+class ShortcutAdminForm(forms.ModelForm):
+    """Custom form for Shortcut with TinyMCE editor for html_value"""
+
+    class Meta:
+        model = Shortcut
+        fields = '__all__'
+        widgets = {
+            'html_value': TinyMCE(),
+        }
+
+
 @admin.register(Shortcut)
 class ShortcutAdmin(admin.ModelAdmin):
+    form = ShortcutAdminForm
     list_display = ["key", "value_preview", "get_sets", "updated_at", "updated_by"]
     list_filter = ["updated_at", "sets"]
     search_fields = ["key", "value"]
-    readonly_fields = ["updated_at"]
+    readonly_fields = ["updated_at", "html_preview"]
     filter_horizontal = ["sets"]  # Nice UI for ManyToMany selection
 
     def value_preview(self, obj):
@@ -37,6 +52,18 @@ class ShortcutAdmin(admin.ModelAdmin):
         return ", ".join([f"{s.name} ({s.get_set_type_display()})" for s in sets])
 
     get_sets.short_description = "Sets"
+
+    def html_preview(self, obj):
+        """Display rendered HTML preview of html_value field"""
+        if not obj.html_value:
+            return format_html('<em style="color: #999;">No HTML content</em>')
+        return format_html(
+            '<div style="border: 1px solid #ddd; padding: 10px; '
+            'background: #f9f9f9; border-radius: 4px;">{}</div>',
+            obj.html_value
+        )
+
+    html_preview.short_description = "HTML Preview"
 
     def save_model(self, request, obj, form, change):
         if not obj.pk:
