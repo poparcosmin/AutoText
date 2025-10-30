@@ -3,6 +3,8 @@ importScripts('config.js');
 
 // Sync shortcuts from Django backend with multi-set support and authentication
 async function syncShortcuts() {
+  console.log("AutoText Background: syncShortcuts() called");
+
   try {
     let { auth_token, active_sets, api_url, last_sync } = await chrome.storage.local.get([
       "auth_token",
@@ -10,6 +12,13 @@ async function syncShortcuts() {
       "api_url",
       "last_sync"
     ]);
+
+    console.log("AutoText: Storage retrieved:", {
+      has_token: !!auth_token,
+      active_sets,
+      api_url,
+      has_last_sync: !!last_sync
+    });
 
     // Check if user is authenticated
     if (!auth_token) {
@@ -192,8 +201,19 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 
 // Manual sync trigger (can be called from content script if needed)
 chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
+  console.log("AutoText Background: Received message:", req);
+
   if (req.action === "sync") {
-    syncShortcuts().then(() => sendResponse({ status: "done" }));
+    console.log("AutoText Background: Starting manual sync...");
+    syncShortcuts().then(() => {
+      console.log("AutoText Background: Sync completed, sending response");
+      sendResponse({ status: "done" });
+    }).catch(error => {
+      console.error("AutoText Background: Sync failed:", error);
+      sendResponse({ status: "error", message: error.message });
+    });
     return true;
   }
 });
+
+console.log("AutoText Background: Service worker initialized");

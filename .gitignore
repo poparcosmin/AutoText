@@ -212,3 +212,4 @@ __marimo__/
 .env
 extension/config.js
 **:Zone.Identifier
+textsync/migrations/0004_alter_shortcut_value.py

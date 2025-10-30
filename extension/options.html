@@ -116,18 +116,18 @@
     .actions {
       margin-top: 30px;
       display: flex;
-      gap: 10px;
+      justify-content: center;
     }
 
     button {
-      flex: 1;
-      padding: 12px 24px;
-      font-size: 14px;
+      padding: 14px 32px;
+      font-size: 15px;
       font-weight: 600;
       border: none;
       border-radius: 6px;
       cursor: pointer;
       transition: all 0.2s;
+      min-width: 200px;
     }
 
     button#save {
@@ -137,20 +137,15 @@
 
     button#save:hover {
       background: #3367d6;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(66, 133, 244, 0.3);
     }
 
     button#save:disabled {
       background: #ccc;
       cursor: not-allowed;
-    }
-
-    button#sync {
-      background: #34a853;
-      color: white;
-    }
-
-    button#sync:hover {
-      background: #2d8e47;
+      transform: none;
+      box-shadow: none;
     }
 
     .status {
@@ -315,7 +310,6 @@
 
       <div class="actions">
         <button id="save">💾 Save & Sync</button>
-        <button id="sync">🔄 Sync Now</button>
       </div>
 
       <div id="status" class="status hidden"></div>

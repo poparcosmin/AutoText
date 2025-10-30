@@ -32,17 +32,65 @@ class ShortcutAdminForm(forms.ModelForm):
 @admin.register(Shortcut)
 class ShortcutAdmin(admin.ModelAdmin):
     form = ShortcutAdminForm
-    list_display = ["key", "value_preview", "get_sets", "updated_at", "updated_by"]
-    list_filter = ["updated_at", "sets"]
+    list_display = ["key", "content_type", "value_preview", "get_sets", "updated_at", "updated_by"]
+    list_filter = ["content_type", "updated_at", "sets"]
     search_fields = ["key", "value"]
-    readonly_fields = ["updated_at", "html_preview"]
+    readonly_fields = ["updated_at"]
     filter_horizontal = ["sets"]  # Nice UI for ManyToMany selection
 
-    def value_preview(self, obj):
-        """Show first 50 chars of value"""
-        return obj.value[:50] + "..." if len(obj.value) > 50 else obj.value
+    fieldsets = (
+        ('Content Type', {
+            'fields': ('key', 'content_type'),
+            'description': 'Choose between Plain Text or Rich Text (HTML)'
+        }),
+        ('Plain Text Content', {
+            'fields': ('value',),
+            'classes': ('content-type-section', 'text-section'),
+        }),
+        ('Rich Text Content', {
+            'fields': ('html_value',),
+            'classes': ('content-type-section', 'html-section'),
+            'description': 'Use the WYSIWYG editor for rich text formatting.'
+        }),
+        ('Organization', {
+            'fields': ('sets',)
+        }),
+        ('Metadata', {
+            'fields': ('updated_at', 'updated_by'),
+            'classes': ('collapse',)
+        }),
+    )
 
-    value_preview.short_description = "Value"
+    class Media:
+        js = ('textsync/admin/js/shortcut_toggle.js',)
+        css = {
+            'all': ('textsync/admin/css/shortcut_toggle.css',)
+        }
+
+    def content_type(self, obj):
+        """Display content type with icon"""
+        if obj.content_type == 'text':
+            return format_html('<span style="color: #666;">📝 Text</span>')
+        else:
+            return format_html('<span style="color: #4285f4;">🎨 HTML</span>')
+
+    content_type.short_description = "Type"
+
+    def value_preview(self, obj):
+        """Show first 50 chars of value or html_value"""
+        if obj.content_type == 'text':
+            if not obj.value:
+                return format_html('<em style="color: #999;">-</em>')
+            return obj.value[:50] + "..." if len(obj.value) > 50 else obj.value
+        else:
+            if not obj.html_value:
+                return format_html('<em style="color: #999;">-</em>')
+            # Strip HTML tags for preview
+            import re
+            text = re.sub('<[^<]+?>', '', obj.html_value)
+            return text[:50] + "..." if len(text) > 50 else text
+
+    value_preview.short_description = "Preview"
 
     def get_sets(self, obj):
         """Display which sets this shortcut belongs to"""
@@ -52,18 +100,6 @@ class ShortcutAdmin(admin.ModelAdmin):
         return ", ".join([f"{s.name} ({s.get_set_type_display()})" for s in sets])
 
     get_sets.short_description = "Sets"
-
-    def html_preview(self, obj):
-        """Display rendered HTML preview of html_value field"""
-        if not obj.html_value:
-            return format_html('<em style="color: #999;">No HTML content</em>')
-        return format_html(
-            '<div style="border: 1px solid #ddd; padding: 10px; '
-            'background: #f9f9f9; border-radius: 4px;">{}</div>',
-            obj.html_value
-        )
-
-    html_preview.short_description = "HTML Preview"
 
     def save_model(self, request, obj, form, change):
         if not obj.pk:

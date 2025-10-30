@@ -187,19 +187,30 @@ function handleTabKey(event) {
   event.preventDefault();
   event.stopPropagation();
 
-  console.log(`AutoText: Expanding "${textBefore}" -> "${shortcut.value}"`);
+  // Determine what content to use
+  let textContent = shortcut.value;
+  let htmlContent = shortcut.html_value;
+
+  // If text is empty but HTML exists, extract text from HTML
+  if (!textContent && htmlContent) {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = htmlContent;
+    textContent = tempDiv.textContent || tempDiv.innerText || '';
+  }
+
+  console.log(`AutoText: Expanding "${textBefore}" -> "${textContent || htmlContent}"`);
 
   // Replace based on element type
   if (element.tagName === "INPUT" || element.tagName === "TEXTAREA") {
-    // For input/textarea, use plain text only
-    replaceInTextInput(element, textBefore, shortcut.value);
+    // For input/textarea, use plain text (extracted from HTML if needed)
+    replaceInTextInput(element, textBefore, textContent);
   } else if (element.isContentEditable) {
     // For contenteditable, use HTML if available
     replaceInContentEditable(
       element,
       textBefore,
-      shortcut.value,
-      shortcut.html_value
+      textContent,
+      htmlContent
     );
   }
 }

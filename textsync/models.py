@@ -63,8 +63,14 @@ class ShortcutSet(models.Model):
 class Shortcut(models.Model):
     """Represents a text expansion shortcut"""
 
+    CONTENT_TYPES = [
+        ('text', 'Plain Text'),
+        ('html', 'Rich Text (HTML)'),
+    ]
+
     key = models.CharField(max_length=50)  # Removed unique=True - same key can be in different sets
-    value = models.TextField()
+    content_type = models.CharField(max_length=10, choices=CONTENT_TYPES, default='text')
+    value = models.TextField(blank=True)
     html_value = models.TextField(blank=True, null=True)
     sets = models.ManyToManyField(ShortcutSet, related_name='shortcuts', blank=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -77,4 +83,5 @@ class Shortcut(models.Model):
 
     def __str__(self):
         sets_str = ", ".join([s.name for s in self.sets.all()]) if self.sets.exists() else "no sets"
-        return f"{self.key} → {self.value[:30]} ({sets_str})"
+        preview = self.value[:30] if self.value else (self.html_value[:30] if self.html_value else "no content")
+        return f"{self.key} → {preview} ({sets_str})"

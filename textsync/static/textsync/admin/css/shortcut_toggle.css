@@ -1,0 +1,92 @@
+/* Shortcut Admin Toggle Styles */
+
+/* Make content type selection more prominent */
+.field-content_type {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 4px;
+    border-left: 4px solid #79aec8;
+    margin-bottom: 20px;
+}
+
+.field-content_type label {
+    font-weight: 600;
+    font-size: 15px;
+    color: #333;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.field-content_type select {
+    font-size: 16px;
+    padding: 10px 16px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: white;
+    cursor: pointer;
+    min-width: 350px;
+    width: auto;
+    height: auto;
+}
+
+.field-content_type select:focus {
+    outline: none;
+    border-color: #79aec8;
+    box-shadow: 0 0 0 2px rgba(121, 174, 200, 0.2);
+}
+
+/* Content sections styling - both visible */
+.content-type-section {
+    transition: all 0.3s ease;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    margin-bottom: 15px;
+    padding: 0;
+    opacity: 0.5;
+}
+
+/* Active section is fully visible and highlighted */
+.content-type-section.active {
+    opacity: 1;
+    border: 2px solid #79aec8;
+    box-shadow: 0 2px 8px rgba(121, 174, 200, 0.15);
+}
+
+/* Inactive section header - gray and subtle */
+.content-type-section h2 {
+    background: #e0e0e0;
+    color: #999;
+    font-size: 13px;
+    font-weight: normal;
+    padding: 10px 15px;
+    margin: 0;
+    border-radius: 4px 4px 0 0;
+    transition: all 0.3s ease;
+}
+
+/* Active section header - Django blue with white text */
+.content-type-section.active h2 {
+    background: #79aec8;
+    color: #fff;
+    font-weight: 600;
+}
+
+/* Add checkmark icon to active section */
+.content-type-section.active h2::before {
+    content: "✓ ";
+    font-weight: bold;
+    margin-right: 5px;
+}
+
+/* Content area inside fieldset */
+.content-type-section .form-row {
+    padding: 15px;
+}
+
+/* Disable inputs in inactive sections visually */
+.content-type-section:not(.active) textarea,
+.content-type-section:not(.active) .mce-tinymce {
+    opacity: 0.6;
+    pointer-events: none;
+}

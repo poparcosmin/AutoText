@@ -271,7 +271,6 @@ function createSetOption(set) {
 // Attach event listeners to buttons
 function attachEventListeners() {
   document.getElementById('save').addEventListener('click', saveAndSync);
-  document.getElementById('sync').addEventListener('click', syncNow);
   document.getElementById('logout').addEventListener('click', handleLogout);
 }
 
@@ -323,43 +322,32 @@ async function saveAndSync() {
   saveBtn.textContent = '💾 Saving...';
 
   try {
+    // Normalize: lowercase and remove duplicates
+    const normalizedSets = [...new Set(selectedSets.map(s => s.toLowerCase()))];
+    console.log('Normalized sets:', normalizedSets);
+
     // Save to storage
     await new Promise((resolve) => {
-      chrome.storage.local.set({ active_sets: selectedSets }, resolve);
+      chrome.storage.local.set({ active_sets: normalizedSets }, resolve);
     });
 
     console.log('Sets saved to storage');
+
+    // Clear last_sync to force full sync (not delta)
+    await chrome.storage.local.remove('last_sync');
+    console.log('Cleared last_sync - forcing full sync');
 
     // Trigger sync
     await triggerBackgroundSync();
 
     // Show success
-    showStatus(`✅ Saved! Active sets: ${selectedSets.join(', ')}`, 'success');
+    showStatus(`✅ Saved! All ${normalizedSets.join(', ')} shortcuts loaded.`, 'success');
 
   } catch (error) {
     showError(`Failed to save: ${error.message}`);
   } finally {
     saveBtn.disabled = false;
     saveBtn.textContent = '💾 Save & Sync';
-  }
-}
-
-// Trigger immediate sync via background script
-async function syncNow() {
-  console.log('Triggering manual sync...');
-
-  const syncBtn = document.getElementById('sync');
-  syncBtn.disabled = true;
-  syncBtn.textContent = '🔄 Syncing...';
-
-  try {
-    await triggerBackgroundSync();
-    showStatus('✅ Sync completed successfully!', 'success');
-  } catch (error) {
-    showError(`Sync failed: ${error.message}`);
-  } finally {
-    syncBtn.disabled = false;
-    syncBtn.textContent = '🔄 Sync Now';
   }
 }
 
