@@ -1,0 +1,626 @@
+[
+  {
+    "model": "textsync.Shortcut",
+    "pk": 1,
+    "fields": {
+      "key": "200",
+      "value": "FEFCO 0200\n\n(desen tehnic: http://i.imgur.com/rRG5W6x.jpg, animatie: http://i.imgur.com/MLIyLWQ.gif)",
+      "html_value": "FEFCO 0200<br><br>(desen tehnic: <a href=\"http://i.imgur.com/rRG5W6x.jpg,\">http://i.imgur.com/rRG5W6x.jpg,</a> animatie: <a href=\"http://i.imgur.com/MLIyLWQ.gif\">http://i.imgur.com/MLIyLWQ.gif</a>)",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 2,
+    "fields": {
+      "key": "201",
+      "value": "FEFCO 0201\n\n(desen tehnic: http://i.imgur.com/pM302Xi.jpg, animatie: http://i.imgur.com/Nv7tcrR.gif)",
+      "html_value": "FEFCO 0201<br><br>(desen tehnic: <a href=\"http://i.imgur.com/pM302Xi.jpg,\">http://i.imgur.com/pM302Xi.jpg,</a> animatie: <a href=\"http://i.imgur.com/Nv7tcrR.gif\">http://i.imgur.com/Nv7tcrR.gif</a>)",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 3,
+    "fields": {
+      "key": "203",
+      "value": "FEFCO 0203\n\n(desen tehnic: http://i.imgur.com/QOJvdQ0.jpg, animatie: http://i.imgur.com/dgJezdc.gif)\"",
+      "html_value": "FEFCO 0203<br><br>(desen tehnic: <a href=\"http://i.imgur.com/QOJvdQ0.jpg,\">http://i.imgur.com/QOJvdQ0.jpg,</a> animatie: <a href=\"http://i.imgur.com/dgJezdc.gif\">http://i.imgur.com/dgJezdc.gif</a>)\"",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 4,
+    "fields": {
+      "key": "215",
+      "value": "FEFCO 0215\n\n(desen tehnic: http://i.imgur.com/h7o6a1E.jpg, animatie: http://i.imgur.com/AIFLoxb.gif)",
+      "html_value": "FEFCO 0215<br><br>(desen tehnic: <a href=\"http://i.imgur.com/h7o6a1E.jpg,\">http://i.imgur.com/h7o6a1E.jpg,</a> animatie: <a href=\"http://i.imgur.com/AIFLoxb.gif\">http://i.imgur.com/AIFLoxb.gif</a>)",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 5,
+    "fields": {
+      "key": "217",
+      "value": "FEFCO 0217\n\n(desen tehnic: http://i.imgur.com/ntHuydK.jpg, animatie: http://i.imgur.com/1F7n5ku.gif)",
+      "html_value": "FEFCO 0217<br><br>(desen tehnic: <a href=\"http://i.imgur.com/ntHuydK.jpg,\">http://i.imgur.com/ntHuydK.jpg,</a> animatie: <a href=\"http://i.imgur.com/1F7n5ku.gif\">http://i.imgur.com/1F7n5ku.gif</a>)",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 6,
+    "fields": {
+      "key": "330",
+      "value": "FEFCO 0330\n\n(desen tehnic: http://i.imgur.com/Ij4YrAD.jpg, animatie: http://i.imgur.com/2g76qPU.gif)",
+      "html_value": "FEFCO 0330<br><br>(desen tehnic: <a href=\"http://i.imgur.com/Ij4YrAD.jpg,\">http://i.imgur.com/Ij4YrAD.jpg,</a> animatie: <a href=\"http://i.imgur.com/2g76qPU.gif\">http://i.imgur.com/2g76qPU.gif</a>)",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 7,
+    "fields": {
+      "key": "426",
+      "value": "FEFCO 0426\n\n(desen tehnic: http://i.imgur.com/nWJLoey.jpg, animatie: http://i.imgur.com/H85TV4W.gif)",
+      "html_value": "FEFCO 0426<br><br>(desen tehnic: <a href=\"http://i.imgur.com/nWJLoey.jpg,\">http://i.imgur.com/nWJLoey.jpg,</a> animatie: <a href=\"http://i.imgur.com/H85TV4W.gif\">http://i.imgur.com/H85TV4W.gif</a>)",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 8,
+    "fields": {
+      "key": "427",
+      "value": "FEFCO 0427\n\n(desen tehnic: http://i.imgur.com/4qvhDaz.jpg, animatie: http://i.imgur.com/DCWaYLA.gif)",
+      "html_value": "FEFCO 0427<br><br>(desen tehnic: <a href=\"http://i.imgur.com/4qvhDaz.jpg,\">http://i.imgur.com/4qvhDaz.jpg,</a> animatie: <a href=\"http://i.imgur.com/DCWaYLA.gif\">http://i.imgur.com/DCWaYLA.gif</a>)",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 9,
+    "fields": {
+      "key": "aa",
+      "value": "<b>ACHITAT</b><font color='#1ABC9C'><b>––» PAFF</b></font>\"",
+      "html_value": "<b>ACHITAT</b><font color='#1ABC9C'><b>––» PAFF</b></font>",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 10,
+    "fields": {
+      "key": "ap",
+      "value": "<b>.............ACHITAT</b><font color='#f441df'><b>––» Se ridica de la PAFF</b></font>\"",
+      "html_value": "<b>.............ACHITAT</b><font color='#f441df'><b>––» Se ridica de la PAFF</b></font>",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 11,
+    "fields": {
+      "key": "af",
+      "value": "<b>ACHITAT</b><font color='#3E66A6'><b>––» Fan Courier</b></font>\"",
+      "html_value": "<b>ACHITAT</b><font color='#3E66A6'><b>––» Fan Courier</b></font>",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 12,
+    "fields": {
+      "key": "ra",
+      "value": "<b>RAMBURS       ... >>> </b>\"",
+      "html_value": "<b>RAMBURS       ... >>> </b>",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 13,
+    "fields": {
+      "key": "adr",
+      "value": "<b>ACHITAT</b><font color=\"#fab220\"><b>––» DRAGON</b></font>",
+      "html_value": "<b>ACHITAT</b><font color=#fab220><b>––» DRAGON</b></font>",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 14,
+    "fields": {
+      "key": "a-nu",
+      "value": "<font color=\"#f44152\"><b>.............Nu a ACHITAT</b></font></b><font",
+      "html_value": "<font color=#f44152><b>.............Nu a ACHITAT</b></font></b><font",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 15,
+    "fields": {
+      "key": "ac",
+      "value": "Cu stima,\n\nAura Chitulescu\n074.466.7233",
+      "html_value": "Cu stima,<br><br>Aura Chitulescu<br>074.466.7233",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 16,
+    "fields": {
+      "key": "fp",
+      "value": "Toate cele bune,\n\nFlorentina Păun\n072.169.7233",
+      "html_value": "Toate cele bune,<br><br>Florentina Păun<br>072.169.7233",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 17,
+    "fields": {
+      "key": "ni",
+      "value": "Cu stima,\n\nIrina Nicolaiu\n072.169.7233",
+      "html_value": "Cu stima,<br><br>Irina Nicolaiu<br>072.169.7233",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 18,
+    "fields": {
+      "key": "pb",
+      "value": "Cu stima,\n\nBogdan Popa\n0756.119.876",
+      "html_value": "Cu stima,<br><br>Bogdan Popa<br>0756.119.876",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 19,
+    "fields": {
+      "key": "pc",
+      "value": "Toate cele bune / Best regards,\n\nPopa R. Cosmin\n0756.562.229",
+      "html_value": "Toate cele bune / Best regards,<br><br>Popa R. Cosmin<br>0756.562.229",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 20,
+    "fields": {
+      "key": "pf",
+      "value": "Cu respect,\n\nPopa Florian\n0756.119.875",
+      "html_value": "Cu respect,<br><br>Popa Florian<br>0756.119.875",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 21,
+    "fields": {
+      "key": "bapco",
+      "value": "Comanda XXXXX\nprint@maxoll.ro\nbucuresti@maxoll.ro\nBună ziua,\n\nDorim o comandă \"\" de 144 role conform atașamentului.\n\nStare cliseu: nou\nCulori: 3 culori (XX, XX, XX)\nFond: alb\nDim. cliseu: 50x187mm\nDim. rolă: 50x66m\nAdeziv: acrilic\n\nCu stimă,\nBogdan Popa\n0756.119.876",
+      "html_value": "Comanda XXXXX<br>print@maxoll.ro<br>bucuresti@maxoll.ro<br>Bună ziua,<br><br>Dorim o comandă \"\" de 144 role conform atașamentului.<br><br>Stare cliseu: nou<br>Culori: 3 culori (XX, XX, XX)<br>Fond: alb<br>Dim. cliseu: 50x187mm<br>Dim. rolă: 50x66m<br>Adeziv: acrilic<br><br>Cu stimă,<br>Bogdan Popa<br>0756.119.876",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 22,
+    "fields": {
+      "key": "bt",
+      "value": "Bună ziua,\n\nAveți OK pentru tipar.\n\nCu stimă,\nBogdan Popa",
+      "html_value": "Bună ziua,<br><br>Aveți OK pentru tipar.<br><br>Cu stimă,<br>Bogdan Popa",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 23,
+    "fields": {
+      "key": "bc",
+      "value": "Buna ziua,\n\nAm primit comanda dvs de banda adeziva personalizata.\n\nVa informam ca la acest produs, comanda minima este de 4 cutii (144 role), detaliu ce este specificat si la  descrierea produsului [http://www.paff.ro/banda-adeziva-personalizata-2-culoari-50mmx66m-set-36-buc].\n\nDaca va hotarati sa suplimentati comanda, trebuie sa luati in calcul si  specificatiile de pastrare si depozitare [http://www.paff.ro/banda-adeziva-personalizata-2-culoari-50mmx66m-set-36-buc]  a benzii adezive.",
+      "html_value": "Buna ziua,<br><br>Am primit comanda dvs de banda adeziva personalizata.<br><br>Va informam ca la acest produs, comanda minima este de 4 cutii (144 role), detaliu ce este specificat si la  descrierea produsului [<a href=\"http://www.paff.ro/banda-adeziva-personalizata-2-culoari-50mmx66m-set-36-buc].<br><br>Daca\">http://www.paff.ro/banda-adeziva-personalizata-2-culoari-50mmx66m-set-36-buc].<br><br>Daca</a> va hotarati sa suplimentati comanda, trebuie sa luati in calcul si  specificatiile de pastrare si depozitare [<a href=\"http://www.paff.ro/banda-adeziva-personalizata-2-culoari-50mmx66m-set-36-buc]\">http://www.paff.ro/banda-adeziva-personalizata-2-culoari-50mmx66m-set-36-buc]</a>  a benzii adezive.",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 24,
+    "fields": {
+      "key": "bapt",
+      "value": "Bună ziua,\n\nAtașat găsiți macheta pentru tipar a benzii personalizate. Vă rugăm să confirmați bunul de tipar.\n\n\nCu stimă,\nBogdan Popa",
+      "html_value": "Bună ziua,<br><br>Atașat găsiți macheta pentru tipar a benzii personalizate. Vă rugăm să confirmați bunul de tipar.<br><br><br>Cu stimă,<br>Bogdan Popa",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 25,
+    "fields": {
+      "key": "nets",
+      "value": "mirela.ivan@netselgrafic.ro\nBună ziua,\n\nDorim un clișeu conform paginii roz din atașament. \nLivrarea prin curier.\n\n\nCu stimă,\nBogdan Popa\n0756.119.876",
+      "html_value": "mirela.ivan@netselgrafic.ro<br>Bună ziua,<br><br>Dorim un clișeu conform paginii roz din atașament. <br>Livrarea prin curier.<br><br><br>Cu stimă,<br>Bogdan Popa<br>0756.119.876",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 26,
+    "fields": {
+      "key": "fb",
+      "value": "Facturarea se face pe firma - Boxpack SRL.\n\nPlata se face in contul ING: RO74INGB0000999907805169",
+      "html_value": "Facturarea se face pe firma - Boxpack SRL.<br><br>Plata se face in contul ING: RO74INGB0000999907805169",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 27,
+    "fields": {
+      "key": "sd",
+      "value": "Bună ziua,\n\nVă așteptăm la sediul nostru din: Str. Ion Ghica 129, Răcari, Dâmboviţa\n\nAdresa noastră pe google maps: http://j.mp/HartaPAFF\n\nPunct de reper: Vis-a-vis de borna kilometrică 39 de pe DN 71, București - Târgoviște Direcție: București - Chitila - Tărtășești - Răcari\n\nBiroul nostru se află pe partea stângă când veniți dinspre București: http://j.mp/2hLOPdt\n\nTelefon: 072-169.7233, 074-466.7233\n\nEmail: contact@paff.ro\n\nWeb: www.paff.ro",
+      "html_value": "Bună ziua,<br><br>Vă așteptăm la sediul nostru din: Str. Ion Ghica 129, Răcari, Dâmboviţa<br><br>Adresa noastră pe google maps: <a href=\"http://j.mp/HartaPAFF<br><br>Punct\">http://j.mp/HartaPAFF<br><br>Punct</a> de reper: Vis-a-vis de borna kilometrică 39 de pe DN 71, București - Târgoviște Direcție: București - Chitila - Tărtășești - Răcari<br><br>Biroul nostru se află pe partea stângă când veniți dinspre București: <a href=\"http://j.mp/2hLOPdt<br><br>Telefon:\">http://j.mp/2hLOPdt<br><br>Telefon:</a> 072-169.7233, 074-466.7233<br><br>Email: contact@paff.ro<br><br>Web: www.paff.ro",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 28,
+    "fields": {
+      "key": "paff",
+      "value": "S.C. PAFF S.R.L.\nJ15/1583/1993 - RO4807535\nSediu: Str. Ion Ghica, Nr. 129, Răcari, Dâmbovița, Cod poștal: 137388\nGoogle maps: https://goo.gl/maps/uRF1xPbg8mP2",
+      "html_value": "S.C. PAFF S.R.L.<br>J15/1583/1993 - RO4807535<br>Sediu: Str. Ion Ghica, Nr. 129, Răcari, Dâmbovița, Cod poștal: 137388<br>Google maps: <a href=\"https://goo.gl/maps/uRF1xPbg8mP2\">https://goo.gl/maps/uRF1xPbg8mP2</a>",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 29,
+    "fields": {
+      "key": "ffan",
+      "value": "Bună ziua,\n\nAtașăm factura fiscală pentru produsele expediate prin Fan Courier.\n\nNumărul de AWB este: \n\nFactura fiscală poate fi descărcată și din e-Factura.",
+      "html_value": "Bună ziua,<br><br>Atașăm factura fiscală pentru produsele expediate prin Fan Courier.<br><br>Numărul de AWB este: <br><br>Factura fiscală poate fi descărcată și din e-Factura.",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 30,
+    "fields": {
+      "key": "ffd",
+      "value": "Bună ziua,\n\nAtașăm factura fiscală pentru produsele expediate prin Dragon Star.\n\nNumărul de AWB este: \n\nFactura fiscală poate fi descărcată și din e-Factura.",
+      "html_value": "Bună ziua,<br><br>Atașăm factura fiscală pentru produsele expediate prin Dragon Star.<br><br>Numărul de AWB este: <br><br>Factura fiscală poate fi descărcată și din e-Factura.",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 31,
+    "fields": {
+      "key": "livrare",
+      "value": "Bună ziua,\n\nNumerele de telefon ale șoferilor care vor efectua livrarea:\n\nPICU - 0756.119.864\nMARIUS - 0756.119.878\n\nLivrarea cu propriile mașini la adresa clientului se face până în incinta sediului sau în cel mai apropiat loc posibil unde se poate parca mașina, însă șoferul:\n\n• NU cară coletele din mașină în sediul clientului\n• NU urcă coletele la etaj\n\nDacă nu se pot îndeplini condițiile de mai sus, vă rugăm să ajutați șoferul pentru a realiza livrarea în condiții optime, astfel încât să nu se pună în pericol bunurile din mașină, să nu blocheze drumul etc. În caz contrar, coletele vor fi expediate prin curier contra cost.\n\nȘoferii sunt de bună credință și fac tot posibilul pentru a facilita clientului accesul la marfă cât mai ușor. Însă sunt oameni și nu pot rezolva toate problemele apărute, precum: lipsa spațiilor de parcare, căi de acces blocate, lipsa personalului pentru preluarea coletelor etc.",
+      "html_value": "Bună ziua,<br><br>Numerele de telefon ale șoferilor care vor efectua livrarea:<br><br>PICU - 0756.119.864<br>MARIUS - 0756.119.878<br><br>Livrarea cu propriile mașini la adresa clientului se face până în incinta sediului sau în cel mai apropiat loc posibil unde se poate parca mașina, însă șoferul:<br><br>• NU cară coletele din mașină în sediul clientului<br>• NU urcă coletele la etaj<br><br>Dacă nu se pot îndeplini condițiile de mai sus, vă rugăm să ajutați șoferul pentru a realiza livrarea în condiții optime, astfel încât să nu se pună în pericol bunurile din mașină, să nu blocheze drumul etc. În caz contrar, coletele vor fi expediate prin curier contra cost.<br><br>Șoferii sunt de bună credință și fac tot posibilul pentru a facilita clientului accesul la marfă cât mai ușor. Însă sunt oameni și nu pot rezolva toate problemele apărute, precum: lipsa spațiilor de parcare, căi de acces blocate, lipsa personalului pentru preluarea coletelor etc.",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 32,
+    "fields": {
+      "key": "dx",
+      "value": "Buna ziua,\n\nNoi producem ambalaje din carton ondulat si din pacate nu va putem ajuta.\n\nDvs. aveti nevoie de un producator de ambalaje duplex.\n\nPot doar sa va recomand doi colegi de breasla care se ocupa cu productia unor astfel de ambalaje:\n\n1. GeoEuro Tours Distributie S.R.L. (Dragos Mecu) email: dragos.mecu@geoeurotours.ro   website: http://outpack.ro adresa: Tunari, Ilfov telefon: 0722 316 300 , 0722 630 231\n2. Almaș Pres International S.R.L. (Vasile Damsa) email: almassrl@yahoo.com adresa:   Str. Garoafei Nr. 1A, sector 5, Bucuresti   telefon: 0728.048.230, 0744.385.590\"",
+      "html_value": "Buna ziua,<br><br>Noi producem ambalaje din carton ondulat si din pacate nu va putem ajuta.<br><br>Dvs. aveti nevoie de un producator de ambalaje duplex.<br><br>Pot doar sa va recomand doi colegi de breasla care se ocupa cu productia unor astfel de ambalaje:<br><br>1. GeoEuro Tours Distributie S.R.L. (Dragos Mecu) email: dragos.mecu@geoeurotours.ro   website: <a href=\"http://outpack.ro\">http://outpack.ro</a> adresa: Tunari, Ilfov telefon: 0722 316 300 , 0722 630 231<br>2. Almaș Pres International S.R.L. (Vasile Damsa) email: almassrl@yahoo.com adresa:   Str. Garoafei Nr. 1A, sector 5, Bucuresti   telefon: 0728.048.230, 0744.385.590\"",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 33,
+    "fields": {
+      "key": "ia",
+      "value": "Buna ziua,\n\nDin cauza aglomerației de sezon ne vedem nevoiți să amânăm comenzile primite în perioada următoare pentru prima parte a lunii ianuarie 2024.\n\nDeoarece comenzile sunt procesate în ordinea sosirii, dacă sunteți de acord vom menține comanda dvs. pentru a fi procesată în cel mai scurt timp posibil - dar nu mai târziu de prima parte a lunii ianuarie 2024.\n\nAsteptam hotararea dvs daca mentinem comanda ,urmand sa va trimitem proforma pentru plata in ianuarie.\n\nVă mulțumim pentru înțelegere.\n\nSperăm că anul 2024 să fie mai liniștit.\n\nIn perioada 22.12.2023 - 07.01.2024 suntem in concediu.",
+      "html_value": "Buna ziua,<br><br>Din cauza aglomerației de sezon ne vedem nevoiți să amânăm comenzile primite în perioada următoare pentru prima parte a lunii ianuarie 2024.<br><br>Deoarece comenzile sunt procesate în ordinea sosirii, dacă sunteți de acord vom menține comanda dvs. pentru a fi procesată în cel mai scurt timp posibil - dar nu mai târziu de prima parte a lunii ianuarie 2024.<br><br>Asteptam hotararea dvs daca mentinem comanda ,urmand sa va trimitem proforma pentru plata in ianuarie.<br><br>Vă mulțumim pentru înțelegere.<br><br>Sperăm că anul 2024 să fie mai liniștit.<br><br>In perioada 22.12.2023 - 07.01.2024 suntem in concediu.",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 34,
+    "fields": {
+      "key": "fx",
+      "value": "Bună ziua,\n\nImprimarea Cutiilor prin Flexografie:\n• Imprimarea cutiilor se realizează prin flexografie, necesitând astfel confecționarea unui clișeu (asemănător celui folosit la ștampile).\n\nCutiile se vor imprima într-o singură culoare în următoarele condiții:\n • Placa de carton din care se formează cutia să nu fie mai mare de 900x700 mm și să nu fie mai mică de 280x280 mm.\n \n Pentru grafică, avem nevoie de o imagine în format vectorial (cdr, ai, eps, sau pdf).\n \n \n Exemple de cutii imprimate:\n \n  • Negru pe alb:\n  \n       ex1 [https://www.paff.ro/library/main/Imprimare/imprimare-flexo-negru-pe-fond-alb.jpg]\n  \n   • Negru pe nature:\n   \n       ex1 [https://www.paff.ro/library/main/Imprimare/flexografie_ipsojhondeere.jpg],\n\n       ex2 [https://www.paff.ro/library/main/Imprimare/flexografie_hessers.jpg],\n\n       ex3 [https://www.paff.ro/library/main/Imprimare/flexografie_forever.jpg]\n   \n   Se folosește doar vopsea neagră, pe bază de apă, specială pentru hârtie.\n   \n   \n   Prețuri pentru Imprimarea Cutiilor:\n    • Comandă minimă de 1000 bucăți / model cutie = 0,5 Lei + TVA / bucată\n    \n    Tarif Clișeu*:\n     • Mai mici de 0,2 m.p. = 200 Lei + TVA / model cutie\n     • Mai mari de 0,2 m.p. = 1500 Lei + TVA / m.p.\n      \n      *Un clișeu poate fi folosit pentru mai multe cutii, doar dacă se imprimă cu același clișeu. Orice modificare în dimensiune sau formă presupune un clișeu nou.\n      Termenul pentru realizarea clișeului este de 2-5 zile de la plata cu OP. Pentru imprimarea cutiilor se mai adaugă o zi lucrătoare.",
+      "html_value": "Bună ziua,<br><br>Imprimarea Cutiilor prin Flexografie:<br>• Imprimarea cutiilor se realizează prin flexografie, necesitând astfel confecționarea unui clișeu (asemănător celui folosit la ștampile).<br><br>Cutiile se vor imprima într-o singură culoare în următoarele condiții:<br> • Placa de carton din care se formează cutia să nu fie mai mare de 900x700 mm și să nu fie mai mică de 280x280 mm.<br> <br> Pentru grafică, avem nevoie de o imagine în format vectorial (cdr, ai, eps, sau pdf).<br> <br> <br> Exemple de cutii imprimate:<br> <br>  • Negru pe alb:<br>  <br>       ex1 [<a href=\"https://www.paff.ro/library/main/Imprimare/imprimare-flexo-negru-pe-fond-alb.jpg]<br>\">https://www.paff.ro/library/main/Imprimare/imprimare-flexo-negru-pe-fond-alb.jpg]<br></a>  <br>   • Negru pe nature:<br>   <br>       ex1 [<a href=\"https://www.paff.ro/library/main/Imprimare/flexografie_ipsojhondeere.jpg],<br><br>\">https://www.paff.ro/library/main/Imprimare/flexografie_ipsojhondeere.jpg],<br><br></a>       ex2 [<a href=\"https://www.paff.ro/library/main/Imprimare/flexografie_hessers.jpg],<br><br>\">https://www.paff.ro/library/main/Imprimare/flexografie_hessers.jpg],<br><br></a>       ex3 [<a href=\"https://www.paff.ro/library/main/Imprimare/flexografie_forever.jpg]<br>\">https://www.paff.ro/library/main/Imprimare/flexografie_forever.jpg]<br></a>   <br>   Se folosește doar vopsea neagră, pe bază de apă, specială pentru hârtie.<br>   <br>   <br>   Prețuri pentru Imprimarea Cutiilor:<br>    • Comandă minimă de 1000 bucăți / model cutie = 0,5 Lei + TVA / bucată<br>    <br>    Tarif Clișeu*:<br>     • Mai mici de 0,2 m.p. = 200 Lei + TVA / model cutie<br>     • Mai mari de 0,2 m.p. = 1500 Lei + TVA / m.p.<br>      <br>      *Un clișeu poate fi folosit pentru mai multe cutii, doar dacă se imprimă cu același clișeu. Orice modificare în dimensiune sau formă presupune un clișeu nou.<br>      Termenul pentru realizarea clișeului este de 2-5 zile de la plata cu OP. Pentru imprimarea cutiilor se mai adaugă o zi lucrătoare.",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 35,
+    "fields": {
+      "key": "lc",
+      "value": "Bună ziua,\n\nDimensiuni cutie in mm:  000 x 000 x 000 mm\n\nDimensiunile sunt: interioare exterioare Tipul cartonului este:  CO 0, ondula 0+0\n\nGrosimea cartonului este: 1,7mm 2,9mm 3,8mm 4,8mm 6,5mm\n\nModel ambalaj:  0000\n\nModel stanta: întreagă jumatate Ștanța trebuie să cuprindă și semnul PAP20 pe o latura nevizibila (interioara).\n\nDetalii suplimentare:         ( Client: XXXXXXXXXX SRL )",
+      "html_value": "Bună ziua,<br><br>Dimensiuni cutie in mm:  000 x 000 x 000 mm<br><br>Dimensiunile sunt: interioare exterioare Tipul cartonului este:  CO 0, ondula 0+0<br><br>Grosimea cartonului este: 1,7mm 2,9mm 3,8mm 4,8mm 6,5mm<br><br>Model ambalaj:  0000<br><br>Model stanta: întreagă jumatate Ștanța trebuie să cuprindă și semnul PAP20 pe o latura nevizibila (interioara).<br><br>Detalii suplimentare:         ( Client: XXXXXXXXXX SRL )",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 36,
+    "fields": {
+      "key": "la",
+      "value": "Te rugăm să ne scrii câteva cuvinte pe pagina Google Plus [https://g.page/r/CQc8dm53vBghEAg/review] pentru a ne ajuta să ne îmbunătățim serviciile, produsele, relația cu clienții, experiența avută cu magazinul online etc. \n\nCe v-a plăcut, ce nu v-a plăcut, orice idee sau opinie este binevenită.\n\nToate cele bune,\nPopa R. Cosmin\n0756.562.229",
+      "html_value": "Te rugăm să ne scrii câteva cuvinte pe pagina Google Plus [<a href=\"https://g.page/r/CQc8dm53vBghEAg/review]\">https://g.page/r/CQc8dm53vBghEAg/review]</a> pentru a ne ajuta să ne îmbunătățim serviciile, produsele, relația cu clienții, experiența avută cu magazinul online etc. <br><br>Ce v-a plăcut, ce nu v-a plăcut, orice idee sau opinie este binevenită.<br><br>Toate cele bune,<br>Popa R. Cosmin<br>0756.562.229",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 37,
+    "fields": {
+      "key": "mj",
+      "value": "Urmare a evoluției prețurilor pentru hârtia din care se realizează cartonul 5% în 2022. Suntem nevoiți să vă anunțăm că operăm o creștere de preț pentru comenzile solicitate în prezent la SC PAFF SRL.\n\nPe lângă majorarea prețului pentru hârtie, am mai înregistrat creșteri de preț și la alte materii prime și servicii (ex. salarii, transport, energie etc.).\n\nIar cea mai importanta influenta in cresterea pretului o reprezinta criza hartiei din ultimul timp. Se exporta masiv hartie reciclata in China Chair si deseurile de carton s-au scumpit.\n\nDaca initial le ridicau gratis apoi in ultimii ani plateau 0,35 lei/kg, acum pretul a ajuns la 0,5 lei/kg (deseu carton) urmand sa creasca la 0,6 lei.\n\nSperăm să înțelegeți necesitatea gestului nostru deoarece intenția noastră este de a vă comunica problemele cu care ne confruntăm și totodată să continuăm acest parteneriat fără să facem rabat de la calitatea serviciilor sau a produselor.\n\n\nVă mulțumim pentru înțelegere.\n\nCu respect,\nPopa Florian\n0756.119.875",
+      "html_value": "Urmare a evoluției prețurilor pentru hârtia din care se realizează cartonul 5% în 2022. Suntem nevoiți să vă anunțăm că operăm o creștere de preț pentru comenzile solicitate în prezent la SC PAFF SRL.<br><br>Pe lângă majorarea prețului pentru hârtie, am mai înregistrat creșteri de preț și la alte materii prime și servicii (ex. salarii, transport, energie etc.).<br><br>Iar cea mai importanta influenta in cresterea pretului o reprezinta criza hartiei din ultimul timp. Se exporta masiv hartie reciclata in China Chair si deseurile de carton s-au scumpit.<br><br>Daca initial le ridicau gratis apoi in ultimii ani plateau 0,35 lei/kg, acum pretul a ajuns la 0,5 lei/kg (deseu carton) urmand sa creasca la 0,6 lei.<br><br>Sperăm să înțelegeți necesitatea gestului nostru deoarece intenția noastră este de a vă comunica problemele cu care ne confruntăm și totodată să continuăm acest parteneriat fără să facem rabat de la calitatea serviciilor sau a produselor.<br><br><br>Vă mulțumim pentru înțelegere.<br><br>Cu respect,<br>Popa Florian<br>0756.119.875",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 38,
+    "fields": {
+      "key": "mr",
+      "value": "Puteti contacta soferul nostru (Marius) la numerele de telefon:   0756.119.864   ,   0737.642.346",
+      "html_value": "Puteti contacta soferul nostru (Marius) la numerele de telefon:   0756.119.864   ,   0737.642.346",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 39,
+    "fields": {
+      "key": "mc",
+      "value": "Bună ziua,\n\nVă mulțumim pentru plată.\n\nNe apucăm să pregătim coletele pentru a le expedia cât mai curând prin serviciul de curierat. Produsele vor ajunge la dvs. în aproximativ 4-7 zile lucrătoare.\n\nRevenim cu un email în care veți avea numărul de AWB și factura fiscală.",
+      "html_value": "Bună ziua,<br><br>Vă mulțumim pentru plată.<br><br>Ne apucăm să pregătim coletele pentru a le expedia cât mai curând prin serviciul de curierat. Produsele vor ajunge la dvs. în aproximativ 4-7 zile lucrătoare.<br><br>Revenim cu un email în care veți avea numărul de AWB și factura fiscală.",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 40,
+    "fields": {
+      "key": "mp",
+      "value": "Bună ziua,\n\nVă mulțumim pentru plată.\n\nÎn cel mai scurt timp, vom pregăti coletele pentru organizarea livrării. Produsele vor ajunge la dvs. în aproximativ 4-7 zile lucrătoare.\n\nVă rugăm să țineți cont că transportul în București pentru această comandă se va asigura cu mașinile noastre până la sediul dumneavoastră.\n\n• Nu și din mașină până în incinta sediului dumneavoastră (ex. produsele nu se vor livra la etaj, birou etc.)\n\n• Produsele se vor livra în cel mai apropiat loc de parcare sau în curtea sediului dumneavoastră.\n\nPentru mai multe detalii, puteți consulta pagina Întrebări frecvente [https://www.paff.ro/intrebari-frecvente#q3].",
+      "html_value": "Bună ziua,<br><br>Vă mulțumim pentru plată.<br><br>În cel mai scurt timp, vom pregăti coletele pentru organizarea livrării. Produsele vor ajunge la dvs. în aproximativ 4-7 zile lucrătoare.<br><br>Vă rugăm să țineți cont că transportul în București pentru această comandă se va asigura cu mașinile noastre până la sediul dumneavoastră.<br><br>• Nu și din mașină până în incinta sediului dumneavoastră (ex. produsele nu se vor livra la etaj, birou etc.)<br><br>• Produsele se vor livra în cel mai apropiat loc de parcare sau în curtea sediului dumneavoastră.<br><br>Pentru mai multe detalii, puteți consulta pagina Întrebări frecvente [<a href=\"https://www.paff.ro/intrebari-frecvente#q3].\">https://www.paff.ro/intrebari-frecvente#q3].</a>",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 41,
+    "fields": {
+      "key": "nu",
+      "value": "Buna ziua,\n\nVa multumim pentru interesul acordat societatii noastre, insa din motive tehnice nu putem da curs cererii dvs.",
+      "html_value": "Buna ziua,<br><br>Va multumim pentru interesul acordat societatii noastre, insa din motive tehnice nu putem da curs cererii dvs.",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 42,
+    "fields": {
+      "key": "pi",
+      "value": "Soferul care se va ocupa de livrarea produselor este Picu (Marales Gheorghe). Si il puteti contacta folosind   numarul   de telefon:   0745 992 533",
+      "html_value": "Soferul care se va ocupa de livrarea produselor este Picu (Marales Gheorghe). Si il puteti contacta folosind   numarul   de telefon:   0745 992 533",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 43,
+    "fields": {
+      "key": "op",
+      "value": "Buna ziua,\n\nAm atașat proforma pentru produsele comandate.\n\nVă rugăm să  analizați corectitudinea comenzii (pret, cantitate si dimensiunile oferite), apoi pentru a grăbi procesul de pregătire a produselor vă rugăm sa ne trimiteți o copie (printscreen, poză etc.) după transferul bancar  (ordin de plata).\n\nProdusele sunt pregătite pentru expediție   de la plata prin transfer bancar și în funcție de metoda de livrare aleasă produsele pot ajunge la dvs. în 4-7 zile lucrătoare.\"",
+      "html_value": "Buna ziua,<br><br>Am atașat proforma pentru produsele comandate.<br><br>Vă rugăm să  analizați corectitudinea comenzii (pret, cantitate si dimensiunile oferite), apoi pentru a grăbi procesul de pregătire a produselor vă rugăm sa ne trimiteți o copie (printscreen, poză etc.) după transferul bancar  (ordin de plata).<br><br>Produsele sunt pregătite pentru expediție   de la plata prin transfer bancar și în funcție de metoda de livrare aleasă produsele pot ajunge la dvs. în 4-7 zile lucrătoare.\"",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 44,
+    "fields": {
+      "key": "sp",
+      "value": "exemple de separatori:\n\n1 [http://www.paff.ro/library/main/Separatori/separator-despartitor-fagure-paff-11.jpg],\n\n2 [http://www.paff.ro/library/main/Separatori/separator-despartitor-fagure-paff-07.jpg],\n\n3 [http://www.paff.ro/library/main/Separatori/separator-despartitor-fagure-paff-14.jpg],\n\n4 [http://www.paff.ro/library/main/Separatori/separator-despartitor-fagure-paff-04.jpg],\n\n5 [http://www.paff.ro/library/main/Separatori/separator-despartitor-fagure-paff-09.jpg] \"",
+      "html_value": "exemple de separatori:<br><br>1 [<a href=\"http://www.paff.ro/library/main/Separatori/separator-despartitor-fagure-paff-11.jpg],<br><br>2\">http://www.paff.ro/library/main/Separatori/separator-despartitor-fagure-paff-11.jpg],<br><br>2</a> [<a href=\"http://www.paff.ro/library/main/Separatori/separator-despartitor-fagure-paff-07.jpg],<br><br>3\">http://www.paff.ro/library/main/Separatori/separator-despartitor-fagure-paff-07.jpg],<br><br>3</a> [<a href=\"http://www.paff.ro/library/main/Separatori/separator-despartitor-fagure-paff-14.jpg],<br><br>4\">http://www.paff.ro/library/main/Separatori/separator-despartitor-fagure-paff-14.jpg],<br><br>4</a> [<a href=\"http://www.paff.ro/library/main/Separatori/separator-despartitor-fagure-paff-04.jpg],<br><br>5\">http://www.paff.ro/library/main/Separatori/separator-despartitor-fagure-paff-04.jpg],<br><br>5</a> [<a href=\"http://www.paff.ro/library/main/Separatori/separator-despartitor-fagure-paff-09.jpg]\">http://www.paff.ro/library/main/Separatori/separator-despartitor-fagure-paff-09.jpg]</a> \"",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 45,
+    "fields": {
+      "key": "st",
+      "value": "Costul unei stante pentru cutiile cu lungimea unei laturi sub 1000mm  este de 1.000 de lei + tva.\n\nEx:\n\n1 [http://www.paff.ro/library/main/Stante/stanta-matrita-carton-paff-04.jpg]\n\n2 [http://www.paff.ro/library/main/Stante/stanta-matrita-carton-paff-01.jpg])\n\n\nDvs. veti achita doar jumatate (adica 500 lei + TVA) daca stanta ramane la noi.\n\nPretul unei stante pentru separatori este de 600 lei + TVA si se achita integral de client.\n\nTermen de executie 2-4 zile lucratoare pentru stante",
+      "html_value": "Costul unei stante pentru cutiile cu lungimea unei laturi sub 1000mm  este de 1.000 de lei + tva.<br><br>Ex:<br><br>1 [<a href=\"http://www.paff.ro/library/main/Stante/stanta-matrita-carton-paff-04.jpg]<br><br>2\">http://www.paff.ro/library/main/Stante/stanta-matrita-carton-paff-04.jpg]<br><br>2</a> [<a href=\"http://www.paff.ro/library/main/Stante/stanta-matrita-carton-paff-01.jpg]\">http://www.paff.ro/library/main/Stante/stanta-matrita-carton-paff-01.jpg]</a>)<br><br><br>Dvs. veti achita doar jumatate (adica 500 lei + TVA) daca stanta ramane la noi.<br><br>Pretul unei stante pentru separatori este de 600 lei + TVA si se achita integral de client.<br><br>Termen de executie 2-4 zile lucratoare pentru stante",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 46,
+    "fields": {
+      "key": "vp",
+      "value": "AICI [http://www.edcg.ro/mostrar-cerneala-hydra.html] aveti catalogul de vopseluri pe baza de apa folosite la imprimarea pe carton.\"",
+      "html_value": "AICI [<a href=\"http://www.edcg.ro/mostrar-cerneala-hydra.html]\">http://www.edcg.ro/mostrar-cerneala-hydra.html]</a> aveti catalogul de vopseluri pe baza de apa folosite la imprimarea pe carton.\"",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 47,
+    "fields": {
+      "key": "df",
+      "value": "Vă rugăm să ne furnizați următoarele informații pentru procesarea comenzii:\n\n• Datele pentru facturare\n• Adresa de livrare\n• Numele și numărul de telefon al persoanei de contact responsabilă pentru recepționarea produselor",
+      "html_value": "Vă rugăm să ne furnizați următoarele informații pentru procesarea comenzii:<br><br>• Datele pentru facturare<br>• Adresa de livrare<br>• Numele și numărul de telefon al persoanei de contact responsabilă pentru recepționarea produselor",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  },
+  {
+    "model": "textsync.Shortcut",
+    "pk": 48,
+    "fields": {
+      "key": "bapi",
+      "value": "Bună ziua,\n\nPentru grafică, vă rugăm să ne trimiteți o imagine vectorizată în unul dintre următoarele formate: cdr, eps sau svg, împreună cu codul de culoare în sistemul Pantone Coated.\n\nComandă minimă:\n\n• 144 role (4 seturi) / model grafic 1-2 culori\n• 180 role (5 seturi) / model grafic 3 culori\n(vedeți recomandările de mai jos).\n\n\nDimensiuni standard clișee:\n\n• 50x150mm (dimensiune max. grafică 45x145mm)\n• 50x187mm (dimensiune max. grafică 45x182mm)\n• 50x219mm (dimensiune max. grafică 45x214mm)\n• 50x251mm (dimensiune max. grafică 45x246mm)\n• 50x282mm (dimensiune max. grafică 45x277mm)\n• 50x313mm (dimensiune max. grafică 45x308mm)\n\n\nPrețuri clișee:\n\n• Lungimile 150mm, 187mm, 219mm = 100 lei + TVA / culoare\n• Lungimile 251mm, 282mm, 313mm = 200 lei + TVA / culoare\nPromoție: La prima comandă, noi suportăm costul clișeelor, în limita a 200 lei + TVA\n\n\nTermen de livrare:\n\n• Maxim 10-14 zile lucrătoare de la plata prin OP și confirmarea bunului de tipar.\n\n__________\n\nMostre pentru testare:\n\nDacă aveți dubii privind calitatea benzilor noastre, puteți solicita o mostră pentru testare înainte de a începe producția. Mostrele fac parte din surplusul provenit din reglajul mașinii și nu din ceea ce urmează a se produce.\n\nVă rugăm să țineți cont că imprimarea se realizează pe baza codurilor Pantone Solid Coated și nu pe baza codurilor RGB sau CMYK. Astfel, fără un cod Pantone, noi putem doar estima culorile furnizate.\n\nPentru a asigura că nuanțele sunt cât mai apropiate de original, vă rugăm să ne trimiteți o mostră de culoare (ex. ceva deja tipărit - revistă, flyer, etc.) pentru potrivirea la pantonar.\n\n__________\n\nSpecificații și recomandări privind benzile adezive personalizate:\n\nSpecificații tehnice ale benzii adezive:\n\n• Suport: BOPP\n• Adeziv: acrilic\n• Culoare bandă: Alb\n• Grosime bandă: 28 microni\n• Grosime bandă + adeziv + imprimeu: 48-50 microni\n• Rezistență la rupere: 108 N/25mm\n• Aderență: 12.5 N/25mm\n• Elongație: 140%\n\n\nSpecificații pentru păstrare, depozitare și utilizare:\n\n• Contactul cu produse organice, unsori, uleiuri sau solvenți poate deteriora tipărirea.\n• Manipularea manuală (direct cu mâna) poate deteriora tipărirea.\n• Contactul cu produse abrazive provoacă deteriorarea tipăririi.\n• Benzile adezive personalizate și ambalajele în care sunt păstrate nu trebuie expuse direct radiațiilor solare, ultraviolete sau calorice.\n• Temperatura de păstrare, depozitare și transport trebuie să fie între 18-22 grade Celsius.\n• Umiditate relativă 54%.\n\nNerespectarea acestor condiții poate duce la reacții între adeziv și cerneala folosită, rezultând exfolierea cernelii în momentul desfășurării benzii.\n\n\nRecomandări pentru păstrare și folosire:\n\n• Recomandăm utilizarea benzilor adezive personalizate în termen de 6 luni de la primirea lor, pentru a evita pierderea proprietăților vizuale și deteriorarea graficii imprimate.\n• Depozitarea trebuie să se facă în condiții de temperatură controlată, ferite de acțiunea directă a razelor solare, de îngheț și umiditate, pentru a prelungi perioada de valabilitate.\n\n__________\n\nSpecificații privind nuanțele:\n\nCu toate că se iau toate măsurile pentru a asigura acuratețea datelor, nu ne asumăm responsabilitatea pentru erorile și omisiunile trecute cu vederea după aprobarea bunului de tipar. Dacă nu specificați culorile Pantone, culorile propuse sunt doar aproximări bazate pe culorile CMYK sau RGB din fișierele furnizate de dumneavoastră. Pentru garantarea acurateței culorilor, vă rugăm să consultați catalogul Pantone.",
+      "html_value": "Bună ziua,<br><br>Pentru grafică, vă rugăm să ne trimiteți o imagine vectorizată în unul dintre următoarele formate: cdr, eps sau svg, împreună cu codul de culoare în sistemul Pantone Coated.<br><br>Comandă minimă:<br><br>• 144 role (4 seturi) / model grafic 1-2 culori<br>• 180 role (5 seturi) / model grafic 3 culori<br>(vedeți recomandările de mai jos).<br><br><br>Dimensiuni standard clișee:<br><br>• 50x150mm (dimensiune max. grafică 45x145mm)<br>• 50x187mm (dimensiune max. grafică 45x182mm)<br>• 50x219mm (dimensiune max. grafică 45x214mm)<br>• 50x251mm (dimensiune max. grafică 45x246mm)<br>• 50x282mm (dimensiune max. grafică 45x277mm)<br>• 50x313mm (dimensiune max. grafică 45x308mm)<br><br><br>Prețuri clișee:<br><br>• Lungimile 150mm, 187mm, 219mm = 100 lei + TVA / culoare<br>• Lungimile 251mm, 282mm, 313mm = 200 lei + TVA / culoare<br>Promoție: La prima comandă, noi suportăm costul clișeelor, în limita a 200 lei + TVA<br><br><br>Termen de livrare:<br><br>• Maxim 10-14 zile lucrătoare de la plata prin OP și confirmarea bunului de tipar.<br><br>__________<br><br>Mostre pentru testare:<br><br>Dacă aveți dubii privind calitatea benzilor noastre, puteți solicita o mostră pentru testare înainte de a începe producția. Mostrele fac parte din surplusul provenit din reglajul mașinii și nu din ceea ce urmează a se produce.<br><br>Vă rugăm să țineți cont că imprimarea se realizează pe baza codurilor Pantone Solid Coated și nu pe baza codurilor RGB sau CMYK. Astfel, fără un cod Pantone, noi putem doar estima culorile furnizate.<br><br>Pentru a asigura că nuanțele sunt cât mai apropiate de original, vă rugăm să ne trimiteți o mostră de culoare (ex. ceva deja tipărit - revistă, flyer, etc.) pentru potrivirea la pantonar.<br><br>__________<br><br>Specificații și recomandări privind benzile adezive personalizate:<br><br>Specificații tehnice ale benzii adezive:<br><br>• Suport: BOPP<br>• Adeziv: acrilic<br>• Culoare bandă: Alb<br>• Grosime bandă: 28 microni<br>• Grosime bandă + adeziv + imprimeu: 48-50 microni<br>• Rezistență la rupere: 108 N/25mm<br>• Aderență: 12.5 N/25mm<br>• Elongație: 140%<br><br><br>Specificații pentru păstrare, depozitare și utilizare:<br><br>• Contactul cu produse organice, unsori, uleiuri sau solvenți poate deteriora tipărirea.<br>• Manipularea manuală (direct cu mâna) poate deteriora tipărirea.<br>• Contactul cu produse abrazive provoacă deteriorarea tipăririi.<br>• Benzile adezive personalizate și ambalajele în care sunt păstrate nu trebuie expuse direct radiațiilor solare, ultraviolete sau calorice.<br>• Temperatura de păstrare, depozitare și transport trebuie să fie între 18-22 grade Celsius.<br>• Umiditate relativă 54%.<br><br>Nerespectarea acestor condiții poate duce la reacții între adeziv și cerneala folosită, rezultând exfolierea cernelii în momentul desfășurării benzii.<br><br><br>Recomandări pentru păstrare și folosire:<br><br>• Recomandăm utilizarea benzilor adezive personalizate în termen de 6 luni de la primirea lor, pentru a evita pierderea proprietăților vizuale și deteriorarea graficii imprimate.<br>• Depozitarea trebuie să se facă în condiții de temperatură controlată, ferite de acțiunea directă a razelor solare, de îngheț și umiditate, pentru a prelungi perioada de valabilitate.<br><br>__________<br><br>Specificații privind nuanțele:<br><br>Cu toate că se iau toate măsurile pentru a asigura acuratețea datelor, nu ne asumăm responsabilitatea pentru erorile și omisiunile trecute cu vederea după aprobarea bunului de tipar. Dacă nu specificați culorile Pantone, culorile propuse sunt doar aproximări bazate pe culorile CMYK sau RGB din fișierele furnizate de dumneavoastră. Pentru garantarea acurateței culorilor, vă rugăm să consultați catalogul Pantone.",
+      "sets": [
+        1
+      ],
+      "updated_by": null
+    }
+  }
+]

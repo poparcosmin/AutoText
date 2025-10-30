@@ -1,0 +1,627 @@
+# espanso match file
+
+# For a complete introduction, visit the official docs at: https://espanso.org/docs/
+
+# You can use this file to define the base matches (aka snippets)
+# that will be available in every application when using espanso.
+
+# Matches are substitution rules: when you type the "trigger" string
+# it gets replaced by the "replace" string.
+
+# yaml-language-server: $schema=https://raw.githubusercontent.com/espanso/espanso/dev/schemas/match.schema.json
+
+matches:
+
+#------------------------------------
+#               FEFCO
+#------------------------------------
+
+  - trigger: "`200"
+    replace: |
+      FEFCO 0200
+
+      (desen tehnic: http://i.imgur.com/rRG5W6x.jpg, animatie: http://i.imgur.com/MLIyLWQ.gif)
+
+  - trigger: "`201"
+    replace: |
+      FEFCO 0201
+
+      (desen tehnic: http://i.imgur.com/pM302Xi.jpg, animatie: http://i.imgur.com/Nv7tcrR.gif)
+    
+
+  - trigger: "`203"
+    replace: |
+     FEFCO 0203
+
+     (desen tehnic: http://i.imgur.com/QOJvdQ0.jpg, animatie: http://i.imgur.com/dgJezdc.gif)"
+     
+  - trigger: "`215"
+    replace: |
+     FEFCO 0215
+
+     (desen tehnic: http://i.imgur.com/h7o6a1E.jpg, animatie: http://i.imgur.com/AIFLoxb.gif)
+    
+  - trigger: "`217"
+    replace: |
+     FEFCO 0217
+
+     (desen tehnic: http://i.imgur.com/ntHuydK.jpg, animatie: http://i.imgur.com/1F7n5ku.gif)
+     
+  - trigger: "`330"
+    replace: |
+     FEFCO 0330
+
+     (desen tehnic: http://i.imgur.com/Ij4YrAD.jpg, animatie: http://i.imgur.com/2g76qPU.gif)
+     
+  - trigger: "`426"
+    replace: |
+     FEFCO 0426
+
+     (desen tehnic: http://i.imgur.com/nWJLoey.jpg, animatie: http://i.imgur.com/H85TV4W.gif)
+     
+  - trigger: "`427"
+    replace: |
+     FEFCO 0427
+
+     (desen tehnic: http://i.imgur.com/4qvhDaz.jpg, animatie: http://i.imgur.com/DCWaYLA.gif)
+    
+
+
+#------------------------------------
+#  Scurtaturi pentru Administrator
+#------------------------------------
+
+     
+  - trigger: "`aa"
+    replace: |
+     <b>ACHITAT</b><font color='#1ABC9C'><b>––» PAFF</b></font>"
+    
+  - trigger: "`ap"
+    replace: |
+     <b>.............ACHITAT</b><font color='#f441df'><b>––» Se ridica de la PAFF</b></font>"
+
+  - trigger: "`af"
+    replace: |
+     <b>ACHITAT</b><font color='#3E66A6'><b>––» Fan Courier</b></font>"
+    
+  - trigger: "`ra"
+    replace: |
+     <b>RAMBURS       ... >>> </b>"
+
+  - trigger: "`adr"
+    replace: |
+     <b>ACHITAT</b><font color="#fab220"><b>––» DRAGON</b></font>
+     
+  - trigger: "`a-nu"
+    replace: |
+     <font color="#f44152"><b>.............Nu a ACHITAT</b></font></b><font
+    
+    
+#------------------------------------
+#              Semnaturi
+#------------------------------------
+    
+    
+  - trigger: "`ac"
+    replace: |
+     Cu stima,
+
+     Aura Chitulescu
+     074.466.7233
+     
+     
+  - trigger: "`fp"
+    replace: |
+     Toate cele bune,
+     
+     Florentina Păun
+     072.169.7233
+         
+     
+  - trigger: "`ni"
+    replace: |
+     Cu stima,
+     
+     Irina Nicolaiu
+     072.169.7233
+     
+  - trigger: "`pb"
+    replace: |
+     Cu stima,
+     
+     Bogdan Popa
+     0756.119.876
+     
+     
+  - trigger: "`pc"
+    replace: |
+     Toate cele bune / Best regards,
+     
+     Popa R. Cosmin
+     0756.562.229
+     
+     
+  - trigger: "`pf"
+    replace: |
+     Cu respect,
+     
+     Popa Florian
+     0756.119.875
+     
+
+#------------------------------------
+#    BAP si Cutii personalizate
+#------------------------------------
+
+  - trigger: "`bapco"
+    replace: |
+     Comanda XXXXX
+     print@maxoll.ro
+     bucuresti@maxoll.ro
+     Bună ziua,
+     
+     Dorim o comandă "" de 144 role conform atașamentului.
+     
+     Stare cliseu: nou
+     Culori: 3 culori (XX, XX, XX)
+     Fond: alb
+     Dim. cliseu: 50x187mm
+     Dim. rolă: 50x66m
+     Adeziv: acrilic
+     
+     Cu stimă,
+     Bogdan Popa
+     0756.119.876
+
+
+
+
+  - trigger: "`bt"
+    replace: |
+     Bună ziua,
+     
+     Aveți OK pentru tipar.
+     
+     Cu stimă,
+     Bogdan Popa
+    
+    
+  - trigger: "`bc"
+    replace: |
+     Buna ziua,
+     
+     Am primit comanda dvs de banda adeziva personalizata.
+     
+     Va informam ca la acest produs, comanda minima este de 4 cutii (144 role), detaliu ce este specificat si la  descrierea produsului [http://www.paff.ro/banda-adeziva-personalizata-2-culoari-50mmx66m-set-36-buc].
+     
+     Daca va hotarati sa suplimentati comanda, trebuie sa luati in calcul si  specificatiile de pastrare si depozitare [http://www.paff.ro/banda-adeziva-personalizata-2-culoari-50mmx66m-set-36-buc]  a benzii adezive.
+     
+
+  - trigger: "`bapt"
+    replace: |
+     Bună ziua,
+     
+     Atașat găsiți macheta pentru tipar a benzii personalizate. Vă rugăm să confirmați bunul de tipar.
+     
+     
+     Cu stimă,
+     Bogdan Popa
+    
+
+  - trigger: "`nets"
+    replace: |
+     mirela.ivan@netselgrafic.ro
+     Bună ziua,
+     
+     Dorim un clișeu conform paginii roz din atașament. 
+     Livrarea prin curier.
+     
+     
+     Cu stimă,
+     Bogdan Popa
+     0756.119.876
+
+    
+
+
+#------------------------------------
+#              Date Firma
+#------------------------------------
+
+    
+  - trigger: "`fb"
+    replace: |
+     Facturarea se face pe firma - Boxpack SRL.
+     
+     Plata se face in contul ING: RO74INGB0000999907805169
+     
+
+  - trigger: "`sd"
+    replace: |
+     Bună ziua,
+     
+     Vă așteptăm la sediul nostru din: Str. Ion Ghica 129, Răcari, Dâmboviţa
+     
+     Adresa noastră pe google maps: http://j.mp/HartaPAFF
+     
+     Punct de reper: Vis-a-vis de borna kilometrică 39 de pe DN 71, București - Târgoviște Direcție: București - Chitila - Tărtășești - Răcari
+     
+     Biroul nostru se află pe partea stângă când veniți dinspre București: http://j.mp/2hLOPdt
+     
+     Telefon: 072-169.7233, 074-466.7233
+     
+     Email: contact@paff.ro
+     
+     Web: www.paff.ro
+     
+  - trigger: "`paff"
+    replace: |
+      S.C. PAFF S.R.L.
+      J15/1583/1993 - RO4807535
+      Sediu: Str. Ion Ghica, Nr. 129, Răcari, Dâmbovița, Cod poștal: 137388
+      Google maps: https://goo.gl/maps/uRF1xPbg8mP2
+     
+
+#------------------------------------
+#              CURIERI
+#------------------------------------
+
+    
+  - trigger: "`ffan"
+    replace: |
+     Bună ziua,
+     
+     Atașăm factura fiscală pentru produsele expediate prin Fan Courier.
+     
+     Numărul de AWB este: 
+     
+     Factura fiscală poate fi descărcată și din e-Factura. 
+     
+     
+  - trigger: "`ffd"
+    replace: |
+     Bună ziua,
+     
+     Atașăm factura fiscală pentru produsele expediate prin Dragon Star.
+     
+     Numărul de AWB este: 
+     
+     Factura fiscală poate fi descărcată și din e-Factura. 
+    
+
+
+#------------------------------------
+#        Mesaje catre clienti
+#------------------------------------
+
+  - trigger: "`livrare"
+    replace: |
+     Bună ziua,
+     
+     Numerele de telefon ale șoferilor care vor efectua livrarea:
+     
+     PICU - 0756.119.864
+     MARIUS - 0756.119.878
+     
+     Livrarea cu propriile mașini la adresa clientului se face până în incinta sediului sau în cel mai apropiat loc posibil unde se poate parca mașina, însă șoferul:
+     
+     • NU cară coletele din mașină în sediul clientului
+     • NU urcă coletele la etaj
+     
+     Dacă nu se pot îndeplini condițiile de mai sus, vă rugăm să ajutați șoferul pentru a realiza livrarea în condiții optime, astfel încât să nu se pună în pericol bunurile din mașină, să nu blocheze drumul etc. În caz contrar, coletele vor fi expediate prin curier contra cost.
+     
+     Șoferii sunt de bună credință și fac tot posibilul pentru a facilita clientului accesul la marfă cât mai ușor. Însă sunt oameni și nu pot rezolva toate problemele apărute, precum: lipsa spațiilor de parcare, căi de acces blocate, lipsa personalului pentru preluarea coletelor etc.
+     
+     
+  - trigger: "`dx"
+    replace: |
+     Buna ziua,
+     
+     Noi producem ambalaje din carton ondulat si din pacate nu va putem ajuta.
+     
+     Dvs. aveti nevoie de un producator de ambalaje duplex.
+     
+     Pot doar sa va recomand doi colegi de breasla care se ocupa cu productia unor astfel de ambalaje:
+     
+     1. GeoEuro Tours Distributie S.R.L. (Dragos Mecu) email: dragos.mecu@geoeurotours.ro   website: http://outpack.ro adresa: Tunari, Ilfov telefon: 0722 316 300 , 0722 630 231
+     2. Almaș Pres International S.R.L. (Vasile Damsa) email: almassrl@yahoo.com adresa:   Str. Garoafei Nr. 1A, sector 5, Bucuresti   telefon: 0728.048.230, 0744.385.590"
+  
+
+
+     
+  - trigger: "`ia"
+    replace: |
+     Buna ziua,
+     
+     Din cauza aglomerației de sezon ne vedem nevoiți să amânăm comenzile primite în perioada următoare pentru prima parte a lunii ianuarie 2024.
+     
+     Deoarece comenzile sunt procesate în ordinea sosirii, dacă sunteți de acord vom menține comanda dvs. pentru a fi procesată în cel mai scurt timp posibil - dar nu mai târziu de prima parte a lunii ianuarie 2024.
+     
+     Asteptam hotararea dvs daca mentinem comanda ,urmand sa va trimitem proforma pentru plata in ianuarie.
+     
+     Vă mulțumim pentru înțelegere.
+     
+     Sperăm că anul 2024 să fie mai liniștit.
+     
+     In perioada 22.12.2023 - 07.01.2024 suntem in concediu.
+     
+     
+  - trigger: "`fx"
+    replace: |
+     Bună ziua,
+     
+     Imprimarea Cutiilor prin Flexografie:
+     • Imprimarea cutiilor se realizează prin flexografie, necesitând astfel confecționarea unui clișeu (asemănător celui folosit la ștampile).
+     
+     Cutiile se vor imprima într-o singură culoare în următoarele condiții:
+      • Placa de carton din care se formează cutia să nu fie mai mare de 900x700 mm și să nu fie mai mică de 280x280 mm.
+      
+      Pentru grafică, avem nevoie de o imagine în format vectorial (cdr, ai, eps, sau pdf).
+      
+      
+      Exemple de cutii imprimate:
+      
+       • Negru pe alb:
+       
+            ex1 [https://www.paff.ro/library/main/Imprimare/imprimare-flexo-negru-pe-fond-alb.jpg]
+       
+        • Negru pe nature:
+        
+            ex1 [https://www.paff.ro/library/main/Imprimare/flexografie_ipsojhondeere.jpg],
+
+            ex2 [https://www.paff.ro/library/main/Imprimare/flexografie_hessers.jpg],
+
+            ex3 [https://www.paff.ro/library/main/Imprimare/flexografie_forever.jpg]
+        
+        Se folosește doar vopsea neagră, pe bază de apă, specială pentru hârtie.
+        
+        
+        Prețuri pentru Imprimarea Cutiilor:
+         • Comandă minimă de 1000 bucăți / model cutie = 0,5 Lei + TVA / bucată
+         
+         Tarif Clișeu*:
+          • Mai mici de 0,2 m.p. = 200 Lei + TVA / model cutie
+          • Mai mari de 0,2 m.p. = 1500 Lei + TVA / m.p.
+           
+           *Un clișeu poate fi folosit pentru mai multe cutii, doar dacă se imprimă cu același clișeu. Orice modificare în dimensiune sau formă presupune un clișeu nou.
+           Termenul pentru realizarea clișeului este de 2-5 zile de la plata cu OP. Pentru imprimarea cutiilor se mai adaugă o zi lucrătoare.
+
+
+  - trigger: "`lc"
+    replace: |
+     Bună ziua,
+     
+     Dimensiuni cutie in mm:  000 x 000 x 000 mm
+     
+     Dimensiunile sunt: interioare exterioare Tipul cartonului este:  CO 0, ondula 0+0
+     
+     Grosimea cartonului este: 1,7mm 2,9mm 3,8mm 4,8mm 6,5mm
+     
+     Model ambalaj:  0000
+     
+     Model stanta: întreagă jumatate Ștanța trebuie să cuprindă și semnul PAP20 pe o latura nevizibila (interioara).
+     
+     Detalii suplimentare:         ( Client: XXXXXXXXXX SRL )
+     
+     
+  - trigger: "`la"
+    replace: |
+     Te rugăm să ne scrii câteva cuvinte pe pagina Google Plus [https://g.page/r/CQc8dm53vBghEAg/review] pentru a ne ajuta să ne îmbunătățim serviciile, produsele, relația cu clienții, experiența avută cu magazinul online etc. 
+     
+     Ce v-a plăcut, ce nu v-a plăcut, orice idee sau opinie este binevenită.
+     
+     Toate cele bune,
+     Popa R. Cosmin
+     0756.562.229
+     
+     
+  - trigger: "`mj"
+    replace: |
+     Urmare a evoluției prețurilor pentru hârtia din care se realizează cartonul 5% în 2022. Suntem nevoiți să vă anunțăm că operăm o creștere de preț pentru comenzile solicitate în prezent la SC PAFF SRL.
+     
+     Pe lângă majorarea prețului pentru hârtie, am mai înregistrat creșteri de preț și la alte materii prime și servicii (ex. salarii, transport, energie etc.).
+     
+     Iar cea mai importanta influenta in cresterea pretului o reprezinta criza hartiei din ultimul timp. Se exporta masiv hartie reciclata in China Chair si deseurile de carton s-au scumpit.
+     
+     Daca initial le ridicau gratis apoi in ultimii ani plateau 0,35 lei/kg, acum pretul a ajuns la 0,5 lei/kg (deseu carton) urmand sa creasca la 0,6 lei.
+     
+     Sperăm să înțelegeți necesitatea gestului nostru deoarece intenția noastră este de a vă comunica problemele cu care ne confruntăm și totodată să continuăm acest parteneriat fără să facem rabat de la calitatea serviciilor sau a produselor.
+     
+     
+     Vă mulțumim pentru înțelegere.
+     
+     Cu respect,
+     Popa Florian
+     0756.119.875
+     
+     
+  - trigger: "`mr"
+    replace: |
+     Puteti contacta soferul nostru (Marius) la numerele de telefon:   0756.119.864   ,   0737.642.346 
+    
+     
+  - trigger: "`mc"
+    replace: |
+     Bună ziua,
+     
+     Vă mulțumim pentru plată.
+     
+     Ne apucăm să pregătim coletele pentru a le expedia cât mai curând prin serviciul de curierat. Produsele vor ajunge la dvs. în aproximativ 4-7 zile lucrătoare.
+     
+     Revenim cu un email în care veți avea numărul de AWB și factura fiscală.
+     
+     
+  - trigger: "`mp"
+    replace: |
+     Bună ziua,
+     
+     Vă mulțumim pentru plată.
+     
+     În cel mai scurt timp, vom pregăti coletele pentru organizarea livrării. Produsele vor ajunge la dvs. în aproximativ 4-7 zile lucrătoare.
+     
+     Vă rugăm să țineți cont că transportul în București pentru această comandă se va asigura cu mașinile noastre până la sediul dumneavoastră.
+     
+     • Nu și din mașină până în incinta sediului dumneavoastră (ex. produsele nu se vor livra la etaj, birou etc.)
+     
+     • Produsele se vor livra în cel mai apropiat loc de parcare sau în curtea sediului dumneavoastră.
+     
+     Pentru mai multe detalii, puteți consulta pagina Întrebări frecvente [https://www.paff.ro/intrebari-frecvente#q3].
+     
+
+    
+  - trigger: "`nu"
+    replace: |
+     Buna ziua,
+     
+     Va multumim pentru interesul acordat societatii noastre, insa din motive tehnice nu putem da curs cererii dvs.
+     
+     
+
+     
+  - trigger: "`pi"
+    replace: |
+     Soferul care se va ocupa de livrarea produselor este Picu (Marales Gheorghe). Si il puteti contacta folosind   numarul   de telefon:   0745 992 533
+    
+    
+  - trigger: "`op"
+    replace: |
+     Buna ziua,
+     
+     Am atașat proforma pentru produsele comandate.
+     
+     Vă rugăm să  analizați corectitudinea comenzii (pret, cantitate si dimensiunile oferite), apoi pentru a grăbi procesul de pregătire a produselor vă rugăm sa ne trimiteți o copie (printscreen, poză etc.) după transferul bancar  (ordin de plata).
+     
+     Produsele sunt pregătite pentru expediție   de la plata prin transfer bancar și în funcție de metoda de livrare aleasă produsele pot ajunge la dvs. în 4-7 zile lucrătoare."
+     
+     
+     
+  - trigger: "`sp"
+    replace: |
+     exemple de separatori:
+     
+     1 [http://www.paff.ro/library/main/Separatori/separator-despartitor-fagure-paff-11.jpg],
+     
+     2 [http://www.paff.ro/library/main/Separatori/separator-despartitor-fagure-paff-07.jpg],
+     
+     3 [http://www.paff.ro/library/main/Separatori/separator-despartitor-fagure-paff-14.jpg],
+     
+     4 [http://www.paff.ro/library/main/Separatori/separator-despartitor-fagure-paff-04.jpg],
+     
+     5 [http://www.paff.ro/library/main/Separatori/separator-despartitor-fagure-paff-09.jpg] "
+  
+  
+  - trigger: "`st"
+    replace: |
+     Costul unei stante pentru cutiile cu lungimea unei laturi sub 1000mm  este de 1.000 de lei + tva.
+     
+     Ex:
+     
+     1 [http://www.paff.ro/library/main/Stante/stanta-matrita-carton-paff-04.jpg]
+     
+     2 [http://www.paff.ro/library/main/Stante/stanta-matrita-carton-paff-01.jpg])
+     
+     
+     Dvs. veti achita doar jumatate (adica 500 lei + TVA) daca stanta ramane la noi.
+     
+     Pretul unei stante pentru separatori este de 600 lei + TVA si se achita integral de client.
+     
+     Termen de executie 2-4 zile lucratoare pentru stante
+    
+    
+  - trigger: "`vp"
+    replace: |
+     AICI [http://www.edcg.ro/mostrar-cerneala-hydra.html] aveti catalogul de vopseluri pe baza de apa folosite la imprimarea pe carton."
+     
+
+  - trigger: "`df"
+    replace: |
+     Vă rugăm să ne furnizați următoarele informații pentru procesarea comenzii:
+     
+     • Datele pentru facturare
+     • Adresa de livrare
+     • Numele și numărul de telefon al persoanei de contact responsabilă pentru recepționarea produselor
+
+
+  - trigger: "`bapi"
+    replace: |
+     Bună ziua,
+     
+     Pentru grafică, vă rugăm să ne trimiteți o imagine vectorizată în unul dintre următoarele formate: cdr, eps sau svg, împreună cu codul de culoare în sistemul Pantone Coated.
+     
+     Comandă minimă:
+     
+     • 144 role (4 seturi) / model grafic 1-2 culori
+     • 180 role (5 seturi) / model grafic 3 culori
+     (vedeți recomandările de mai jos).
+     
+     
+     Dimensiuni standard clișee:
+     
+     • 50x150mm (dimensiune max. grafică 45x145mm)
+     • 50x187mm (dimensiune max. grafică 45x182mm)
+     • 50x219mm (dimensiune max. grafică 45x214mm)
+     • 50x251mm (dimensiune max. grafică 45x246mm)
+     • 50x282mm (dimensiune max. grafică 45x277mm)
+     • 50x313mm (dimensiune max. grafică 45x308mm)
+     
+     
+     Prețuri clișee:
+     
+     • Lungimile 150mm, 187mm, 219mm = 100 lei + TVA / culoare
+     • Lungimile 251mm, 282mm, 313mm = 200 lei + TVA / culoare
+     Promoție: La prima comandă, noi suportăm costul clișeelor, în limita a 200 lei + TVA
+     
+     
+     Termen de livrare:
+     
+     • Maxim 10-14 zile lucrătoare de la plata prin OP și confirmarea bunului de tipar.
+     
+     __________
+     
+     Mostre pentru testare:
+     
+     Dacă aveți dubii privind calitatea benzilor noastre, puteți solicita o mostră pentru testare înainte de a începe producția. Mostrele fac parte din surplusul provenit din reglajul mașinii și nu din ceea ce urmează a se produce.
+     
+     Vă rugăm să țineți cont că imprimarea se realizează pe baza codurilor Pantone Solid Coated și nu pe baza codurilor RGB sau CMYK. Astfel, fără un cod Pantone, noi putem doar estima culorile furnizate.
+     
+     Pentru a asigura că nuanțele sunt cât mai apropiate de original, vă rugăm să ne trimiteți o mostră de culoare (ex. ceva deja tipărit - revistă, flyer, etc.) pentru potrivirea la pantonar.
+     
+     __________
+     
+     Specificații și recomandări privind benzile adezive personalizate:
+     
+     Specificații tehnice ale benzii adezive:
+     
+     • Suport: BOPP
+     • Adeziv: acrilic
+     • Culoare bandă: Alb
+     • Grosime bandă: 28 microni
+     • Grosime bandă + adeziv + imprimeu: 48-50 microni
+     • Rezistență la rupere: 108 N/25mm
+     • Aderență: 12.5 N/25mm
+     • Elongație: 140%
+     
+     
+     Specificații pentru păstrare, depozitare și utilizare:
+     
+     • Contactul cu produse organice, unsori, uleiuri sau solvenți poate deteriora tipărirea.
+     • Manipularea manuală (direct cu mâna) poate deteriora tipărirea.
+     • Contactul cu produse abrazive provoacă deteriorarea tipăririi.
+     • Benzile adezive personalizate și ambalajele în care sunt păstrate nu trebuie expuse direct radiațiilor solare, ultraviolete sau calorice.
+     • Temperatura de păstrare, depozitare și transport trebuie să fie între 18-22 grade Celsius.
+     • Umiditate relativă 54%.
+     
+     Nerespectarea acestor condiții poate duce la reacții între adeziv și cerneala folosită, rezultând exfolierea cernelii în momentul desfășurării benzii.
+     
+     
+     Recomandări pentru păstrare și folosire:
+     
+     • Recomandăm utilizarea benzilor adezive personalizate în termen de 6 luni de la primirea lor, pentru a evita pierderea proprietăților vizuale și deteriorarea graficii imprimate.
+     • Depozitarea trebuie să se facă în condiții de temperatură controlată, ferite de acțiunea directă a razelor solare, de îngheț și umiditate, pentru a prelungi perioada de valabilitate.
+     
+     __________
+     
+     Specificații privind nuanțele:
+     
+     Cu toate că se iau toate măsurile pentru a asigura acuratețea datelor, nu ne asumăm responsabilitatea pentru erorile și omisiunile trecute cu vederea după aprobarea bunului de tipar. Dacă nu specificați culorile Pantone, culorile propuse sunt doar aproximări bazate pe culorile CMYK sau RGB din fișierele furnizate de dumneavoastră. Pentru garantarea acurateței culorilor, vă rugăm să consultați catalogul Pantone.
+
