@@ -6,11 +6,12 @@ async function syncShortcuts() {
   console.log("AutoText Background: syncShortcuts() called");
 
   try {
-    let { auth_token, active_sets, api_url, last_sync } = await chrome.storage.local.get([
+    let { auth_token, active_sets, api_url, last_sync, shortcuts } = await chrome.storage.local.get([
       "auth_token",
       "active_sets",
       "api_url",
-      "last_sync"
+      "last_sync",
+      "shortcuts"
     ]);
 
     console.log("AutoText: Storage retrieved:", {
@@ -25,6 +26,14 @@ async function syncShortcuts() {
       console.log("AutoText: No auth token found. User needs to login via Options page.");
       notifyUserToLogin();
       return;
+    }
+
+    // Force full sync if storage is empty (even if last_sync exists)
+    const shortcutsCount = shortcuts ? Object.keys(shortcuts).length : 0;
+    if (shortcutsCount === 0 && last_sync) {
+      console.log("AutoText: Storage is empty but last_sync exists, forcing full sync...");
+      await chrome.storage.local.remove('last_sync');
+      last_sync = null;
     }
 
     // Get active sets (default to 'birou' if none selected)

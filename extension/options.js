@@ -221,7 +221,8 @@ function createSetOption(set) {
   div.className = 'set-option';
   div.dataset.setName = set.name;
 
-  const isSelected = selectedSets.includes(set.name);
+  // Case-insensitive match since we normalize to lowercase on save
+  const isSelected = selectedSets.some(s => s.toLowerCase() === set.name.toLowerCase());
   if (isSelected) {
     div.classList.add('selected');
   }
@@ -254,12 +255,14 @@ function createSetOption(set) {
 
     if (checkbox.checked) {
       div.classList.add('selected');
-      if (!selectedSets.includes(set.name)) {
+      // Case-insensitive check to avoid duplicates
+      if (!selectedSets.some(s => s.toLowerCase() === set.name.toLowerCase())) {
         selectedSets.push(set.name);
       }
     } else {
       div.classList.remove('selected');
-      selectedSets = selectedSets.filter(s => s !== set.name);
+      // Case-insensitive removal
+      selectedSets = selectedSets.filter(s => s.toLowerCase() !== set.name.toLowerCase());
     }
 
     console.log('Selected sets updated:', selectedSets);

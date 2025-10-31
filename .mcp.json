@@ -1,0 +1,42 @@
+{
+  "mcpServers": {
+    "c7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"],
+      "env": {
+        "UPSTASH_REDIS_REST_URL": "https://apt-ewe-14850.upstash.io",
+        "UPSTASH_REDIS_REST_TOKEN": "ce60d270-e9c4-4c3e-af47-069ca848553e",
+        "CONTEXT7_API_KEY": "ctx7sk-cb3c5f23-0a69-4284-ad70-0f233c02b5e9",
+        "DOCUMENTATION_SOURCES": "django,python,javascript,bootstrap,redis,pnpm,nodejs,htmx",
+        "CONTEXT_NAMESPACE": "dev_documentation",
+        "AUTO_UPDATE": "true",
+        "UPDATE_FREQUENCY": "daily",
+        "CACHE_DURATION": "604800"
+      }
+    },
+    "cdt": {
+      "command": "npx",
+      "args": [
+        "chrome-devtools-mcp@latest"
+      ]
+    },
+    "fs": {
+      "command": "npx",
+      "args": [ "-y", "@modelcontextprotocol/server-filesystem", "/home/cosmin/Work/The_Project" ]
+    },
+    "qdrant": {
+      "command": "python3",
+      "args": [
+        "/home/cosmin/Work/LangChain-Qdrant/mcp_server/memory_server.py"
+      ],
+      "env": {
+        "MEMORY_API_URL": "http://localhost:8100"
+      }
+    }
+  },
+  "security": {
+    "auth": {
+      "selectedType": "oauth-personal"
+    }
+  }
+}

@@ -9,6 +9,18 @@ async function loadShortcuts() {
     const result = await chrome.storage.local.get("shortcuts");
     shortcuts = result.shortcuts || {};
     console.log("AutoText: Loaded", Object.keys(shortcuts).length, "shortcuts");
+
+    // If no shortcuts found, trigger auto-sync from background
+    if (Object.keys(shortcuts).length === 0) {
+      console.log("AutoText: No shortcuts found, triggering auto-sync...");
+      chrome.runtime.sendMessage({ action: 'sync' }, (response) => {
+        if (chrome.runtime.lastError) {
+          console.error("AutoText: Failed to trigger sync:", chrome.runtime.lastError.message);
+        } else {
+          console.log("AutoText: Auto-sync triggered successfully");
+        }
+      });
+    }
   } catch (error) {
     console.error("AutoText: Error loading shortcuts:", error);
   }
