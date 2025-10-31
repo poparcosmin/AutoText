@@ -343,8 +343,11 @@ async function saveAndSync() {
     // Trigger sync
     await triggerBackgroundSync();
 
-    // Show success
+    // Show success message
     showStatus(`✅ Saved! All ${normalizedSets.join(', ')} shortcuts loaded.`, 'success');
+
+    // Re-fetch sets to update shortcut counts
+    await refreshShortcutCounts();
 
   } catch (error) {
     showError(`Failed to save: ${error.message}`);
@@ -366,6 +369,39 @@ function triggerBackgroundSync() {
       }
     });
   });
+}
+
+// Refresh shortcut counts after sync
+async function refreshShortcutCounts() {
+  try {
+    console.log('Refreshing shortcut counts...');
+
+    // Re-fetch sets from API to get updated counts
+    await loadAvailableSets();
+
+    // Clear existing UI
+    const generalList = document.getElementById('general-list');
+    const personalList = document.getElementById('personal-list');
+    generalList.innerHTML = '';
+    personalList.innerHTML = '';
+
+    // Re-render with updated counts (preserves selection based on selectedSets array)
+    const generalSets = availableSets.filter(s => s.set_type === 'general');
+    const personalSets = availableSets.filter(s => s.set_type === 'personal');
+
+    generalSets.forEach(set => {
+      generalList.appendChild(createSetOption(set));
+    });
+
+    personalSets.forEach(set => {
+      personalList.appendChild(createSetOption(set));
+    });
+
+    console.log('Shortcut counts refreshed successfully');
+  } catch (error) {
+    console.error('Failed to refresh counts:', error);
+    // Don't show error to user - sync was successful, just counts didn't update
+  }
 }
 
 // Show status message

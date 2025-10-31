@@ -64,10 +64,12 @@ class ShortcutViewSet(viewsets.ModelViewSet):
                 general_set_names = list(general_sets.values_list('name', flat=True))
                 queries |= Q(sets__name__in=general_set_names)
 
-            # For personal sets: get only shortcuts owned by current user
+            # For personal sets: get ALL shortcuts in those sets
+            # Note: The sets themselves are already filtered by ownership/visibility in ShortcutSetViewSet
+            # So if user has access to a personal set, they should see all shortcuts in it
             if personal_sets.exists():
                 personal_set_names = list(personal_sets.values_list('name', flat=True))
-                queries |= Q(sets__name__in=personal_set_names, owner=self.request.user)
+                queries |= Q(sets__name__in=personal_set_names)
 
             queryset = queryset.filter(queries).distinct()
 
