@@ -75,12 +75,35 @@ class ShortcutAdminForm(forms.ModelForm):
         }
 
 
+class ShortcutSetFilter(admin.SimpleListFilter):
+    """Custom filter to filter shortcuts by set with better display"""
+    title = 'Shortcut Set'
+    parameter_name = 'set'
+
+    def lookups(self, request, model_admin):
+        """Return list of sets available to current user"""
+        if request.user.is_superuser:
+            sets = ShortcutSet.objects.all()
+        else:
+            sets = ShortcutSet.objects.filter(
+                Q(owner=request.user) | Q(visible_to=request.user)
+            ).distinct()
+
+        return [(s.id, f"{s.name} ({s.get_set_type_display()})") for s in sets.order_by('set_type', 'name')]
+
+    def queryset(self, request, queryset):
+        """Filter queryset by selected set"""
+        if self.value():
+            return queryset.filter(sets__id=self.value()).distinct()
+        return queryset
+
+
 @admin.register(Shortcut)
 class ShortcutAdmin(admin.ModelAdmin):
     form = ShortcutAdminForm
     list_display = ["key", "content_type", "value_preview", "owner", "get_sets", "updated_at", "updated_by"]
-    list_filter = ["content_type", "owner", "updated_at", "sets"]
-    search_fields = ["key", "value"]
+    list_filter = [ShortcutSetFilter, "content_type", "owner", "updated_at"]
+    search_fields = ["key", "value", "sets__name"]
     readonly_fields = ["updated_at"]
     filter_horizontal = ["sets"]  # Nice UI for ManyToMany selection
 
@@ -139,20 +162,39 @@ class ShortcutAdmin(admin.ModelAdmin):
     value_preview.short_description = "Preview"
 
     def get_sets(self, obj):
-        """Display which sets this shortcut belongs to"""
+        """Display which sets this shortcut belongs to with color coding"""
         sets = obj.sets.all()
         if not sets:
-            return "-"
-        return ", ".join([f"{s.name} ({s.get_set_type_display()})" for s in sets])
+            return format_html('<em style="color: #999;">No sets</em>')
+
+        # Color code by set type
+        set_badges = []
+        for s in sets:
+            if s.set_type == 'general':
+                color = '#4CAF50'  # Green for general
+                icon = '🏢'
+            else:
+                color = '#2196F3'  # Blue for personal
+                icon = '👤'
+
+            badge = f'<span style="background: {color}; color: white; padding: 2px 8px; border-radius: 3px; margin-right: 4px; font-size: 11px;">{icon} {s.name}</span>'
+            set_badges.append(badge)
+
+        return format_html(''.join(set_badges))
 
     get_sets.short_description = "Sets"
 
     def get_queryset(self, request):
         """Filter queryset: staff users see only their own shortcuts, superusers see all"""
         qs = super().get_queryset(request)
+
+        # Prefetch sets for better performance
+        qs = qs.prefetch_related('sets', 'sets__owner')
+
+        # Filter by user permissions
         if request.user.is_superuser:
-            return qs
-        return qs.filter(owner=request.user)
+            return qs.order_by('key')
+        return qs.filter(owner=request.user).order_by('key')
 
     def save_model(self, request, obj, form, change):
         """Auto-assign owner and updated_by to current user"""
