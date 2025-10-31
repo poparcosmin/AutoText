@@ -59,7 +59,8 @@ class ShortcutSetAdmin(admin.ModelAdmin):
 
     def save_model(self, request, obj, form, change):
         """Auto-assign owner to current user if not set"""
-        if not obj.pk and not obj.owner:
+        # For new objects or objects without owner, set owner to current user
+        if not obj.owner:
             obj.owner = request.user
         super().save_model(request, obj, form, change)
 
@@ -198,11 +199,13 @@ class ShortcutAdmin(admin.ModelAdmin):
 
     def save_model(self, request, obj, form, change):
         """Auto-assign owner and updated_by to current user"""
-        if not obj.pk:
-            # New object - set both owner and updated_by
-            if not obj.owner:
-                obj.owner = request.user
-            obj.updated_by = request.user
+        # Set owner to current user if not set (for new objects or objects without owner)
+        if not obj.owner:
+            obj.owner = request.user
+
+        # Always set updated_by to current user on any save
+        obj.updated_by = request.user
+
         super().save_model(request, obj, form, change)
 
 
