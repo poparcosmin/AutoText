@@ -16,9 +16,11 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from textsync.views import privacy_view
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('textsync.urls')),
     path('tinymce/', include('tinymce.urls')),
+    path('privacy.html', privacy_view, name='privacy'),
 ]

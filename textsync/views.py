@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from django.contrib.auth import authenticate
 from django.db.models import Q
 from django.utils import timezone
+from django.shortcuts import render
 from datetime import timedelta
 
 from .models import Shortcut, ShortcutSet, ExpiringToken
@@ -47,7 +48,28 @@ class ShortcutViewSet(viewsets.ModelViewSet):
         sets_param = self.request.query_params.get('sets', None)
         if sets_param:
             set_names = [s.strip() for s in sets_param.split(',')]
-            queryset = queryset.filter(sets__name__in=set_names).distinct()
+
+            # Get the ShortcutSet objects to determine their types
+            requested_sets = ShortcutSet.objects.filter(name__in=set_names)
+
+            # Separate general and personal sets
+            general_sets = requested_sets.filter(set_type='general')
+            personal_sets = requested_sets.filter(set_type='personal')
+
+            # Build query combining both types with different ownership rules
+            queries = Q()
+
+            # For general sets: get ALL shortcuts in those sets (no ownership filter)
+            if general_sets.exists():
+                general_set_names = list(general_sets.values_list('name', flat=True))
+                queries |= Q(sets__name__in=general_set_names)
+
+            # For personal sets: get only shortcuts owned by current user
+            if personal_sets.exists():
+                personal_set_names = list(personal_sets.values_list('name', flat=True))
+                queries |= Q(sets__name__in=personal_set_names, owner=self.request.user)
+
+            queryset = queryset.filter(queries).distinct()
 
         # Delta sync: filter by updated_after timestamp
         # Example: /api/shortcuts/?updated_after=2024-10-30T10:00:00Z
@@ -148,3 +170,10 @@ def verify_token_view(request):
             'email': request.user.email,
         }
     })
+
+
+def privacy_view(request):
+    """
+    Privacy Policy page for Chrome Web Store compliance.
+    """
+    return render(request, 'privacy.html')
