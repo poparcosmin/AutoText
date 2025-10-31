@@ -10,15 +10,16 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
-from pathlib import Path
 import os
+from pathlib import Path
+
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Load environment variables from .env file
-load_dotenv(BASE_DIR / '.env')
+load_dotenv(BASE_DIR / ".env")
 
 # Ensure logs directory exists
 LOGS_DIR = BASE_DIR / "logs"
@@ -29,7 +30,7 @@ LOGS_DIR.mkdir(exist_ok=True)
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "django-insecure-=%p1+=o9jl8nydr=$almgoj$*sl^duf+qpkg80+z@absd5ss)k")
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "True") == "True"
@@ -45,7 +46,7 @@ if not DEBUG:
     # Force HTTPS
     SECURE_SSL_REDIRECT = True
     # Trust X-Forwarded-Proto header from nginx reverse proxy
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     # HSTS Settings - tells browsers to only use HTTPS
     SECURE_HSTS_SECONDS = 31536000  # 1 year
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
@@ -54,14 +55,14 @@ if not DEBUG:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     # SameSite cookies for CSRF protection
-    SESSION_COOKIE_SAMESITE = 'Lax'
-    CSRF_COOKIE_SAMESITE = 'Lax'
+    SESSION_COOKIE_SAMESITE = "Lax"
+    CSRF_COOKIE_SAMESITE = "Lax"
     # Prevent browsers from guessing content type
     SECURE_CONTENT_TYPE_NOSNIFF = True
     # Enable XSS filter in browsers
     SECURE_BROWSER_XSS_FILTER = True
     # Don't allow site to be framed (clickjacking protection)
-    X_FRAME_OPTIONS = 'DENY'
+    X_FRAME_OPTIONS = "DENY"
 
 
 # Application definition
@@ -261,14 +262,14 @@ TINYMCE_DEFAULT_CONFIG = {
     "width": "100%",
     "menubar": "file edit view insert format tools table",
     "plugins": "advlist autolink lists link image charmap preview anchor "
-               "searchreplace visualblocks code fullscreen "
-               "insertdatetime media table paste code help wordcount",
+    "searchreplace visualblocks code fullscreen "
+    "insertdatetime media table paste code help wordcount",
     "toolbar": "undo redo | bold italic underline strikethrough | "
-               "fontselect fontsizeselect formatselect | alignleft aligncenter "
-               "alignright alignjustify | outdent indent | numlist bullist | "
-               "forecolor backcolor removeformat | pagebreak | charmap emoticons | "
-               "fullscreen preview save print | insertfile image media template link anchor "
-               "codesample | ltr rtl",
+    "fontselect fontsizeselect formatselect | alignleft aligncenter "
+    "alignright alignjustify | outdent indent | numlist bullist | "
+    "forecolor backcolor removeformat | pagebreak | charmap emoticons | "
+    "fullscreen preview save print | insertfile image media template link anchor "
+    "codesample | ltr rtl",
     "toolbar_mode": "sliding",
     "contextmenu": "link image table",
     "content_css": "default",

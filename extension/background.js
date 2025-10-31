@@ -33,10 +33,10 @@ async function syncShortcuts() {
       "shortcuts"
     ]);
 
+    // Log only non-sensitive info
     console.log("AutoText: Storage retrieved:", {
       has_token: !!auth_token,
-      active_sets,
-      api_url,
+      sets_count: active_sets ? active_sets.length : 0,
       has_last_sync: !!last_sync
     });
 
@@ -57,7 +57,7 @@ async function syncShortcuts() {
 
     // Get active sets (default to 'birou' if none selected)
     const sets = active_sets || ['birou'];
-    console.log(`AutoText: Syncing shortcuts from sets: ${sets.join(', ')}`);
+    console.log(`AutoText: Syncing shortcuts from ${sets.length} set(s)`);
 
     // Build API URL with sets query parameter
     const baseUrl = api_url || `${CONFIG.API_URL}/shortcuts/`;
@@ -65,13 +65,13 @@ async function syncShortcuts() {
 
     // Delta sync: only fetch changes since last sync
     let url = `${baseUrl}?sets=${encodeURIComponent(setsParam)}`;
+    const isDeltaSync = !!last_sync;
     if (last_sync) {
       const lastSyncDate = new Date(last_sync).toISOString();
       url += `&updated_after=${encodeURIComponent(lastSyncDate)}`;
-      console.log(`AutoText: Delta sync since ${lastSyncDate}`);
     }
 
-    console.log(`AutoText: Fetching from: ${url}`);
+    console.log(`AutoText: Syncing (${isDeltaSync ? 'delta' : 'full'})`);
 
     const res = await fetch(url, {
       headers: { Authorization: `Token ${auth_token}` }

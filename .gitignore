@@ -214,3 +214,4 @@ extension/config.js
 **:Zone.Identifier
 textsync/migrations/0004_alter_shortcut_value.py
 textsync/migrations/*
+db.sqlite3

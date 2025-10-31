@@ -35,49 +35,53 @@ class ShortcutSetViewSet(viewsets.ReadOnlyModelViewSet):
         ).distinct().order_by('set_type', 'name')
 
 
-class ShortcutViewSet(viewsets.ModelViewSet):
+class ShortcutViewSet(viewsets.ReadOnlyModelViewSet):
     """
-    API endpoint for shortcuts.
+    API endpoint for shortcuts (READ-ONLY).
+    Shortcuts can only be created/edited via Django Admin.
     Supports filtering by sets: /api/shortcuts/?sets=birou,cosmin
+
+    Security: Only returns shortcuts that the authenticated user has access to.
     """
     serializer_class = ShortcutSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        queryset = Shortcut.objects.all().prefetch_related('sets').order_by("key")
+        user = self.request.user
+        queryset = Shortcut.objects.prefetch_related('sets').order_by("key")
 
-        # Filter by sets if provided in query params
-        # Example: /api/shortcuts/?sets=birou,cosmin
+        # Get sets that user has access to (same logic as ShortcutSetViewSet)
+        if user.is_superuser:
+            accessible_sets = ShortcutSet.objects.all()
+        else:
+            # User can access: general sets + their own personal sets
+            accessible_sets = ShortcutSet.objects.filter(
+                Q(set_type='general') | Q(owner=user)
+            )
+
+        # Filter by sets parameter (if provided)
         sets_param = self.request.query_params.get('sets', None)
+
         if sets_param:
-            set_names = [s.strip() for s in sets_param.split(',')]
+            # User specified which sets they want
+            requested_set_names = [s.strip() for s in sets_param.split(',')]
 
-            # Get the ShortcutSet objects to determine their types
-            requested_sets = ShortcutSet.objects.filter(name__in=set_names)
+            # Validate: user can only request sets they have access to
+            requested_sets = accessible_sets.filter(name__in=requested_set_names)
 
-            # Separate general and personal sets
-            general_sets = requested_sets.filter(set_type='general')
-            personal_sets = requested_sets.filter(set_type='personal')
+            # Security check: if user requested sets they don't have access to, return empty
+            if requested_sets.count() != len(requested_set_names):
+                # Some requested sets don't exist or user doesn't have access
+                return queryset.none()
 
-            # Build query combining both types with different ownership rules
-            queries = Q()
-
-            # For general sets: get ALL shortcuts in those sets (no ownership filter)
-            if general_sets.exists():
-                general_set_names = list(general_sets.values_list('name', flat=True))
-                queries |= Q(sets__name__in=general_set_names)
-
-            # For personal sets: get ALL shortcuts in those sets
-            # Note: The sets themselves are already filtered by ownership/visibility in ShortcutSetViewSet
-            # So if user has access to a personal set, they should see all shortcuts in it
-            if personal_sets.exists():
-                personal_set_names = list(personal_sets.values_list('name', flat=True))
-                queries |= Q(sets__name__in=personal_set_names)
-
-            queryset = queryset.filter(queries).distinct()
+            # Return shortcuts from the validated requested sets
+            queryset = queryset.filter(sets__in=requested_sets).distinct()
+        else:
+            # No sets param provided: return shortcuts from ALL accessible sets
+            # This prevents exposing all shortcuts - only those in accessible sets
+            queryset = queryset.filter(sets__in=accessible_sets).distinct()
 
         # Delta sync: filter by updated_after timestamp
-        # Example: /api/shortcuts/?updated_after=2024-10-30T10:00:00Z
         updated_after = self.request.query_params.get('updated_after', None)
         if updated_after:
             queryset = queryset.filter(updated_at__gt=updated_after)
