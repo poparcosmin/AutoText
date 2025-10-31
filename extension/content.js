@@ -39,18 +39,39 @@ function getTextBeforeCursor(element) {
   // For input and textarea elements
   if (element.tagName === "INPUT" || element.tagName === "TEXTAREA") {
     const cursorPos = element.selectionStart;
-    const textBefore = element.value.substring(0, cursorPos);
+
+    // Validate cursor position
+    if (cursorPos === null || cursorPos === undefined || cursorPos < 0) {
+      console.log("AutoText Debug: Invalid cursor position:", cursorPos);
+      return "";
+    }
+
+    const fullValue = element.value;
+    const textBefore = fullValue.substring(0, cursorPos);
+
+    console.log("AutoText Debug: INPUT/TEXTAREA", {
+      fullValue,
+      cursorPos,
+      textBefore,
+      valueLength: fullValue.length
+    });
 
     // Extract the last word (everything after last space/newline)
     const match = textBefore.match(/(\S+)$/);
-    return match ? match[1] : "";
+    const lastWord = match ? match[1] : "";
+
+    console.log("AutoText Debug: Extracted last word:", lastWord);
+    return lastWord;
   }
 
   // For contenteditable elements (Gmail, rich text editors)
   if (element.isContentEditable) {
     try {
       const selection = window.getSelection();
-      if (!selection.rangeCount) return "";
+      if (!selection.rangeCount) {
+        console.log("AutoText Debug: No selection range in contenteditable");
+        return "";
+      }
 
       const range = selection.getRangeAt(0);
 
@@ -73,9 +94,14 @@ function getTextBeforeCursor(element) {
 
       const textBefore = preCaretRange.toString();
 
+      console.log("AutoText Debug: contenteditable text before:", textBefore);
+
       // Extract the last word
       const match = textBefore.match(/(\S+)$/);
-      return match ? match[1] : "";
+      const lastWord = match ? match[1] : "";
+
+      console.log("AutoText Debug: Extracted last word from contenteditable:", lastWord);
+      return lastWord;
     } catch (error) {
       console.error("AutoText: Error getting text in contenteditable:", error);
       return "";
@@ -185,15 +211,36 @@ function handleTabKey(event) {
     element = contentEditableParent;
   }
 
+  // Debug logging
+  console.log("AutoText Debug: Tab pressed", {
+    elementType: element.tagName || 'contenteditable',
+    isContentEditable: element.isContentEditable,
+    cursorPos: element.selectionStart,
+  });
+
   // Get the text before cursor
   const textBefore = getTextBeforeCursor(element);
 
-  if (!textBefore) return;
+  console.log("AutoText Debug: Text before cursor:", {
+    textBefore,
+    length: textBefore.length,
+    hasShortcut: !!shortcuts[textBefore]
+  });
+
+  if (!textBefore) {
+    console.log("AutoText Debug: No text before cursor, skipping");
+    return;
+  }
 
   // Check if it matches a shortcut
   const shortcut = shortcuts[textBefore];
 
-  if (!shortcut) return;
+  if (!shortcut) {
+    console.log("AutoText Debug: No shortcut found for:", textBefore);
+    return;
+  }
+
+  console.log("AutoText Debug: Shortcut match found!", textBefore);
 
   // We found a match! Prevent default Tab behavior
   event.preventDefault();

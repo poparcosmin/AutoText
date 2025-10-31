@@ -66,7 +66,9 @@ async function syncShortcuts() {
     }
 
     if (!res.ok) {
+      const errorText = await res.text();
       console.error("AutoText: Failed to sync shortcuts:", res.status, res.statusText);
+      console.error("AutoText: Error details:", errorText);
       return;
     }
 
