@@ -58,7 +58,10 @@ function getTextBeforeCursor(element) {
 
     // Extract the last word (everything after last space/newline)
     const match = textBefore.match(/(\S+)$/);
-    const lastWord = match ? match[1] : "";
+    let lastWord = match ? match[1] : "";
+
+    // Clean zero-width characters and invisible Unicode characters
+    lastWord = lastWord.replace(/[\u200B-\u200D\uFEFF]/g, '');
 
     console.log("AutoText Debug: Extracted last word:", lastWord);
     return lastWord;
@@ -98,7 +101,10 @@ function getTextBeforeCursor(element) {
 
       // Extract the last word
       const match = textBefore.match(/(\S+)$/);
-      const lastWord = match ? match[1] : "";
+      let lastWord = match ? match[1] : "";
+
+      // Clean zero-width characters and invisible Unicode characters
+      lastWord = lastWord.replace(/[\u200B-\u200D\uFEFF]/g, '');
 
       console.log("AutoText Debug: Extracted last word from contenteditable:", lastWord);
       return lastWord;

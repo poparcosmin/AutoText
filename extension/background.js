@@ -1,6 +1,25 @@
 // Import configuration
 importScripts('config.js');
 
+// Keep-alive mechanism for Service Worker (Manifest V3)
+// Service workers become inactive after ~30s, we need to keep them alive
+let keepAliveInterval;
+
+function startKeepAlive() {
+  // Clear any existing interval
+  if (keepAliveInterval) {
+    clearInterval(keepAliveInterval);
+  }
+
+  // Send keepalive message every 20 seconds to prevent worker from sleeping
+  keepAliveInterval = setInterval(() => {
+    console.log('AutoText: Service Worker keepalive ping');
+  }, 20000);
+}
+
+// Start keepalive on worker activation
+startKeepAlive();
+
 // Sync shortcuts from Django backend with multi-set support and authentication
 async function syncShortcuts() {
   console.log("AutoText Background: syncShortcuts() called");
@@ -188,21 +207,32 @@ function mergeShortcutsWithPriority(shortcuts) {
   return map;
 }
 
+// Initialize event listeners (called on startup and when service worker wakes up)
+function initializeListeners() {
+  console.log("AutoText: Initializing event listeners...");
+
+  // Ensure keepalive is running
+  startKeepAlive();
+
+  // Periodic sync every 5 minutes (300000 ms)
+  chrome.alarms.create("syncShortcuts", { periodInMinutes: 5 });
+}
+
 // Sync on extension startup
 chrome.runtime.onStartup.addListener(() => {
   console.log("AutoText: Extension started, syncing shortcuts...");
+  initializeListeners();
   syncShortcuts();
 });
 
 // Sync on extension installation/update
 chrome.runtime.onInstalled.addListener(() => {
   console.log("AutoText: Extension installed/updated, syncing shortcuts...");
+  initializeListeners();
   syncShortcuts();
 });
 
-// Periodic sync every 5 minutes (300000 ms)
-chrome.alarms.create("syncShortcuts", { periodInMinutes: 5 });
-
+// Alarm listener (must be at top level, not inside function)
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === "syncShortcuts") {
     console.log("AutoText: Periodic sync triggered");
@@ -210,7 +240,7 @@ chrome.alarms.onAlarm.addListener((alarm) => {
   }
 });
 
-// Manual sync trigger (can be called from content script if needed)
+// Manual sync trigger (must be at top level)
 chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
   console.log("AutoText Background: Received message:", req);
 
@@ -223,8 +253,10 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
       console.error("AutoText Background: Sync failed:", error);
       sendResponse({ status: "error", message: error.message });
     });
-    return true;
+    return true; // Keep message channel open for async response
   }
 });
 
+// Initialize on service worker load
 console.log("AutoText Background: Service worker initialized");
+initializeListeners();

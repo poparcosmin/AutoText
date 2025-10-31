@@ -26,9 +26,12 @@ class ShortcutSetViewSet(viewsets.ReadOnlyModelViewSet):
         if user.is_superuser:
             # Superusers see all sets
             return ShortcutSet.objects.all().order_by('set_type', 'name')
-        # Staff users see: sets they own OR sets shared with them
+
+        # Business rule:
+        # - General sets: visible to everyone (no filter)
+        # - Personal sets: visible only to owner
         return ShortcutSet.objects.filter(
-            Q(owner=user) | Q(visible_to=user)
+            Q(set_type='general') | Q(owner=user)
         ).distinct().order_by('set_type', 'name')
 
 
