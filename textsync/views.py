@@ -66,8 +66,13 @@ class ShortcutViewSet(viewsets.ReadOnlyModelViewSet):
             # User specified which sets they want
             requested_set_names = [s.strip() for s in sets_param.split(',')]
 
-            # Validate: user can only request sets they have access to
-            requested_sets = accessible_sets.filter(name__in=requested_set_names)
+            # Validate: user can only request sets they have access to (case-insensitive)
+            # Build Q filter for case-insensitive matching
+            q_filters = Q()
+            for name in requested_set_names:
+                q_filters |= Q(name__iexact=name)
+
+            requested_sets = accessible_sets.filter(q_filters)
 
             # Security check: if user requested sets they don't have access to, return empty
             if requested_sets.count() != len(requested_set_names):
