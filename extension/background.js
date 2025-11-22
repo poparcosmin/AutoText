@@ -1,6 +1,13 @@
 // Import configuration
 importScripts('config.js');
 
+const DEBUG = false;
+const debugLog = (...args) => {
+  if (DEBUG) {
+    console.log(...args);
+  }
+};
+
 // Keep-alive mechanism for Service Worker (Manifest V3)
 // Service workers become inactive after ~30s, we need to keep them alive
 let keepAliveInterval;
@@ -13,7 +20,7 @@ function startKeepAlive() {
 
   // Send keepalive message every 20 seconds to prevent worker from sleeping
   keepAliveInterval = setInterval(() => {
-    console.log('AutoText: Service Worker keepalive ping');
+    debugLog('AutoText: Service Worker keepalive ping');
   }, 20000);
 }
 
@@ -22,7 +29,7 @@ startKeepAlive();
 
 // Sync shortcuts from Django backend with multi-set support and authentication
 async function syncShortcuts() {
-  console.log("AutoText Background: syncShortcuts() called");
+  debugLog("AutoText Background: syncShortcuts() called");
 
   try {
     let { auth_token, active_sets, api_url, last_sync, shortcuts } = await chrome.storage.local.get([
@@ -34,7 +41,7 @@ async function syncShortcuts() {
     ]);
 
     // Log only non-sensitive info
-    console.log("AutoText: Storage retrieved:", {
+    debugLog("AutoText: Storage retrieved:", {
       has_token: !!auth_token,
       sets_count: active_sets ? active_sets.length : 0,
       has_last_sync: !!last_sync
@@ -42,7 +49,7 @@ async function syncShortcuts() {
 
     // Check if user is authenticated
     if (!auth_token) {
-      console.log("AutoText: No auth token found. User needs to login via Options page.");
+      debugLog("AutoText: No auth token found. User needs to login via Options page.");
       notifyUserToLogin();
       return;
     }
@@ -50,14 +57,14 @@ async function syncShortcuts() {
     // Force full sync if storage is empty (even if last_sync exists)
     const shortcutsCount = shortcuts ? Object.keys(shortcuts).length : 0;
     if (shortcutsCount === 0 && last_sync) {
-      console.log("AutoText: Storage is empty but last_sync exists, forcing full sync...");
+      debugLog("AutoText: Storage is empty but last_sync exists, forcing full sync...");
       await chrome.storage.local.remove('last_sync');
       last_sync = null;
     }
 
     // Get active sets (default to 'birou' if none selected)
     const sets = active_sets || ['birou'];
-    console.log(`AutoText: Syncing shortcuts from ${sets.length} set(s)`);
+    debugLog(`AutoText: Syncing shortcuts from ${sets.length} set(s)`);
 
     // Build API URL with sets query parameter
     const baseUrl = api_url || `${CONFIG.API_URL}/shortcuts/`;
@@ -71,7 +78,7 @@ async function syncShortcuts() {
       url += `&updated_after=${encodeURIComponent(lastSyncDate)}`;
     }
 
-    console.log(`AutoText: Syncing (${isDeltaSync ? 'delta' : 'full'})`);
+    debugLog(`AutoText: Syncing (${isDeltaSync ? 'delta' : 'full'})`);
 
     const res = await fetch(url, {
       headers: { Authorization: `Token ${auth_token}` }
@@ -92,7 +99,7 @@ async function syncShortcuts() {
     }
 
     const serverShortcuts = await res.json();
-    console.log(`AutoText: Received ${serverShortcuts.length} shortcuts from server`);
+    debugLog(`AutoText: Received ${serverShortcuts.length} shortcuts from server`);
 
     // If delta sync and we have existing shortcuts, merge with them
     let shortcutsMap;
@@ -105,11 +112,11 @@ async function syncShortcuts() {
       const newShortcutsMap = mergeShortcutsWithPriority(serverShortcuts);
       shortcutsMap = { ...existingMap, ...newShortcutsMap };
 
-      console.log(`AutoText: Delta sync - merged ${serverShortcuts.length} changes with existing shortcuts`);
+      debugLog(`AutoText: Delta sync - merged ${serverShortcuts.length} changes with existing shortcuts`);
     } else {
       // Full sync - replace all shortcuts
       shortcutsMap = mergeShortcutsWithPriority(serverShortcuts);
-      console.log(`AutoText: Full sync - loaded ${Object.keys(shortcutsMap).length} shortcuts`);
+      debugLog(`AutoText: Full sync - loaded ${Object.keys(shortcutsMap).length} shortcuts`);
     }
 
     // Store indexed shortcuts and sync timestamp
@@ -118,7 +125,7 @@ async function syncShortcuts() {
       last_sync: Date.now()
     });
 
-    console.log(`AutoText: Sync complete. Total shortcuts: ${Object.keys(shortcutsMap).length}`);
+    debugLog(`AutoText: Sync complete. Total shortcuts: ${Object.keys(shortcutsMap).length}`);
   } catch (error) {
     console.error("AutoText: Error during sync:", error);
   }
@@ -141,7 +148,7 @@ async function handleAuthenticationFailure() {
     priority: 2
   });
 
-  console.log("AutoText: Auth token cleared. User needs to re-login.");
+  debugLog("AutoText: Auth token cleared. User needs to re-login.");
 }
 
 /**
@@ -190,7 +197,7 @@ function mergeShortcutsWithPriority(shortcuts) {
 
       // If current shortcut is personal and existing isn't, replace it
       if (hasPersonal && !existingIsPersonal) {
-        console.log(`AutoText: Replacing '${key}' with personal version`);
+        debugLog(`AutoText: Replacing '${key}' with personal version`);
         map[key] = {
           value: shortcut.value,
           html_value: shortcut.html_value,
@@ -209,7 +216,7 @@ function mergeShortcutsWithPriority(shortcuts) {
 
 // Initialize event listeners (called on startup and when service worker wakes up)
 function initializeListeners() {
-  console.log("AutoText: Initializing event listeners...");
+  debugLog("AutoText: Initializing event listeners...");
 
   // Ensure keepalive is running
   startKeepAlive();
@@ -220,14 +227,14 @@ function initializeListeners() {
 
 // Sync on extension startup
 chrome.runtime.onStartup.addListener(() => {
-  console.log("AutoText: Extension started, syncing shortcuts...");
+  debugLog("AutoText: Extension started, syncing shortcuts...");
   initializeListeners();
   syncShortcuts();
 });
 
 // Sync on extension installation/update
 chrome.runtime.onInstalled.addListener(() => {
-  console.log("AutoText: Extension installed/updated, syncing shortcuts...");
+  debugLog("AutoText: Extension installed/updated, syncing shortcuts...");
   initializeListeners();
   syncShortcuts();
 });
@@ -235,19 +242,19 @@ chrome.runtime.onInstalled.addListener(() => {
 // Alarm listener (must be at top level, not inside function)
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === "syncShortcuts") {
-    console.log("AutoText: Periodic sync triggered");
+    debugLog("AutoText: Periodic sync triggered");
     syncShortcuts();
   }
 });
 
 // Manual sync trigger (must be at top level)
 chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
-  console.log("AutoText Background: Received message:", req);
+  debugLog("AutoText Background: Received message:", req);
 
   if (req.action === "sync") {
-    console.log("AutoText Background: Starting manual sync...");
+    debugLog("AutoText Background: Starting manual sync...");
     syncShortcuts().then(() => {
-      console.log("AutoText Background: Sync completed, sending response");
+      debugLog("AutoText Background: Sync completed, sending response");
       sendResponse({ status: "done" });
     }).catch(error => {
       console.error("AutoText Background: Sync failed:", error);
@@ -258,5 +265,5 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
 });
 
 // Initialize on service worker load
-console.log("AutoText Background: Service worker initialized");
+debugLog("AutoText Background: Service worker initialized");
 initializeListeners();

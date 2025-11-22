@@ -90,6 +90,10 @@ class Shortcut(models.Model):
         ordering = ['key']
         verbose_name = 'Shortcut'
         verbose_name_plural = 'Shortcuts'
+        indexes = [
+            models.Index(fields=['key']),
+            models.Index(fields=['updated_at']),
+        ]
 
     def __str__(self):
         sets_str = ", ".join([s.name for s in self.sets.all()]) if self.sets.exists() else "no sets"

@@ -1,6 +1,13 @@
 // AutoText Content Script - Core text expansion logic
 // Listens for Tab key, detects shortcuts, and replaces with expansions
 
+const DEBUG = false;
+const debugLog = (...args) => {
+  if (DEBUG) {
+    console.log(...args);
+  }
+};
+
 let shortcuts = {};
 
 // Load shortcuts from storage on initialization
@@ -8,16 +15,16 @@ async function loadShortcuts() {
   try {
     const result = await chrome.storage.local.get("shortcuts");
     shortcuts = result.shortcuts || {};
-    console.log("AutoText: Loaded", Object.keys(shortcuts).length, "shortcuts");
+    debugLog("AutoText: Loaded", Object.keys(shortcuts).length, "shortcuts");
 
     // If no shortcuts found, trigger auto-sync from background
     if (Object.keys(shortcuts).length === 0) {
-      console.log("AutoText: No shortcuts found, triggering auto-sync...");
+      debugLog("AutoText: No shortcuts found, triggering auto-sync...");
       chrome.runtime.sendMessage({ action: 'sync' }, (response) => {
         if (chrome.runtime.lastError) {
           console.error("AutoText: Failed to trigger sync:", chrome.runtime.lastError.message);
         } else {
-          console.log("AutoText: Auto-sync triggered successfully");
+          debugLog("AutoText: Auto-sync triggered successfully");
         }
       });
     }
@@ -30,7 +37,7 @@ async function loadShortcuts() {
 chrome.storage.onChanged.addListener((changes, areaName) => {
   if (areaName === "local" && changes.shortcuts) {
     shortcuts = changes.shortcuts.newValue || {};
-    console.log("AutoText: Shortcuts updated,", Object.keys(shortcuts).length, "available");
+    debugLog("AutoText: Shortcuts updated,", Object.keys(shortcuts).length, "available");
   }
 });
 
@@ -42,14 +49,14 @@ function getTextBeforeCursor(element) {
 
     // Validate cursor position
     if (cursorPos === null || cursorPos === undefined || cursorPos < 0) {
-      console.log("AutoText Debug: Invalid cursor position:", cursorPos);
+      debugLog("AutoText Debug: Invalid cursor position:", cursorPos);
       return "";
     }
 
     const fullValue = element.value;
     const textBefore = fullValue.substring(0, cursorPos);
 
-    console.log("AutoText Debug: INPUT/TEXTAREA", {
+    debugLog("AutoText Debug: INPUT/TEXTAREA", {
       fullValue,
       cursorPos,
       textBefore,
@@ -63,7 +70,7 @@ function getTextBeforeCursor(element) {
     // Clean zero-width characters and invisible Unicode characters
     lastWord = lastWord.replace(/[\u200B-\u200D\uFEFF]/g, '');
 
-    console.log("AutoText Debug: Extracted last word:", lastWord);
+    debugLog("AutoText Debug: Extracted last word:", lastWord);
     return lastWord;
   }
 
@@ -72,7 +79,7 @@ function getTextBeforeCursor(element) {
     try {
       const selection = window.getSelection();
       if (!selection.rangeCount) {
-        console.log("AutoText Debug: No selection range in contenteditable");
+        debugLog("AutoText Debug: No selection range in contenteditable");
         return "";
       }
 
@@ -97,7 +104,7 @@ function getTextBeforeCursor(element) {
 
       const textBefore = preCaretRange.toString();
 
-      console.log("AutoText Debug: contenteditable text before:", textBefore);
+      debugLog("AutoText Debug: contenteditable text before:", textBefore);
 
       // Extract the last word
       const match = textBefore.match(/(\S+)$/);
@@ -106,7 +113,7 @@ function getTextBeforeCursor(element) {
       // Clean zero-width characters and invisible Unicode characters
       lastWord = lastWord.replace(/[\u200B-\u200D\uFEFF]/g, '');
 
-      console.log("AutoText Debug: Extracted last word from contenteditable:", lastWord);
+      debugLog("AutoText Debug: Extracted last word from contenteditable:", lastWord);
       return lastWord;
     } catch (error) {
       console.error("AutoText: Error getting text in contenteditable:", error);
@@ -218,7 +225,7 @@ function handleTabKey(event) {
   }
 
   // Debug logging
-  console.log("AutoText Debug: Tab pressed", {
+  debugLog("AutoText Debug: Tab pressed", {
     elementType: element.tagName || 'contenteditable',
     isContentEditable: element.isContentEditable,
     cursorPos: element.selectionStart,
@@ -227,14 +234,14 @@ function handleTabKey(event) {
   // Get the text before cursor
   const textBefore = getTextBeforeCursor(element);
 
-  console.log("AutoText Debug: Text before cursor:", {
+  debugLog("AutoText Debug: Text before cursor:", {
     textBefore,
     length: textBefore.length,
     hasShortcut: !!shortcuts[textBefore]
   });
 
   if (!textBefore) {
-    console.log("AutoText Debug: No text before cursor, skipping");
+    debugLog("AutoText Debug: No text before cursor, skipping");
     return;
   }
 
@@ -242,11 +249,11 @@ function handleTabKey(event) {
   const shortcut = shortcuts[textBefore];
 
   if (!shortcut) {
-    console.log("AutoText Debug: No shortcut found for:", textBefore);
+    debugLog("AutoText Debug: No shortcut found for:", textBefore);
     return;
   }
 
-  console.log("AutoText Debug: Shortcut match found!", textBefore);
+  debugLog("AutoText Debug: Shortcut match found!", textBefore);
 
   // We found a match! Prevent default Tab behavior
   event.preventDefault();
@@ -263,7 +270,7 @@ function handleTabKey(event) {
     textContent = tempDiv.textContent || tempDiv.innerText || '';
   }
 
-  console.log(`AutoText: Expanding "${textBefore}" -> "${textContent || htmlContent}"`);
+  debugLog(`AutoText: Expanding "${textBefore}" -> "${textContent || htmlContent}"`);
 
   // Replace based on element type
   if (element.tagName === "INPUT" || element.tagName === "TEXTAREA") {
@@ -286,4 +293,4 @@ document.addEventListener("keydown", handleTabKey, true);
 // Initialize: load shortcuts
 loadShortcuts();
 
-console.log("AutoText: Content script loaded and ready");
+debugLog("AutoText: Content script loaded and ready");

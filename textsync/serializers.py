@@ -14,7 +14,8 @@ class ShortcutSetSerializer(serializers.ModelSerializer):
         fields = ["id", "name", "set_type", "description", "owner_username", "visible_to_usernames", "shortcut_count", "created_at"]
 
     def get_shortcut_count(self, obj):
-        return obj.shortcuts.count()
+        # Use annotated value when available to avoid extra queries
+        return getattr(obj, "shortcut_count", obj.shortcuts.count())
 
     def get_owner_username(self, obj):
         """Return owner username if exists"""

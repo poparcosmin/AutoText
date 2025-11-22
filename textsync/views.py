@@ -1,11 +1,14 @@
+from datetime import timedelta
+
+from django.contrib.auth import authenticate
+from django.db.models import Q, Count
+from django.shortcuts import render
+from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from rest_framework import permissions, viewsets, status
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.exceptions import ParseError
 from rest_framework.response import Response
-from django.contrib.auth import authenticate
-from django.db.models import Q
-from django.utils import timezone
-from django.shortcuts import render
-from datetime import timedelta
 
 from .models import Shortcut, ShortcutSet, ExpiringToken
 from .serializers import ShortcutSerializer, ShortcutSetSerializer
@@ -23,15 +26,17 @@ class ShortcutSetViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        base_qs = ShortcutSet.objects.select_related("owner").prefetch_related("visible_to")
+        base_qs = base_qs.annotate(shortcut_count=Count("shortcuts", distinct=True))
         if user.is_superuser:
             # Superusers see all sets
-            return ShortcutSet.objects.all().order_by('set_type', 'name')
+            return base_qs.order_by('set_type', 'name')
 
         # Business rule:
         # - General sets: visible to everyone (no filter)
         # - Personal sets: visible only to owner
-        return ShortcutSet.objects.filter(
-            Q(set_type='general') | Q(owner=user)
+        return base_qs.filter(
+            Q(set_type='general') | Q(owner=user) | Q(visible_to=user)
         ).distinct().order_by('set_type', 'name')
 
 
@@ -48,7 +53,7 @@ class ShortcutViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = Shortcut.objects.prefetch_related('sets').order_by("key")
+        queryset = Shortcut.objects.select_related('owner', 'updated_by').prefetch_related('sets').order_by("key")
 
         # Get sets that user has access to (same logic as ShortcutSetViewSet)
         if user.is_superuser:
@@ -56,15 +61,18 @@ class ShortcutViewSet(viewsets.ReadOnlyModelViewSet):
         else:
             # User can access: general sets + their own personal sets
             accessible_sets = ShortcutSet.objects.filter(
-                Q(set_type='general') | Q(owner=user)
-            )
+                Q(set_type='general') | Q(owner=user) | Q(visible_to=user)
+            ).distinct()
 
         # Filter by sets parameter (if provided)
         sets_param = self.request.query_params.get('sets', None)
 
         if sets_param:
             # User specified which sets they want
-            requested_set_names = [s.strip() for s in sets_param.split(',')]
+            requested_set_names = {s.strip().lower() for s in sets_param.split(',') if s.strip()}
+
+            if not requested_set_names:
+                return queryset.none()
 
             # Validate: user can only request sets they have access to (case-insensitive)
             # Build Q filter for case-insensitive matching
@@ -74,8 +82,12 @@ class ShortcutViewSet(viewsets.ReadOnlyModelViewSet):
 
             requested_sets = accessible_sets.filter(q_filters)
 
+            requested_set_names_found = set(
+                name.lower() for name in requested_sets.values_list('name', flat=True)
+            )
+
             # Security check: if user requested sets they don't have access to, return empty
-            if requested_sets.count() != len(requested_set_names):
+            if requested_set_names_found != requested_set_names:
                 # Some requested sets don't exist or user doesn't have access
                 return queryset.none()
 
@@ -89,7 +101,14 @@ class ShortcutViewSet(viewsets.ReadOnlyModelViewSet):
         # Delta sync: filter by updated_after timestamp
         updated_after = self.request.query_params.get('updated_after', None)
         if updated_after:
-            queryset = queryset.filter(updated_at__gt=updated_after)
+            parsed_updated_after = parse_datetime(updated_after.replace('Z', '+00:00'))
+            if not parsed_updated_after:
+                raise ParseError("updated_after must be a valid ISO 8601 datetime")
+
+            if timezone.is_naive(parsed_updated_after):
+                parsed_updated_after = timezone.make_aware(parsed_updated_after, timezone.get_current_timezone())
+
+            queryset = queryset.filter(updated_at__gt=parsed_updated_after)
 
         return queryset
 
