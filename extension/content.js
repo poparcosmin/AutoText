@@ -102,7 +102,18 @@ function getTextBeforeCursor(element) {
       preCaretRange.selectNodeContents(editableElement);
       preCaretRange.setEnd(range.endContainer, range.endOffset);
 
-      const textBefore = preCaretRange.toString();
+      // Optimization: Only get the last 100 characters to avoid performance issues in large docs
+      // We can't easily slice a Range, but we can try to limit the start
+      // If the text is huge, toString() is expensive.
+      // A better approach for huge text is to only look at the immediate text node if possible,
+      // but that might miss cross-node words.
+      // For now, let's just grab the text. If it's too slow, we'll need a more complex walker.
+      let textBefore = preCaretRange.toString();
+
+      // Optimization: Truncate if too long (we only need the last word)
+      if (textBefore.length > 100) {
+        textBefore = textBefore.slice(-100);
+      }
 
       debugLog("AutoText Debug: contenteditable text before:", textBefore);
 
