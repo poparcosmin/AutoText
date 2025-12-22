@@ -914,20 +914,32 @@ async function loadManageShortcuts() {
   container.appendChild(loadingDiv);
 
   try {
+    // Debug logging
+    console.log('[Manage] Loading shortcuts, authToken:', authToken ? 'present' : 'missing');
+    console.log('[Manage] API URL:', `${CONFIG.API_URL}/shortcuts/my/`);
+
     // Fetch user's shortcuts from API
     const response = await fetch(`${CONFIG.API_URL}/shortcuts/my/`, {
       headers: { 'Authorization': `Token ${authToken}` }
     });
 
-    if (!response.ok) throw new Error('Failed to load shortcuts');
+    console.log('[Manage] Response status:', response.status);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[Manage] Error response:', errorText);
+      throw new Error(`Failed to load shortcuts (${response.status})`);
+    }
 
     manageShortcuts = await response.json();
+    console.log('[Manage] Loaded shortcuts:', manageShortcuts.length);
 
     // Also fetch personal sets for the dropdown
     await loadPersonalSetsForSelect();
 
     renderManageShortcuts(manageShortcuts);
   } catch (error) {
+    console.error('[Manage] Error:', error);
     container.textContent = '';
     const errorDiv = document.createElement('div');
     errorDiv.style.cssText = 'text-align: center; padding: 20px; color: var(--danger);';
