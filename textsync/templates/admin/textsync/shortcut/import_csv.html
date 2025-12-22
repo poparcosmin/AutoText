@@ -1,0 +1,105 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+<style>
+    .import-container {
+        max-width: 600px;
+        margin: 20px 0;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+    }
+    .import-container h2 {
+        margin-top: 0;
+        color: #417690;
+    }
+    .import-form {
+        margin-top: 20px;
+    }
+    .import-form label {
+        display: block;
+        margin-bottom: 10px;
+        font-weight: bold;
+    }
+    .import-form input[type="file"] {
+        padding: 10px;
+        border: 2px dashed #ccc;
+        border-radius: 4px;
+        width: 100%;
+        box-sizing: border-box;
+        background: white;
+    }
+    .import-form input[type="file"]:hover {
+        border-color: #417690;
+    }
+    .import-form .submit-row {
+        margin-top: 20px;
+    }
+    .format-info {
+        background: white;
+        padding: 15px;
+        border-radius: 4px;
+        margin-top: 20px;
+        border-left: 4px solid #417690;
+    }
+    .format-info h3 {
+        margin-top: 0;
+        font-size: 14px;
+    }
+    .format-info code {
+        background: #f1f1f1;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-size: 12px;
+    }
+    .format-info pre {
+        background: #2d2d2d;
+        color: #f8f8f2;
+        padding: 15px;
+        border-radius: 4px;
+        overflow-x: auto;
+        font-size: 12px;
+    }
+    .back-link {
+        display: inline-block;
+        margin-top: 15px;
+    }
+</style>
+
+<div class="import-container">
+    <h2>📥 Import Shortcuts from CSV</h2>
+    <p>Upload a CSV file to bulk import shortcuts.</p>
+
+    <form method="post" enctype="multipart/form-data" class="import-form">
+        {% csrf_token %}
+        <label for="csv_file">Select CSV file:</label>
+        <input type="file" name="csv_file" id="csv_file" accept=".csv" required>
+
+        <div class="submit-row">
+            <input type="submit" value="Import" class="default">
+        </div>
+    </form>
+
+    <div class="format-info">
+        <h3>📋 CSV Format</h3>
+        <p>Your CSV file should have these columns:</p>
+        <ul>
+            <li><code>key</code> - The shortcut trigger (required)</li>
+            <li><code>content_type</code> - Either <code>text</code> or <code>html</code></li>
+            <li><code>value</code> - Plain text content</li>
+            <li><code>html_value</code> - Rich text/HTML content</li>
+            <li><code>sets</code> - Set names separated by <code>|</code></li>
+        </ul>
+
+        <h3>Example:</h3>
+        <pre>key,content_type,value,html_value,sets
+/hello,text,Hello World!,,General
+/sig,html,,&lt;p&gt;&lt;b&gt;John Doe&lt;/b&gt;&lt;br&gt;CEO&lt;/p&gt;,Personal|Signatures
+/ty,text,Thank you for your email.,,Support</pre>
+    </div>
+
+    <a href=".." class="back-link">← Back to shortcuts list</a>
+</div>
+{% endblock %}

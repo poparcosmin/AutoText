@@ -1,0 +1,200 @@
+{% extends "admin/change_list.html" %}
+{% load i18n %}
+
+{% block content %}
+{% if show_analytics %}
+<style>
+    .analytics-dashboard {
+        margin-bottom: 30px;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+    }
+    .analytics-dashboard h2 {
+        margin: 0 0 20px 0;
+        color: #333;
+        font-size: 18px;
+        border-bottom: 2px solid #417690;
+        padding-bottom: 10px;
+    }
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+    .stat-card {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border-left: 4px solid #417690;
+    }
+    .stat-card.today { border-left-color: #28a745; }
+    .stat-card.week { border-left-color: #17a2b8; }
+    .stat-card.month { border-left-color: #6f42c1; }
+    .stat-number {
+        font-size: 32px;
+        font-weight: bold;
+        color: #333;
+        display: block;
+    }
+    .stat-label {
+        font-size: 12px;
+        color: #666;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .analytics-sections {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+    }
+    .analytics-section {
+        background: white;
+        border-radius: 8px;
+        padding: 15px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .analytics-section h3 {
+        margin: 0 0 15px 0;
+        font-size: 14px;
+        color: #417690;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 8px;
+    }
+    .analytics-section h3 .icon {
+        margin-right: 8px;
+    }
+    .top-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    .top-list li {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    .top-list li:last-child {
+        border-bottom: none;
+    }
+    .top-list .rank {
+        width: 24px;
+        height: 24px;
+        background: #e9ecef;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: bold;
+        color: #666;
+        margin-right: 10px;
+    }
+    .top-list .rank.gold { background: #ffd700; color: #333; }
+    .top-list .rank.silver { background: #c0c0c0; color: #333; }
+    .top-list .rank.bronze { background: #cd7f32; color: white; }
+    .top-list .name {
+        flex: 1;
+        font-family: monospace;
+        font-size: 13px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .top-list .count {
+        background: #417690;
+        color: white;
+        padding: 2px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: bold;
+    }
+    .empty-state {
+        color: #999;
+        font-style: italic;
+        text-align: center;
+        padding: 20px;
+    }
+</style>
+
+<div class="analytics-dashboard">
+    <h2>📊 Usage Analytics Dashboard (Last 30 Days)</h2>
+
+    <div class="stats-grid">
+        <div class="stat-card today">
+            <span class="stat-number">{{ today_count }}</span>
+            <span class="stat-label">Today</span>
+        </div>
+        <div class="stat-card week">
+            <span class="stat-number">{{ week_count }}</span>
+            <span class="stat-label">This Week</span>
+        </div>
+        <div class="stat-card month">
+            <span class="stat-number">{{ month_count }}</span>
+            <span class="stat-label">This Month</span>
+        </div>
+    </div>
+
+    <div class="analytics-sections">
+        <div class="analytics-section">
+            <h3><span class="icon">🏆</span>Top Shortcuts</h3>
+            {% if top_shortcuts %}
+            <ul class="top-list">
+                {% for item in top_shortcuts %}
+                <li>
+                    <span class="rank {% if forloop.counter == 1 %}gold{% elif forloop.counter == 2 %}silver{% elif forloop.counter == 3 %}bronze{% endif %}">{{ forloop.counter }}</span>
+                    <span class="name">{{ item.shortcut__key }}</span>
+                    <span class="count">{{ item.count }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="empty-state">No usage data yet</p>
+            {% endif %}
+        </div>
+
+        <div class="analytics-section">
+            <h3><span class="icon">👥</span>Top Users</h3>
+            {% if top_users %}
+            <ul class="top-list">
+                {% for item in top_users %}
+                <li>
+                    <span class="rank {% if forloop.counter == 1 %}gold{% elif forloop.counter == 2 %}silver{% elif forloop.counter == 3 %}bronze{% endif %}">{{ forloop.counter }}</span>
+                    <span class="name">{{ item.user__username }}</span>
+                    <span class="count">{{ item.count }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="empty-state">No usage data yet</p>
+            {% endif %}
+        </div>
+
+        <div class="analytics-section">
+            <h3><span class="icon">🌐</span>Top Domains</h3>
+            {% if top_domains %}
+            <ul class="top-list">
+                {% for item in top_domains %}
+                <li>
+                    <span class="rank {% if forloop.counter == 1 %}gold{% elif forloop.counter == 2 %}silver{% elif forloop.counter == 3 %}bronze{% endif %}">{{ forloop.counter }}</span>
+                    <span class="name">{{ item.domain }}</span>
+                    <span class="count">{{ item.count }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="empty-state">No domain data yet</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{{ block.super }}
+{% endblock %}

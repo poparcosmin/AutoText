@@ -30,7 +30,7 @@ LOGS_DIR.mkdir(exist_ok=True)
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-secret-key-change-in-production")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "True") == "True"
@@ -89,6 +89,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "textsync.middleware.RequestLoggingMiddleware",  # Structured logging context
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -123,6 +124,33 @@ DATABASES = {
     }
 }
 
+
+# Cache Configuration
+# Redis cache for shortcuts and API responses
+REDIS_URL = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/1")
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": REDIS_URL,
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "CONNECTION_POOL_KWARGS": {"max_connections": 50},
+            "SOCKET_CONNECT_TIMEOUT": 5,
+            "SOCKET_TIMEOUT": 5,
+            "IGNORE_EXCEPTIONS": True,  # Graceful degradation if Redis unavailable
+        },
+        "KEY_PREFIX": "autotext",
+        "TIMEOUT": 300,  # 5 minutes default cache timeout
+    }
+}
+
+# Cache timeouts for different data types
+CACHE_TIMEOUTS = {
+    "shortcuts": 60 * 5,      # 5 minutes for shortcuts
+    "shortcut_sets": 60 * 10, # 10 minutes for sets
+    "user_data": 60 * 2,      # 2 minutes for user-specific data
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -176,49 +204,122 @@ REST_FRAMEWORK = {
         "rest_framework.throttling.UserRateThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {
-        "anon": "100/hour",  # Anonymous users: 100 requests per hour
-        "user": "1000/hour",  # Authenticated users: 1000 requests per hour
+        # Anonymous users
+        "anon": "100/hour",
+        # Authenticated users - general API
+        "user": "1000/hour",
+        # Specific endpoints with stricter limits
+        "login": "10/minute",      # Prevent brute force
+        "token_refresh": "5/hour", # Prevent token churn
+        "bulk_sync": "60/hour",    # Heavy operation
     },
 }
 
-# Logging Configuration
+# Application Version (used in health checks)
+APP_VERSION = os.getenv("APP_VERSION", "1.0.0")
+
+# =============================================================================
+# Structured Logging with structlog
+# =============================================================================
+import structlog  # noqa: E402 - must be after DEBUG is defined
+
+# Shared processors used by both structlog and standard logging
+shared_processors = [
+    structlog.contextvars.merge_contextvars,  # Merge context from contextvars
+    structlog.stdlib.add_logger_name,
+    structlog.stdlib.add_log_level,
+    structlog.stdlib.PositionalArgumentsFormatter(),
+    structlog.processors.TimeStamper(fmt="iso"),
+    structlog.processors.StackInfoRenderer(),
+    structlog.processors.UnicodeDecoder(),
+]
+
+# In development, use console renderer for readability
+# In production, use JSON renderer for log aggregation
+if DEBUG:
+    # Pretty console output for development
+    final_processors = [
+        structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
+    ]
+    console_formatter = "colored"
+else:
+    # JSON output for production (ELK, Datadog, etc.)
+    final_processors = [
+        structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
+    ]
+    console_formatter = "json"
+
+# Configure structlog
+structlog.configure(
+    processors=shared_processors + final_processors,
+    wrapper_class=structlog.stdlib.BoundLogger,
+    context_class=dict,
+    logger_factory=structlog.stdlib.LoggerFactory(),
+    cache_logger_on_first_use=True,
+)
+
+# Logging Configuration (Django + structlog)
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "formatters": {
-        "verbose": {
-            "format": "{levelname} {asctime} {module} {message}",
-            "style": "{",
+        "json": {
+            "()": structlog.stdlib.ProcessorFormatter,
+            "processor": structlog.processors.JSONRenderer(),
+            "foreign_pre_chain": shared_processors,
+        },
+        "colored": {
+            "()": structlog.stdlib.ProcessorFormatter,
+            "processor": structlog.dev.ConsoleRenderer(colors=True),
+            "foreign_pre_chain": shared_processors,
+        },
+        "plain": {
+            "()": structlog.stdlib.ProcessorFormatter,
+            "processor": structlog.dev.ConsoleRenderer(colors=False),
+            "foreign_pre_chain": shared_processors,
         },
     },
     "handlers": {
+        "console": {
+            "level": "DEBUG" if DEBUG else "INFO",
+            "class": "logging.StreamHandler",
+            "formatter": console_formatter,
+        },
         "file": {
             "level": "WARNING",
             "class": "logging.handlers.RotatingFileHandler",
             "filename": LOGS_DIR / "django.log",
             "maxBytes": 10 * 1024 * 1024,  # 10MB
-            "backupCount": 5,  # Keep 5 backup files
-            "formatter": "verbose",
+            "backupCount": 5,
+            "formatter": "plain",
         },
         "security_file": {
             "level": "WARNING",
             "class": "logging.handlers.RotatingFileHandler",
             "filename": LOGS_DIR / "security.log",
             "maxBytes": 10 * 1024 * 1024,  # 10MB
-            "backupCount": 5,  # Keep 5 backup files
-            "formatter": "verbose",
+            "backupCount": 5,
+            "formatter": "json",  # Security logs always in JSON for auditing
         },
-        "console": {
+        "json_file": {
             "level": "INFO",
-            "class": "logging.StreamHandler",
-            "formatter": "verbose",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": LOGS_DIR / "app.json.log",
+            "maxBytes": 10 * 1024 * 1024,  # 10MB
+            "backupCount": 10,
+            "formatter": "json",
         },
     },
     "loggers": {
-        "django": {
-            "handlers": ["file", "console"],
-            "level": "INFO",
+        "": {
+            "handlers": ["console", "json_file"] if not DEBUG else ["console"],
+            "level": "DEBUG" if DEBUG else "INFO",
             "propagate": True,
+        },
+        "django": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+            "propagate": False,
         },
         "django.security": {
             "handlers": ["security_file", "console"],
@@ -228,6 +329,11 @@ LOGGING = {
         "django.request": {
             "handlers": ["file", "console"],
             "level": "ERROR",
+            "propagate": False,
+        },
+        "textsync": {
+            "handlers": ["console", "json_file"] if not DEBUG else ["console"],
+            "level": "DEBUG" if DEBUG else "INFO",
             "propagate": False,
         },
     },

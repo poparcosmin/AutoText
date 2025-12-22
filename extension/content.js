@@ -9,6 +9,233 @@ const debugLog = (...args) => {
 };
 
 let shortcuts = {};
+let autotextEnabled = true;  // Global toggle state
+let settings = {
+  triggerKey: 'Tab',
+  showToast: true,
+  showHighlight: true,
+  playSound: false,
+  blacklistedSites: []
+};
+
+// Load settings from storage
+async function loadSettings() {
+  try {
+    const result = await chrome.storage.local.get(['settings', 'autotext_enabled']);
+    if (result.settings) {
+      settings = { ...settings, ...result.settings };
+    }
+    // Load global enabled state (default to true if not set)
+    autotextEnabled = result.autotext_enabled !== false;
+  } catch (error) {
+    console.error('AutoText: Error loading settings:', error);
+  }
+}
+
+// Check if current site is blacklisted
+function isBlacklisted() {
+  const hostname = window.location.hostname;
+  return settings.blacklistedSites.some(site =>
+    hostname.includes(site) || site.includes(hostname)
+  );
+}
+
+// Create and inject styles for visual feedback
+function injectFeedbackStyles() {
+  if (document.getElementById('autotext-styles')) return;
+
+  const style = document.createElement('style');
+  style.id = 'autotext-styles';
+  style.textContent = `
+    @keyframes autotext-highlight {
+      0% { background-color: rgba(76, 175, 80, 0.4); }
+      100% { background-color: transparent; }
+    }
+
+    @keyframes autotext-toast-in {
+      from { opacity: 0; transform: translateY(20px) scale(0.9); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    @keyframes autotext-toast-out {
+      from { opacity: 1; transform: translateY(0) scale(1); }
+      to { opacity: 0; transform: translateY(-10px) scale(0.9); }
+    }
+
+    .autotext-highlight {
+      animation: autotext-highlight 0.6s ease-out;
+      border-radius: 2px;
+    }
+
+    .autotext-toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15), 0 2px 8px rgba(76,175,80,0.3);
+      z-index: 2147483647;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: autotext-toast-in 0.3s ease-out;
+      max-width: 300px;
+    }
+
+    .autotext-toast.hiding {
+      animation: autotext-toast-out 0.2s ease-in forwards;
+    }
+
+    .autotext-toast-icon {
+      font-size: 18px;
+    }
+
+    .autotext-toast-content {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .autotext-toast-title {
+      font-weight: 600;
+    }
+
+    .autotext-toast-shortcut {
+      font-size: 12px;
+      opacity: 0.9;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+// Show toast notification (using safe DOM methods)
+function showToast(shortcutKey, expansionPreview) {
+  if (!settings.showToast) return;
+
+  // Remove existing toast
+  const existing = document.querySelector('.autotext-toast');
+  if (existing) existing.remove();
+
+  // Create toast container
+  const toast = document.createElement('div');
+  toast.className = 'autotext-toast';
+
+  // Create icon span
+  const iconSpan = document.createElement('span');
+  iconSpan.className = 'autotext-toast-icon';
+  iconSpan.textContent = '⚡';
+
+  // Create content container
+  const contentDiv = document.createElement('div');
+  contentDiv.className = 'autotext-toast-content';
+
+  // Create title span
+  const titleSpan = document.createElement('span');
+  titleSpan.className = 'autotext-toast-title';
+  titleSpan.textContent = 'Expanded!';
+
+  // Create shortcut span with preview
+  const shortcutSpan = document.createElement('span');
+  shortcutSpan.className = 'autotext-toast-shortcut';
+  const preview = expansionPreview.length > 40
+    ? expansionPreview.substring(0, 40) + '...'
+    : expansionPreview;
+  shortcutSpan.textContent = `${shortcutKey} → ${preview}`;
+
+  // Assemble DOM tree
+  contentDiv.appendChild(titleSpan);
+  contentDiv.appendChild(shortcutSpan);
+  toast.appendChild(iconSpan);
+  toast.appendChild(contentDiv);
+
+  document.body.appendChild(toast);
+
+  // Auto-remove after 2 seconds
+  setTimeout(() => {
+    toast.classList.add('hiding');
+    setTimeout(() => toast.remove(), 200);
+  }, 2000);
+}
+
+// Play expansion sound
+function playExpansionSound() {
+  if (!settings.playSound) return;
+
+  try {
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    oscillator.frequency.value = 800;
+    oscillator.type = 'sine';
+    gainNode.gain.value = 0.1;
+
+    oscillator.start();
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+    oscillator.stop(audioContext.currentTime + 0.1);
+  } catch (error) {
+    // Audio not supported, ignore
+  }
+}
+
+// Track shortcut usage for statistics
+async function trackShortcutUsage(shortcutKey, shortcutId) {
+  try {
+    // Update local stats (for offline access and quick display)
+    const result = await chrome.storage.local.get('shortcutStats');
+    const stats = result.shortcutStats || {};
+
+    if (!stats[shortcutKey]) {
+      stats[shortcutKey] = { count: 0, lastUsed: null, id: shortcutId };
+    }
+
+    stats[shortcutKey].count++;
+    stats[shortcutKey].lastUsed = Date.now();
+
+    await chrome.storage.local.set({ shortcutStats: stats });
+
+    // Send usage data to server for analytics (fire-and-forget)
+    sendUsageToServer(shortcutId, window.location.hostname);
+  } catch (error) {
+    // Stats tracking failed, non-critical
+  }
+}
+
+// Send usage data to server API for centralized analytics
+async function sendUsageToServer(shortcutId, domain) {
+  try {
+    const authResult = await chrome.storage.local.get('authToken');
+    if (!authResult.authToken) return;
+
+    const serverResult = await chrome.storage.local.get('serverUrl');
+    const serverUrl = serverResult.serverUrl || 'http://localhost:8000';
+
+    // Fire-and-forget: don't await response to avoid blocking
+    fetch(`${serverUrl}/api/track-usage/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Token ${authResult.authToken}`
+      },
+      body: JSON.stringify({
+        shortcut_id: shortcutId,
+        domain: domain
+      })
+    }).catch(() => {
+      // Silently fail - analytics are non-critical
+    });
+  } catch (error) {
+    // Non-critical error, ignore
+  }
+}
 
 // Load shortcuts from storage on initialization
 async function loadShortcuts() {
@@ -198,10 +425,21 @@ function replaceInContentEditable(element, shortcutKey, expansion, htmlExpansion
   }
 }
 
-// Main handler for Tab key press
-function handleTabKey(event) {
-  // Only handle Tab key
-  if (event.key !== 'Tab') {
+// Main handler for trigger key press
+function handleTriggerKey(event) {
+  // Check if AutoText is globally disabled (via keyboard shortcut toggle)
+  if (!autotextEnabled) {
+    return;
+  }
+
+  // Check if current site is blacklisted
+  if (isBlacklisted()) {
+    return;
+  }
+
+  // Check for configured trigger key (default: Tab)
+  const triggerKey = settings.triggerKey || 'Tab';
+  if (event.key !== triggerKey) {
     return;
   }
 
@@ -296,12 +534,39 @@ function handleTabKey(event) {
       htmlContent
     );
   }
+
+  // Visual feedback
+  showToast(textBefore, textContent || 'Rich text content');
+  playExpansionSound();
+
+  // Track usage statistics
+  trackShortcutUsage(textBefore, shortcut.id);
 }
 
-// Listen for Tab key press
-document.addEventListener("keydown", handleTabKey, true);
+// Listen for trigger key press
+document.addEventListener("keydown", handleTriggerKey, true);
 
-// Initialize: load shortcuts
-loadShortcuts();
+// Listen for settings changes
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName === "local") {
+    if (changes.settings) {
+      settings = { ...settings, ...changes.settings.newValue };
+      debugLog("AutoText: Settings updated");
+    }
+    // Listen for global enabled/disabled toggle (from keyboard shortcut)
+    if (changes.autotext_enabled !== undefined) {
+      autotextEnabled = changes.autotext_enabled.newValue !== false;
+      debugLog("AutoText: Extension", autotextEnabled ? "enabled" : "disabled");
+    }
+  }
+});
 
-debugLog("AutoText: Content script loaded and ready");
+// Initialize: load shortcuts and settings, inject styles
+async function initialize() {
+  await loadSettings();
+  await loadShortcuts();
+  injectFeedbackStyles();
+  debugLog("AutoText: Content script loaded and ready");
+}
+
+initialize();

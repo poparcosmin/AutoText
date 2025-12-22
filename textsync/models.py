@@ -85,6 +85,9 @@ class Shortcut(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     updated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
                                    related_name='updated_shortcuts')
+    # Usage tracking
+    usage_count = models.PositiveIntegerField(default=0, help_text='Total times this shortcut has been expanded')
+    last_used_at = models.DateTimeField(null=True, blank=True, help_text='Last time this shortcut was used')
 
     class Meta:
         ordering = ['key']
@@ -93,9 +96,36 @@ class Shortcut(models.Model):
         indexes = [
             models.Index(fields=['key']),
             models.Index(fields=['updated_at']),
+            models.Index(fields=['usage_count']),
         ]
 
     def __str__(self):
         sets_str = ", ".join([s.name for s in self.sets.all()]) if self.sets.exists() else "no sets"
         preview = self.value[:30] if self.value else (self.html_value[:30] if self.html_value else "no content")
         return f"{self.key} → {preview} ({sets_str})"
+
+
+class ShortcutUsageLog(models.Model):
+    """
+    Detailed usage log for analytics.
+    Tracks each shortcut expansion for reporting and analysis.
+    """
+    shortcut = models.ForeignKey(Shortcut, on_delete=models.CASCADE, related_name='usage_logs')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='shortcut_usage_logs')
+    used_at = models.DateTimeField(auto_now_add=True)
+    # Optional: track where the shortcut was used (domain)
+    domain = models.CharField(max_length=255, blank=True, null=True,
+                              help_text='Domain where the shortcut was used')
+
+    class Meta:
+        ordering = ['-used_at']
+        verbose_name = 'Shortcut Usage Log'
+        verbose_name_plural = 'Shortcut Usage Logs'
+        indexes = [
+            models.Index(fields=['used_at']),
+            models.Index(fields=['user', 'used_at']),
+            models.Index(fields=['shortcut', 'used_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} used '{self.shortcut.key}' at {self.used_at}"

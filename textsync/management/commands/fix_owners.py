@@ -29,7 +29,7 @@ class Command(BaseCommand):
         dry_run = options["dry_run"]
         owner_username = options["owner"]
 
-        self.stdout.write(f"\n🔍 Checking for objects without owners...\n")
+        self.stdout.write("\n🔍 Checking for objects without owners...\n")
 
         # Find owner user
         try:

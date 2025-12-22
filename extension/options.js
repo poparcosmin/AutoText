@@ -5,10 +5,24 @@ let availableSets = [];
 let selectedSets = [];
 let currentUser = null;
 let authToken = null;
+let allShortcuts = {};
+let userSettings = {
+  triggerKey: 'Tab',
+  showToast: true,
+  showHighlight: true,
+  playSound: false,
+  blacklistedSites: []
+};
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('AutoText Options: Initializing...');
+
+  // Initialize theme
+  initializeTheme();
+
+  // Initialize tabs
+  initializeTabs();
 
   try {
     // Check if user is authenticated
@@ -17,6 +31,54 @@ document.addEventListener('DOMContentLoaded', async () => {
     showError(`Failed to load: ${error.message}`);
   }
 });
+
+// Theme Management
+function initializeTheme() {
+  const themeToggle = document.getElementById('theme-toggle');
+
+  // Check saved theme or system preference
+  chrome.storage.local.get('theme', (result) => {
+    if (result.theme === 'dark' ||
+        (!result.theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.body.classList.add('dark');
+      themeToggle.textContent = '☀️';
+    }
+  });
+
+  themeToggle.addEventListener('click', () => {
+    document.body.classList.toggle('dark');
+    const isDark = document.body.classList.contains('dark');
+    themeToggle.textContent = isDark ? '☀️' : '🌙';
+    chrome.storage.local.set({ theme: isDark ? 'dark' : 'light' });
+  });
+}
+
+// Tab Navigation
+function initializeTabs() {
+  const tabs = document.querySelectorAll('.tab');
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      // Remove active from all tabs and contents
+      tabs.forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+      // Add active to clicked tab
+      tab.classList.add('active');
+
+      // Show corresponding content
+      const tabId = tab.dataset.tab;
+      document.getElementById(`tab-${tabId}`).classList.add('active');
+
+      // Load tab-specific data
+      if (tabId === 'shortcuts') {
+        loadShortcutsPreview();
+      } else if (tabId === 'settings') {
+        loadUserSettings();
+      }
+    });
+  });
+}
 
 // Check if user has valid auth token
 async function checkAuthentication() {
@@ -103,13 +165,14 @@ async function handleLogin(e) {
       throw new Error(data.error || 'Login failed');
     }
 
-    // Save token and username
+    // Save token, username, and expiration time
     authToken = data.token;
     currentUser = data.user.username;
 
     await chrome.storage.local.set({
       auth_token: authToken,
-      username: currentUser
+      username: currentUser,
+      token_expires_at: data.expires_at
     });
 
     console.log('Login successful for user:', currentUser);
@@ -275,6 +338,266 @@ function createSetOption(set) {
 function attachEventListeners() {
   document.getElementById('save').addEventListener('click', saveAndSync);
   document.getElementById('logout').addEventListener('click', handleLogout);
+
+  // Settings tab
+  document.getElementById('save-settings').addEventListener('click', saveUserSettings);
+
+  // Shortcuts search
+  document.getElementById('shortcuts-search').addEventListener('input', handleShortcutsSearch);
+
+  // Backup tab
+  document.getElementById('export-all').addEventListener('click', handleExportAll);
+  document.getElementById('export-stats').addEventListener('click', handleExportStats);
+  document.getElementById('import-data').addEventListener('click', () => {
+    document.getElementById('import-file').click();
+  });
+  document.getElementById('import-file').addEventListener('change', handleImportData);
+  document.getElementById('reset-data').addEventListener('click', handleResetData);
+}
+
+// ==========================================
+// SHORTCUTS PREVIEW
+// ==========================================
+
+async function loadShortcutsPreview() {
+  const result = await chrome.storage.local.get('shortcuts');
+  allShortcuts = result.shortcuts || {};
+
+  renderShortcutsPreview(allShortcuts);
+}
+
+function renderShortcutsPreview(shortcuts) {
+  const container = document.getElementById('shortcuts-preview-list');
+  const countEl = document.getElementById('shortcuts-count');
+  container.textContent = ''; // Clear safely
+
+  const entries = Object.entries(shortcuts);
+  countEl.textContent = entries.length;
+
+  if (entries.length === 0) {
+    const emptyDiv = document.createElement('div');
+    emptyDiv.style.cssText = 'padding: 30px; text-align: center; color: var(--text-secondary-light);';
+    emptyDiv.textContent = 'No shortcuts loaded. Select sets and sync first.';
+    container.appendChild(emptyDiv);
+    return;
+  }
+
+  entries.forEach(([key, data]) => {
+    const row = document.createElement('div');
+    row.className = 'shortcut-row';
+
+    const keyBadge = document.createElement('span');
+    keyBadge.className = 'shortcut-key-badge';
+    keyBadge.textContent = key;
+
+    const value = document.createElement('span');
+    value.className = 'shortcut-value';
+    value.textContent = data.value || (data.html_value ? '[Rich text]' : '');
+
+    row.appendChild(keyBadge);
+    row.appendChild(value);
+
+    // Add set badges if available
+    if (data.set_name) {
+      const setsDiv = document.createElement('div');
+      setsDiv.className = 'shortcut-sets';
+
+      const badge = document.createElement('span');
+      badge.className = 'set-badge';
+      badge.textContent = data.set_name;
+      setsDiv.appendChild(badge);
+
+      row.appendChild(setsDiv);
+    }
+
+    container.appendChild(row);
+  });
+}
+
+function handleShortcutsSearch(e) {
+  const query = e.target.value.toLowerCase().trim();
+
+  if (!query) {
+    renderShortcutsPreview(allShortcuts);
+    return;
+  }
+
+  const filtered = {};
+  Object.entries(allShortcuts).forEach(([key, data]) => {
+    if (key.toLowerCase().includes(query) ||
+        (data.value && data.value.toLowerCase().includes(query))) {
+      filtered[key] = data;
+    }
+  });
+
+  renderShortcutsPreview(filtered);
+}
+
+// ==========================================
+// USER SETTINGS
+// ==========================================
+
+async function loadUserSettings() {
+  const result = await chrome.storage.local.get('settings');
+
+  if (result.settings) {
+    userSettings = { ...userSettings, ...result.settings };
+  }
+
+  // Populate UI
+  document.getElementById('setting-trigger-key').value = userSettings.triggerKey || 'Tab';
+  document.getElementById('setting-show-toast').checked = userSettings.showToast !== false;
+  document.getElementById('setting-play-sound').checked = userSettings.playSound || false;
+  document.getElementById('setting-blacklist').value =
+    (userSettings.blacklistedSites || []).join('\n');
+}
+
+async function saveUserSettings() {
+  const triggerKey = document.getElementById('setting-trigger-key').value;
+  const showToast = document.getElementById('setting-show-toast').checked;
+  const playSound = document.getElementById('setting-play-sound').checked;
+  const blacklistText = document.getElementById('setting-blacklist').value;
+
+  // Parse blacklist (one domain per line, trim whitespace)
+  const blacklistedSites = blacklistText
+    .split('\n')
+    .map(s => s.trim())
+    .filter(s => s.length > 0);
+
+  userSettings = {
+    triggerKey,
+    showToast,
+    showHighlight: true,
+    playSound,
+    blacklistedSites
+  };
+
+  await chrome.storage.local.set({ settings: userSettings });
+
+  showStatus('Settings saved successfully!', 'success');
+  console.log('Settings saved:', userSettings);
+}
+
+// ==========================================
+// EXPORT / IMPORT
+// ==========================================
+
+async function handleExportAll() {
+  try {
+    const result = await chrome.storage.local.get([
+      'shortcuts',
+      'active_sets',
+      'settings',
+      'shortcutStats'
+    ]);
+
+    const exportData = {
+      version: '1.1.0',
+      exportedAt: new Date().toISOString(),
+      data: result
+    };
+
+    downloadJson(exportData, 'autotext-backup.json');
+    showStatus('Data exported successfully!', 'success');
+  } catch (error) {
+    showError('Failed to export data: ' + error.message);
+  }
+}
+
+async function handleExportStats() {
+  try {
+    const result = await chrome.storage.local.get('shortcutStats');
+    const stats = result.shortcutStats || {};
+
+    const exportData = {
+      version: '1.1.0',
+      exportedAt: new Date().toISOString(),
+      statistics: stats
+    };
+
+    downloadJson(exportData, 'autotext-stats.json');
+    showStatus('Statistics exported successfully!', 'success');
+  } catch (error) {
+    showError('Failed to export statistics: ' + error.message);
+  }
+}
+
+function downloadJson(data, filename) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+async function handleImportData(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  try {
+    const text = await file.text();
+    const importData = JSON.parse(text);
+
+    if (!importData.data) {
+      throw new Error('Invalid backup file format');
+    }
+
+    // Confirm import
+    if (!confirm('This will replace your current settings and statistics. Continue?')) {
+      return;
+    }
+
+    // Import data
+    if (importData.data.settings) {
+      await chrome.storage.local.set({ settings: importData.data.settings });
+    }
+    if (importData.data.active_sets) {
+      await chrome.storage.local.set({ active_sets: importData.data.active_sets });
+    }
+    if (importData.data.shortcutStats) {
+      await chrome.storage.local.set({ shortcutStats: importData.data.shortcutStats });
+    }
+
+    showStatus('Data imported successfully! Reloading...', 'success');
+
+    // Reload to apply changes
+    setTimeout(() => window.location.reload(), 1500);
+
+  } catch (error) {
+    showError('Failed to import data: ' + error.message);
+  }
+
+  // Reset file input
+  e.target.value = '';
+}
+
+async function handleResetData() {
+  if (!confirm('Are you sure you want to reset all local data? This cannot be undone.')) {
+    return;
+  }
+
+  try {
+    // Keep auth info but clear everything else
+    const { auth_token, username } = await chrome.storage.local.get(['auth_token', 'username']);
+
+    await chrome.storage.local.clear();
+
+    // Restore auth
+    if (auth_token && username) {
+      await chrome.storage.local.set({ auth_token, username });
+    }
+
+    showStatus('Local data reset. Reloading...', 'success');
+
+    setTimeout(() => window.location.reload(), 1500);
+  } catch (error) {
+    showError('Failed to reset data: ' + error.message);
+  }
 }
 
 // Handle logout

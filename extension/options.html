@@ -2,33 +2,182 @@
 <html>
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>AutoText Options</title>
+  <link rel="icon" type="image/x-icon" href="icon48.png">
   <style>
+    :root {
+      --primary: #4285f4;
+      --primary-dark: #3367d6;
+      --success: #4CAF50;
+      --warning: #ff9800;
+      --danger: #ea4335;
+      --bg-light: #f5f5f5;
+      --bg-dark: #1a1a2e;
+      --card-light: white;
+      --card-dark: #16213e;
+      --text-light: #333;
+      --text-dark: #e0e0e0;
+      --text-secondary-light: #666;
+      --text-secondary-dark: #999;
+      --border-light: #e0e0e0;
+      --border-dark: #3a3a5a;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      max-width: 600px;
-      margin: 40px auto;
+      max-width: 800px;
+      margin: 0 auto;
       padding: 20px;
-      background: #f5f5f5;
+      background: var(--bg-light);
+      color: var(--text-light);
+      transition: background 0.3s, color 0.3s;
+    }
+
+    body.dark {
+      background: var(--bg-dark);
+      color: var(--text-dark);
     }
 
     .container {
-      background: white;
-      border-radius: 8px;
+      background: var(--card-light);
+      border-radius: 12px;
       padding: 30px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      margin-bottom: 20px;
+      transition: background 0.3s;
+    }
+
+    body.dark .container {
+      background: var(--card-dark);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .logo {
+      font-size: 40px;
     }
 
     h1 {
-      margin: 0 0 10px 0;
-      color: #333;
-      font-size: 24px;
+      margin: 0;
+      color: var(--text-light);
+      font-size: 28px;
+    }
+
+    body.dark h1 {
+      color: var(--text-dark);
     }
 
     .subtitle {
-      color: #666;
-      margin-bottom: 30px;
+      color: var(--text-secondary-light);
+      margin: 5px 0 0 0;
       font-size: 14px;
+    }
+
+    body.dark .subtitle {
+      color: var(--text-secondary-dark);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .theme-toggle {
+      background: none;
+      border: 2px solid var(--border-light);
+      border-radius: 8px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 18px;
+      transition: all 0.2s;
+    }
+
+    body.dark .theme-toggle {
+      border-color: var(--border-dark);
+    }
+
+    .theme-toggle:hover {
+      background: var(--bg-light);
+    }
+
+    body.dark .theme-toggle:hover {
+      background: var(--border-dark);
+    }
+
+    .version {
+      font-size: 12px;
+      color: var(--text-secondary-light);
+      background: var(--bg-light);
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+
+    body.dark .version {
+      background: var(--border-dark);
+      color: var(--text-secondary-dark);
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      border-bottom: 2px solid var(--border-light);
+      margin-bottom: 25px;
+    }
+
+    body.dark .tabs {
+      border-color: var(--border-dark);
+    }
+
+    .tab {
+      padding: 12px 20px;
+      cursor: pointer;
+      border: none;
+      background: none;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary-light);
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: all 0.2s;
+    }
+
+    body.dark .tab {
+      color: var(--text-secondary-dark);
+    }
+
+    .tab:hover {
+      color: var(--primary);
+    }
+
+    .tab.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
     }
 
     .loading {
@@ -263,17 +412,320 @@
     .user-info .username::before {
       content: "👤 ";
     }
+
+    /* Search Box */
+    .search-container {
+      margin-bottom: 20px;
+    }
+
+    .search-box {
+      position: relative;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding: 12px 12px 12px 40px;
+      border: 2px solid var(--border-light);
+      border-radius: 8px;
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+
+    body.dark .search-box input {
+      background: var(--bg-dark);
+      border-color: var(--border-dark);
+      color: var(--text-dark);
+    }
+
+    .search-box input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .search-box::before {
+      content: "🔍";
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    /* Shortcuts Preview List */
+    .shortcuts-preview {
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid var(--border-light);
+      border-radius: 8px;
+      margin-top: 15px;
+    }
+
+    body.dark .shortcuts-preview {
+      border-color: var(--border-dark);
+    }
+
+    .shortcut-row {
+      display: flex;
+      align-items: center;
+      padding: 12px 15px;
+      border-bottom: 1px solid var(--border-light);
+      transition: background 0.2s;
+    }
+
+    body.dark .shortcut-row {
+      border-color: var(--border-dark);
+    }
+
+    .shortcut-row:last-child {
+      border-bottom: none;
+    }
+
+    .shortcut-row:hover {
+      background: var(--bg-light);
+    }
+
+    body.dark .shortcut-row:hover {
+      background: var(--border-dark);
+    }
+
+    .shortcut-key-badge {
+      background: var(--primary);
+      color: white;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-weight: 600;
+      margin-right: 15px;
+      min-width: 60px;
+      text-align: center;
+    }
+
+    .shortcut-value {
+      flex: 1;
+      color: var(--text-secondary-light);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    body.dark .shortcut-value {
+      color: var(--text-secondary-dark);
+    }
+
+    .shortcut-sets {
+      display: flex;
+      gap: 5px;
+    }
+
+    .set-badge {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      background: var(--success);
+      color: white;
+    }
+
+    .set-badge.personal {
+      background: var(--primary);
+    }
+
+    /* Settings Section */
+    .settings-group {
+      margin-bottom: 25px;
+    }
+
+    .settings-group h3 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 15px;
+      color: var(--text-secondary-light);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    body.dark .settings-group h3 {
+      color: var(--text-secondary-dark);
+    }
+
+    .setting-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    body.dark .setting-item {
+      border-color: var(--border-dark);
+    }
+
+    .setting-item:last-child {
+      border-bottom: none;
+    }
+
+    .setting-label {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .setting-title {
+      font-weight: 500;
+    }
+
+    .setting-description {
+      font-size: 12px;
+      color: var(--text-secondary-light);
+    }
+
+    body.dark .setting-description {
+      color: var(--text-secondary-dark);
+    }
+
+    /* Toggle Switch */
+    .toggle {
+      position: relative;
+      width: 50px;
+      height: 26px;
+    }
+
+    .toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: 0.3s;
+      border-radius: 26px;
+    }
+
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.3s;
+      border-radius: 50%;
+    }
+
+    .toggle input:checked + .toggle-slider {
+      background-color: var(--primary);
+    }
+
+    .toggle input:checked + .toggle-slider:before {
+      transform: translateX(24px);
+    }
+
+    /* Select dropdown */
+    .setting-select {
+      padding: 8px 12px;
+      border: 2px solid var(--border-light);
+      border-radius: 6px;
+      font-size: 14px;
+      min-width: 120px;
+    }
+
+    body.dark .setting-select {
+      background: var(--bg-dark);
+      border-color: var(--border-dark);
+      color: var(--text-dark);
+    }
+
+    /* Blacklist textarea */
+    .blacklist-input {
+      width: 100%;
+      padding: 10px;
+      border: 2px solid var(--border-light);
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: monospace;
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    body.dark .blacklist-input {
+      background: var(--bg-dark);
+      border-color: var(--border-dark);
+      color: var(--text-dark);
+    }
+
+    /* Export/Import */
+    .export-import {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .btn-outline {
+      padding: 10px 20px;
+      border: 2px solid var(--primary);
+      background: transparent;
+      color: var(--primary);
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-outline:hover {
+      background: var(--primary);
+      color: white;
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding: 20px;
+      color: var(--text-secondary-light);
+      font-size: 12px;
+    }
+
+    body.dark .footer {
+      color: var(--text-secondary-dark);
+    }
+
+    .footer a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>⚡ AutoText Options</h1>
-    <p class="subtitle">Select which shortcut sets you want to use</p>
-
-    <div id="loading" class="loading">
-      Loading...
+    <div class="header">
+      <div class="header-left">
+        <span class="logo">⚡</span>
+        <div>
+          <h1>AutoText</h1>
+          <p class="subtitle">Text Expansion Settings</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <span class="version">v1.1.0</span>
+        <button class="theme-toggle" id="theme-toggle" title="Toggle dark mode">🌙</button>
+      </div>
     </div>
 
+    <div id="loading" class="loading">Loading...</div>
     <div id="error" class="error" style="display: none;"></div>
 
     <!-- Login Section -->
@@ -282,38 +734,160 @@
       <form id="login-form">
         <div class="form-group">
           <label for="username">Username</label>
-          <input type="text" id="username" name="username" required autocomplete="username">
+          <input type="text" id="username" name="username" required autocomplete="username" placeholder="Enter your username">
         </div>
         <div class="form-group">
           <label for="password">Password</label>
-          <input type="password" id="password" name="password" required autocomplete="current-password">
+          <input type="password" id="password" name="password" required autocomplete="current-password" placeholder="Enter your password">
         </div>
         <button type="submit" id="login">Login</button>
       </form>
     </div>
 
-    <!-- Sets Selection Section (shown after login) -->
+    <!-- Main Content (shown after login) -->
     <div id="sets-container" style="display: none;">
       <div class="user-info">
         <span class="username" id="current-user"></span>
         <button id="logout">Logout</button>
       </div>
-      <div class="set-section" id="general-sets">
-        <h2>📋 General Sets (Team)</h2>
-        <div id="general-list"></div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab active" data-tab="sets">📋 Sets</button>
+        <button class="tab" data-tab="shortcuts">🔍 Shortcuts</button>
+        <button class="tab" data-tab="settings">⚙️ Settings</button>
+        <button class="tab" data-tab="backup">💾 Backup</button>
       </div>
 
-      <div class="set-section" id="personal-sets">
-        <h2>👤 Personal Sets</h2>
-        <div id="personal-list"></div>
+      <!-- Tab: Sets -->
+      <div class="tab-content active" id="tab-sets">
+        <div class="set-section" id="general-sets">
+          <h2>📋 General Sets (Team)</h2>
+          <div id="general-list"></div>
+        </div>
+
+        <div class="set-section" id="personal-sets">
+          <h2>👤 Personal Sets</h2>
+          <div id="personal-list"></div>
+        </div>
+
+        <div class="actions">
+          <button id="save">💾 Save & Sync</button>
+        </div>
       </div>
 
-      <div class="actions">
-        <button id="save">💾 Save & Sync</button>
+      <!-- Tab: Shortcuts Preview -->
+      <div class="tab-content" id="tab-shortcuts">
+        <div class="search-container">
+          <div class="search-box">
+            <input type="text" id="shortcuts-search" placeholder="Search shortcuts by key or content...">
+          </div>
+        </div>
+        <div class="shortcuts-preview" id="shortcuts-preview-list">
+          <!-- Populated by JS -->
+        </div>
+        <p style="margin-top: 15px; font-size: 13px; color: var(--text-secondary-light);">
+          Showing <span id="shortcuts-count">0</span> shortcuts from your active sets.
+        </p>
+      </div>
+
+      <!-- Tab: Settings -->
+      <div class="tab-content" id="tab-settings">
+        <div class="settings-group">
+          <h3>Trigger Settings</h3>
+          <div class="setting-item">
+            <div class="setting-label">
+              <span class="setting-title">Trigger Key</span>
+              <span class="setting-description">Key to press after typing a shortcut</span>
+            </div>
+            <select class="setting-select" id="setting-trigger-key">
+              <option value="Tab">Tab</option>
+              <option value=" ">Space</option>
+              <option value="Enter">Enter</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <h3>Visual Feedback</h3>
+          <div class="setting-item">
+            <div class="setting-label">
+              <span class="setting-title">Show Toast Notification</span>
+              <span class="setting-description">Display a notification when text is expanded</span>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="setting-show-toast" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="setting-item">
+            <div class="setting-label">
+              <span class="setting-title">Play Sound</span>
+              <span class="setting-description">Play a subtle sound on expansion</span>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="setting-play-sound">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <h3>Blacklisted Sites</h3>
+          <p class="setting-description" style="margin-bottom: 10px;">
+            AutoText will be disabled on these sites. Enter one domain per line.
+          </p>
+          <textarea class="blacklist-input" id="setting-blacklist" placeholder="example.com&#10;another-site.com"></textarea>
+        </div>
+
+        <div class="actions">
+          <button id="save-settings" class="btn-primary" style="background: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 6px; font-size: 14px; cursor: pointer;">
+            💾 Save Settings
+          </button>
+        </div>
+      </div>
+
+      <!-- Tab: Backup -->
+      <div class="tab-content" id="tab-backup">
+        <div class="settings-group">
+          <h3>Export Data</h3>
+          <p class="setting-description" style="margin-bottom: 15px;">
+            Export your shortcuts and settings to a JSON file for backup or transfer.
+          </p>
+          <div class="export-import">
+            <button class="btn-outline" id="export-all">📤 Export All Data</button>
+            <button class="btn-outline" id="export-stats">📊 Export Statistics</button>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <h3>Import Data</h3>
+          <p class="setting-description" style="margin-bottom: 15px;">
+            Import shortcuts and settings from a previously exported file.
+          </p>
+          <div class="export-import">
+            <button class="btn-outline" id="import-data">📥 Import Data</button>
+            <input type="file" id="import-file" class="file-input" accept=".json">
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <h3>Reset</h3>
+          <p class="setting-description" style="margin-bottom: 15px;">
+            Clear all local data and start fresh. This will not affect server data.
+          </p>
+          <button class="btn-outline" id="reset-data" style="border-color: var(--danger); color: var(--danger);">
+            🗑️ Reset Local Data
+          </button>
+        </div>
       </div>
 
       <div id="status" class="status hidden"></div>
     </div>
+  </div>
+
+  <div class="footer">
+    <p>AutoText v1.1.0 • <a href="https://autotext.zua.ro/privacy" target="_blank">Privacy Policy</a></p>
   </div>
 
   <script src="config.js"></script>

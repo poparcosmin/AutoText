@@ -1,5 +1,4 @@
 from rest_framework import authentication, exceptions
-from django.utils import timezone
 from .models import ExpiringToken
 
 
@@ -28,7 +27,7 @@ class ExpiringTokenAuthentication(authentication.BaseAuthentication):
         try:
             token = auth[1].decode()
         except UnicodeError:
-            msg = 'Invalid token header. Token string should not contain invalid characters.'
+            msg = 'Invalid token header. Token contains invalid characters.'
             raise exceptions.AuthenticationFailed(msg)
 
         return self.authenticate_credentials(token)

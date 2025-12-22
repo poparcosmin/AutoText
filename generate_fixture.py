@@ -107,7 +107,7 @@ def generate_fixture(yaml_file, output_file, set_id=1):
 
     print(f"✅ Generated {len(fixtures)} shortcuts in {output_file}")
     print(f"   Set ID: {set_id} (birou)")
-    print(f"\nTo load fixture:")
+    print("\nTo load fixture:")
     print(f"   python manage.py loaddata {output_file}")
 
 

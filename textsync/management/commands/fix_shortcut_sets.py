@@ -29,7 +29,7 @@ class Command(BaseCommand):
         dry_run = options["dry_run"]
         set_name = options["set_name"]
 
-        self.stdout.write(f"\n🔍 Checking for shortcuts without sets...\n")
+        self.stdout.write("\n🔍 Checking for shortcuts without sets...\n")
 
         # Find shortcuts that have no sets
         unlinked_shortcuts = Shortcut.objects.annotate(
