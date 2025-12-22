@@ -192,9 +192,15 @@ class ShortcutViewSet(viewsets.ModelViewSet):
         GET /api/shortcuts/my/
         Returns only shortcuts owned by the current user.
         """
-        queryset = Shortcut.objects.filter(owner=request.user).prefetch_related('sets')
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
+        import logging
+        logger = logging.getLogger(__name__)
+        try:
+            queryset = Shortcut.objects.filter(owner=request.user).prefetch_related('sets')
+            serializer = self.get_serializer(queryset, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            logger.exception(f"Error in /shortcuts/my/ for user {request.user}: {e}")
+            return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def create(self, request, *args, **kwargs):
         """
