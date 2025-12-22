@@ -138,8 +138,10 @@
     /* Tabs */
     .tabs {
       display: flex;
+      flex-wrap: wrap;
       border-bottom: 2px solid var(--border-light);
       margin-bottom: 25px;
+      gap: 0;
     }
 
     body.dark .tabs {
@@ -147,16 +149,17 @@
     }
 
     .tab {
-      padding: 12px 20px;
+      padding: 10px 16px;
       cursor: pointer;
       border: none;
       background: none;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 500;
       color: var(--text-secondary-light);
       border-bottom: 2px solid transparent;
       margin-bottom: -2px;
       transition: all 0.2s;
+      white-space: nowrap;
     }
 
     body.dark .tab {
@@ -707,6 +710,307 @@
     .footer a:hover {
       text-decoration: underline;
     }
+
+    /* Autocomplete dropdown */
+    .autocomplete-container {
+      position: relative;
+    }
+
+    .autocomplete-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: var(--card-light);
+      border: 2px solid var(--primary);
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+      max-height: 300px;
+      overflow-y: auto;
+      z-index: 100;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    body.dark .autocomplete-dropdown {
+      background: var(--card-dark);
+    }
+
+    .autocomplete-item {
+      padding: 10px 15px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border-light);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    body.dark .autocomplete-item {
+      border-color: var(--border-dark);
+    }
+
+    .autocomplete-item:hover {
+      background: var(--bg-light);
+    }
+
+    body.dark .autocomplete-item:hover {
+      background: var(--border-dark);
+    }
+
+    .autocomplete-item:last-child {
+      border-bottom: none;
+    }
+
+    .autocomplete-key {
+      background: var(--primary);
+      color: white;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-weight: 600;
+      font-size: 12px;
+      min-width: 50px;
+      text-align: center;
+    }
+
+    .autocomplete-value {
+      flex: 1;
+      color: var(--text-secondary-light);
+      font-size: 13px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    body.dark .autocomplete-value {
+      color: var(--text-secondary-dark);
+    }
+
+    /* CRUD Section */
+    .crud-section {
+      margin-bottom: 25px;
+    }
+
+    .crud-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .crud-header h3 {
+      margin: 0;
+      font-size: 16px;
+      color: var(--text-light);
+    }
+
+    body.dark .crud-header h3 {
+      color: var(--text-dark);
+    }
+
+    .btn-add {
+      background: var(--success);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-add:hover {
+      background: #43a047;
+      transform: translateY(-1px);
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal-overlay.hidden {
+      display: none;
+    }
+
+    .modal {
+      background: var(--card-light);
+      border-radius: 12px;
+      width: 90%;
+      max-width: 500px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    }
+
+    body.dark .modal {
+      background: var(--card-dark);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    body.dark .modal-header {
+      border-color: var(--border-dark);
+    }
+
+    .modal-header h3 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: var(--text-secondary-light);
+      padding: 0;
+      line-height: 1;
+    }
+
+    body.dark .modal-close {
+      color: var(--text-secondary-dark);
+    }
+
+    .modal-body {
+      padding: 20px;
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      padding: 15px 20px;
+      border-top: 1px solid var(--border-light);
+    }
+
+    body.dark .modal-footer {
+      border-color: var(--border-dark);
+    }
+
+    .btn-cancel {
+      background: var(--bg-light);
+      color: var(--text-light);
+      border: 1px solid var(--border-light);
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    body.dark .btn-cancel {
+      background: var(--border-dark);
+      color: var(--text-dark);
+      border-color: var(--border-dark);
+    }
+
+    .btn-save {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .btn-save:hover {
+      background: var(--primary-dark);
+    }
+
+    .btn-delete {
+      background: var(--danger);
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .btn-edit {
+      background: var(--warning);
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+      margin-right: 5px;
+    }
+
+    .shortcut-actions {
+      display: flex;
+      gap: 5px;
+      margin-left: auto;
+    }
+
+    /* Content type toggle in modal */
+    .content-type-toggle {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .content-type-btn {
+      flex: 1;
+      padding: 10px;
+      border: 2px solid var(--border-light);
+      background: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+
+    body.dark .content-type-btn {
+      border-color: var(--border-dark);
+      color: var(--text-dark);
+    }
+
+    .content-type-btn.active {
+      border-color: var(--primary);
+      background: var(--primary);
+      color: white;
+    }
+
+    .form-group textarea {
+      width: 100%;
+      padding: 12px;
+      font-size: 14px;
+      border: 2px solid var(--border-light);
+      border-radius: 6px;
+      resize: vertical;
+      min-height: 100px;
+      font-family: inherit;
+    }
+
+    body.dark .form-group textarea {
+      background: var(--bg-dark);
+      border-color: var(--border-dark);
+      color: var(--text-dark);
+    }
+
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
   </style>
 </head>
 <body>
@@ -754,7 +1058,8 @@
       <!-- Tabs -->
       <div class="tabs">
         <button class="tab active" data-tab="sets">📋 Sets</button>
-        <button class="tab" data-tab="shortcuts">🔍 Shortcuts</button>
+        <button class="tab" data-tab="shortcuts">🔍 Search</button>
+        <button class="tab" data-tab="manage">✏️ Manage</button>
         <button class="tab" data-tab="settings">⚙️ Settings</button>
         <button class="tab" data-tab="backup">💾 Backup</button>
       </div>
@@ -776,11 +1081,14 @@
         </div>
       </div>
 
-      <!-- Tab: Shortcuts Preview -->
+      <!-- Tab: Shortcuts Search with Autocomplete -->
       <div class="tab-content" id="tab-shortcuts">
-        <div class="search-container">
+        <div class="search-container autocomplete-container">
           <div class="search-box">
-            <input type="text" id="shortcuts-search" placeholder="Search shortcuts by key or content...">
+            <input type="text" id="shortcuts-search" placeholder="Type to search shortcuts..." autocomplete="off">
+          </div>
+          <div class="autocomplete-dropdown" id="autocomplete-dropdown" style="display: none;">
+            <!-- Populated by JS -->
           </div>
         </div>
         <div class="shortcuts-preview" id="shortcuts-preview-list">
@@ -789,6 +1097,27 @@
         <p style="margin-top: 15px; font-size: 13px; color: var(--text-secondary-light);">
           Showing <span id="shortcuts-count">0</span> shortcuts from your active sets.
         </p>
+      </div>
+
+      <!-- Tab: Manage Shortcuts (CRUD) -->
+      <div class="tab-content" id="tab-manage">
+        <div class="crud-section">
+          <div class="crud-header">
+            <h3>📝 Your Shortcuts</h3>
+            <button class="btn-add" id="btn-add-shortcut">+ Add New</button>
+          </div>
+          <p class="setting-description" style="margin-bottom: 15px;">
+            Create, edit, or delete your personal shortcuts. Changes sync to the server automatically.
+          </p>
+          <div class="search-container">
+            <div class="search-box">
+              <input type="text" id="manage-search" placeholder="Filter your shortcuts...">
+            </div>
+          </div>
+          <div class="shortcuts-preview" id="manage-shortcuts-list" style="margin-top: 15px;">
+            <!-- Populated by JS -->
+          </div>
+        </div>
       </div>
 
       <!-- Tab: Settings -->
@@ -883,6 +1212,50 @@
       </div>
 
       <div id="status" class="status hidden"></div>
+    </div>
+  </div>
+
+  <!-- Modal for Create/Edit Shortcut -->
+  <div class="modal-overlay hidden" id="shortcut-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modal-title">Add New Shortcut</h3>
+        <button class="modal-close" id="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="shortcut-form">
+          <input type="hidden" id="shortcut-id">
+          <div class="form-group">
+            <label for="shortcut-key">Shortcut Key</label>
+            <input type="text" id="shortcut-key" placeholder="e.g., /email, #signature" required>
+          </div>
+          <div class="form-group">
+            <label>Content Type</label>
+            <div class="content-type-toggle">
+              <button type="button" class="content-type-btn active" data-type="text">📝 Plain Text</button>
+              <button type="button" class="content-type-btn" data-type="html">🎨 Rich Text</button>
+            </div>
+          </div>
+          <div class="form-group" id="text-content-group">
+            <label for="shortcut-value">Expansion Text</label>
+            <textarea id="shortcut-value" placeholder="Text that replaces the shortcut..." rows="4"></textarea>
+          </div>
+          <div class="form-group" id="html-content-group" style="display: none;">
+            <label for="shortcut-html">Rich Text (HTML)</label>
+            <textarea id="shortcut-html" placeholder="<b>Formatted</b> content..." rows="4"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="shortcut-set">Add to Set</label>
+            <select id="shortcut-set">
+              <!-- Populated by JS with user's personal sets -->
+            </select>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-outline" id="modal-cancel">Cancel</button>
+        <button class="btn-add" id="modal-save">Save Shortcut</button>
+      </div>
     </div>
   </div>
 

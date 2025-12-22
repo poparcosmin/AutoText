@@ -75,6 +75,8 @@ function initializeTabs() {
         loadShortcutsPreview();
       } else if (tabId === 'settings') {
         loadUserSettings();
+      } else if (tabId === 'manage') {
+        loadManageShortcuts();
       }
     });
   });
@@ -342,8 +344,45 @@ function attachEventListeners() {
   // Settings tab
   document.getElementById('save-settings').addEventListener('click', saveUserSettings);
 
-  // Shortcuts search
-  document.getElementById('shortcuts-search').addEventListener('input', handleShortcutsSearch);
+  // Shortcuts search with autocomplete
+  const searchInput = document.getElementById('shortcuts-search');
+  searchInput.addEventListener('input', debounce(handleAutocompleteSearch, 300));
+  searchInput.addEventListener('focus', () => {
+    if (searchInput.value.length > 0) {
+      handleAutocompleteSearch({ target: searchInput });
+    }
+  });
+  searchInput.addEventListener('blur', () => {
+    // Delay hiding to allow click on dropdown items
+    setTimeout(() => hideAutocompleteDropdown(), 200);
+  });
+
+  // Manage tab search
+  document.getElementById('manage-search').addEventListener('input', handleManageSearch);
+
+  // CRUD modal
+  document.getElementById('btn-add-shortcut').addEventListener('click', () => openShortcutModal());
+  document.getElementById('modal-close').addEventListener('click', closeShortcutModal);
+  document.getElementById('modal-cancel').addEventListener('click', closeShortcutModal);
+  document.getElementById('modal-save').addEventListener('click', saveShortcut);
+
+  // Content type toggle in modal
+  document.querySelectorAll('.content-type-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.content-type-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const type = btn.dataset.type;
+      document.getElementById('text-content-group').style.display = type === 'text' ? 'block' : 'none';
+      document.getElementById('html-content-group').style.display = type === 'html' ? 'block' : 'none';
+    });
+  });
+
+  // Close modal on overlay click
+  document.getElementById('shortcut-modal').addEventListener('click', (e) => {
+    if (e.target.classList.contains('modal-overlay')) {
+      closeShortcutModal();
+    }
+  });
 
   // Backup tab
   document.getElementById('export-all').addEventListener('click', handleExportAll);
@@ -750,4 +789,383 @@ function showError(message) {
   loading.style.display = 'none';
 
   console.error('AutoText Options Error:', message);
+}
+
+// ==========================================
+// UTILITY: Debounce function
+// ==========================================
+
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
+// ==========================================
+// AUTOCOMPLETE SEARCH (AJAX)
+// ==========================================
+
+let autocompleteAbortController = null;
+
+async function handleAutocompleteSearch(e) {
+  const query = e.target.value.trim();
+  const dropdown = document.getElementById('autocomplete-dropdown');
+
+  if (query.length < 1) {
+    hideAutocompleteDropdown();
+    renderShortcutsPreview(allShortcuts);
+    return;
+  }
+
+  // Cancel previous request
+  if (autocompleteAbortController) {
+    autocompleteAbortController.abort();
+  }
+  autocompleteAbortController = new AbortController();
+
+  try {
+    const response = await fetch(`${CONFIG.API_URL}/shortcuts/?search=${encodeURIComponent(query)}`, {
+      headers: { 'Authorization': `Token ${authToken}` },
+      signal: autocompleteAbortController.signal
+    });
+
+    if (!response.ok) throw new Error('Search failed');
+
+    const results = await response.json();
+    showAutocompleteDropdown(results, query);
+
+    // Also filter local preview
+    const filtered = {};
+    Object.entries(allShortcuts).forEach(([key, data]) => {
+      if (key.toLowerCase().includes(query.toLowerCase()) ||
+          (data.value && data.value.toLowerCase().includes(query.toLowerCase()))) {
+        filtered[key] = data;
+      }
+    });
+    renderShortcutsPreview(filtered);
+
+  } catch (error) {
+    if (error.name === 'AbortError') return; // Cancelled, ignore
+    console.error('Autocomplete search error:', error);
+    // Fallback to local search
+    handleShortcutsSearch(e);
+  }
+}
+
+function showAutocompleteDropdown(results, query) {
+  const dropdown = document.getElementById('autocomplete-dropdown');
+  dropdown.textContent = ''; // Safe clear
+
+  if (results.length === 0) {
+    dropdown.style.display = 'none';
+    return;
+  }
+
+  results.slice(0, 10).forEach(shortcut => {
+    const item = document.createElement('div');
+    item.className = 'autocomplete-item';
+
+    const keySpan = document.createElement('span');
+    keySpan.className = 'autocomplete-key';
+    keySpan.textContent = shortcut.key;
+
+    const valueSpan = document.createElement('span');
+    valueSpan.className = 'autocomplete-value';
+    valueSpan.textContent = (shortcut.value || shortcut.html_value || '').substring(0, 50);
+
+    item.appendChild(keySpan);
+    item.appendChild(valueSpan);
+
+    item.addEventListener('click', () => {
+      document.getElementById('shortcuts-search').value = shortcut.key;
+      hideAutocompleteDropdown();
+      // Show just this shortcut
+      renderShortcutsPreview({ [shortcut.key]: shortcut });
+    });
+    dropdown.appendChild(item);
+  });
+
+  dropdown.style.display = 'block';
+}
+
+function hideAutocompleteDropdown() {
+  document.getElementById('autocomplete-dropdown').style.display = 'none';
+}
+
+// ==========================================
+// MANAGE SHORTCUTS (CRUD)
+// ==========================================
+
+let manageShortcuts = [];
+let personalSetsForSelect = [];
+
+async function loadManageShortcuts() {
+  const container = document.getElementById('manage-shortcuts-list');
+  container.textContent = '';
+  const loadingDiv = document.createElement('div');
+  loadingDiv.style.cssText = 'text-align: center; padding: 20px;';
+  loadingDiv.textContent = 'Loading...';
+  container.appendChild(loadingDiv);
+
+  try {
+    // Fetch user's shortcuts from API
+    const response = await fetch(`${CONFIG.API_URL}/shortcuts/my/`, {
+      headers: { 'Authorization': `Token ${authToken}` }
+    });
+
+    if (!response.ok) throw new Error('Failed to load shortcuts');
+
+    manageShortcuts = await response.json();
+
+    // Also fetch personal sets for the dropdown
+    await loadPersonalSetsForSelect();
+
+    renderManageShortcuts(manageShortcuts);
+  } catch (error) {
+    container.textContent = '';
+    const errorDiv = document.createElement('div');
+    errorDiv.style.cssText = 'text-align: center; padding: 20px; color: var(--danger);';
+    errorDiv.textContent = 'Error: ' + error.message;
+    container.appendChild(errorDiv);
+  }
+}
+
+async function loadPersonalSetsForSelect() {
+  try {
+    const response = await fetch(`${CONFIG.API_URL}/sets/`, {
+      headers: { 'Authorization': `Token ${authToken}` }
+    });
+    if (response.ok) {
+      const sets = await response.json();
+      personalSetsForSelect = sets.filter(s => s.set_type === 'personal');
+    }
+  } catch (error) {
+    console.error('Failed to load personal sets:', error);
+  }
+}
+
+function renderManageShortcuts(shortcuts) {
+  const container = document.getElementById('manage-shortcuts-list');
+  container.textContent = '';
+
+  if (shortcuts.length === 0) {
+    const emptyDiv = document.createElement('div');
+    emptyDiv.style.cssText = 'text-align: center; padding: 30px; color: var(--text-secondary-light);';
+    emptyDiv.textContent = 'No shortcuts yet. Click "+ Add New" to create one.';
+    container.appendChild(emptyDiv);
+    return;
+  }
+
+  shortcuts.forEach(shortcut => {
+    const row = document.createElement('div');
+    row.className = 'shortcut-row';
+    row.style.cssText = 'display: flex; align-items: center; gap: 10px;';
+
+    const keyBadge = document.createElement('span');
+    keyBadge.className = 'shortcut-key-badge';
+    keyBadge.textContent = shortcut.key;
+
+    const value = document.createElement('span');
+    value.className = 'shortcut-value';
+    value.style.flex = '1';
+    value.textContent = shortcut.value || (shortcut.html_value ? '[Rich text]' : '');
+
+    const actions = document.createElement('div');
+    actions.className = 'shortcut-actions';
+
+    const editBtn = document.createElement('button');
+    editBtn.className = 'btn-edit';
+    editBtn.textContent = '✏️';
+    editBtn.title = 'Edit';
+    editBtn.addEventListener('click', () => openShortcutModal(shortcut));
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'btn-delete';
+    deleteBtn.textContent = '🗑️';
+    deleteBtn.title = 'Delete';
+    deleteBtn.addEventListener('click', () => deleteShortcut(shortcut.id));
+
+    actions.appendChild(editBtn);
+    actions.appendChild(deleteBtn);
+
+    row.appendChild(keyBadge);
+    row.appendChild(value);
+    row.appendChild(actions);
+    container.appendChild(row);
+  });
+}
+
+function handleManageSearch(e) {
+  const query = e.target.value.toLowerCase().trim();
+
+  if (!query) {
+    renderManageShortcuts(manageShortcuts);
+    return;
+  }
+
+  const filtered = manageShortcuts.filter(s =>
+    s.key.toLowerCase().includes(query) ||
+    (s.value && s.value.toLowerCase().includes(query))
+  );
+  renderManageShortcuts(filtered);
+}
+
+// ==========================================
+// MODAL: Create/Edit Shortcut
+// ==========================================
+
+function openShortcutModal(shortcut = null) {
+  const modal = document.getElementById('shortcut-modal');
+  const title = document.getElementById('modal-title');
+  const idField = document.getElementById('shortcut-id');
+  const keyField = document.getElementById('shortcut-key');
+  const valueField = document.getElementById('shortcut-value');
+  const htmlField = document.getElementById('shortcut-html');
+  const setSelect = document.getElementById('shortcut-set');
+
+  // Reset content type toggle
+  document.querySelectorAll('.content-type-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('.content-type-btn[data-type="text"]').classList.add('active');
+  document.getElementById('text-content-group').style.display = 'block';
+  document.getElementById('html-content-group').style.display = 'none';
+
+  // Populate sets dropdown safely
+  setSelect.textContent = '';
+  const defaultOption = document.createElement('option');
+  defaultOption.value = '';
+  defaultOption.textContent = '-- Select a set --';
+  setSelect.appendChild(defaultOption);
+
+  personalSetsForSelect.forEach(set => {
+    const option = document.createElement('option');
+    option.value = set.id;
+    option.textContent = set.name;
+    setSelect.appendChild(option);
+  });
+
+  if (shortcut) {
+    // Edit mode
+    title.textContent = 'Edit Shortcut';
+    idField.value = shortcut.id;
+    keyField.value = shortcut.key;
+    valueField.value = shortcut.value || '';
+    htmlField.value = shortcut.html_value || '';
+
+    // Set content type
+    if (shortcut.content_type === 'html') {
+      document.querySelectorAll('.content-type-btn').forEach(b => b.classList.remove('active'));
+      document.querySelector('.content-type-btn[data-type="html"]').classList.add('active');
+      document.getElementById('text-content-group').style.display = 'none';
+      document.getElementById('html-content-group').style.display = 'block';
+    }
+
+    // Select set if shortcut belongs to one
+    if (shortcut.sets && shortcut.sets.length > 0) {
+      setSelect.value = shortcut.sets[0].id || shortcut.sets[0];
+    }
+  } else {
+    // Create mode
+    title.textContent = 'Add New Shortcut';
+    idField.value = '';
+    keyField.value = '';
+    valueField.value = '';
+    htmlField.value = '';
+    setSelect.value = '';
+  }
+
+  modal.classList.remove('hidden');
+}
+
+function closeShortcutModal() {
+  document.getElementById('shortcut-modal').classList.add('hidden');
+}
+
+async function saveShortcut() {
+  const id = document.getElementById('shortcut-id').value;
+  const key = document.getElementById('shortcut-key').value.trim();
+  const value = document.getElementById('shortcut-value').value;
+  const htmlValue = document.getElementById('shortcut-html').value;
+  const setId = document.getElementById('shortcut-set').value;
+
+  const isHtml = document.querySelector('.content-type-btn.active').dataset.type === 'html';
+
+  if (!key) {
+    alert('Shortcut key is required!');
+    return;
+  }
+
+  if (!setId) {
+    alert('Please select a set!');
+    return;
+  }
+
+  const payload = {
+    key,
+    content_type: isHtml ? 'html' : 'text',
+    value: isHtml ? '' : value,
+    html_value: isHtml ? htmlValue : '',
+    sets: [parseInt(setId)]
+  };
+
+  try {
+    const url = id
+      ? `${CONFIG.API_URL}/shortcuts/${id}/`
+      : `${CONFIG.API_URL}/shortcuts/`;
+
+    const response = await fetch(url, {
+      method: id ? 'PUT' : 'POST',
+      headers: {
+        'Authorization': `Token ${authToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to save');
+    }
+
+    closeShortcutModal();
+    showStatus(id ? 'Shortcut updated!' : 'Shortcut created!', 'success');
+    loadManageShortcuts();
+
+    // Trigger sync to update local cache
+    triggerBackgroundSync();
+
+  } catch (error) {
+    alert('Error: ' + error.message);
+  }
+}
+
+async function deleteShortcut(id) {
+  if (!confirm('Are you sure you want to delete this shortcut?')) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`${CONFIG.API_URL}/shortcuts/${id}/`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Token ${authToken}` }
+    });
+
+    if (!response.ok && response.status !== 204) {
+      throw new Error('Failed to delete');
+    }
+
+    showStatus('Shortcut deleted!', 'success');
+    loadManageShortcuts();
+
+    // Trigger sync to update local cache
+    triggerBackgroundSync();
+
+  } catch (error) {
+    alert('Error: ' + error.message);
+  }
 }

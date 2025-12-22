@@ -10,8 +10,8 @@ from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.conf import settings
 from rest_framework import permissions, viewsets, status
-from rest_framework.decorators import api_view, permission_classes, throttle_classes
-from rest_framework.exceptions import ParseError
+from rest_framework.decorators import api_view, permission_classes, throttle_classes, action
+from rest_framework.exceptions import ParseError, PermissionDenied
 from rest_framework.response import Response
 
 from .models import Shortcut, ShortcutSet, ExpiringToken, ShortcutUsageLog
@@ -71,13 +71,18 @@ class ShortcutSetViewSet(viewsets.ReadOnlyModelViewSet):
         ).distinct().order_by('set_type', 'name')
 
 
-class ShortcutViewSet(viewsets.ReadOnlyModelViewSet):
+class ShortcutViewSet(viewsets.ModelViewSet):
     """
-    API endpoint for shortcuts (READ-ONLY).
-    Shortcuts can only be created/edited via Django Admin.
-    Supports filtering by sets: /api/shortcuts/?sets=birou,cosmin
+    API endpoint for shortcuts with full CRUD support.
+    - GET /api/shortcuts/ - List shortcuts from accessible sets
+    - GET /api/shortcuts/?search=query - Search shortcuts
+    - GET /api/shortcuts/my/ - List user's own shortcuts
+    - POST /api/shortcuts/ - Create (only in user's personal sets)
+    - PUT /api/shortcuts/{id}/ - Update (only own shortcuts)
+    - DELETE /api/shortcuts/{id}/ - Delete (only own shortcuts)
 
     Security: Only returns shortcuts that the authenticated user has access to.
+    CRUD: Users can only manage shortcuts they own in their personal sets.
     Caching: Full list results are cached for 5 minutes. Delta sync bypasses cache.
     """
     serializer_class = ShortcutSerializer
@@ -172,7 +177,94 @@ class ShortcutViewSet(viewsets.ReadOnlyModelViewSet):
 
             queryset = queryset.filter(updated_at__gt=parsed_updated_after)
 
+        # Support search parameter
+        search = self.request.query_params.get('search', None)
+        if search:
+            queryset = queryset.filter(
+                Q(key__icontains=search) | Q(value__icontains=search)
+            )
+
         return queryset
+
+    @action(detail=False, methods=['get'])
+    def my(self, request):
+        """
+        GET /api/shortcuts/my/
+        Returns only shortcuts owned by the current user.
+        """
+        queryset = Shortcut.objects.filter(owner=request.user).prefetch_related('sets')
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    def create(self, request, *args, **kwargs):
+        """
+        POST /api/shortcuts/
+        Create a new shortcut owned by the current user.
+        Only allows adding to personal sets owned by the user.
+        """
+        user = request.user
+        data = request.data.copy()
+
+        # Validate sets - user can only add to their own personal sets
+        set_ids = data.get('sets', [])
+        if set_ids:
+            allowed_sets = ShortcutSet.objects.filter(
+                id__in=set_ids,
+                set_type='personal',
+                owner=user
+            )
+            if allowed_sets.count() != len(set_ids):
+                raise PermissionDenied("You can only add shortcuts to your own personal sets.")
+
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(owner=user, updated_by=user)
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def update(self, request, *args, **kwargs):
+        """
+        PUT /api/shortcuts/{id}/
+        Update a shortcut. Only the owner can update their shortcuts.
+        """
+        instance = self.get_object()
+        user = request.user
+
+        if instance.owner != user and not user.is_superuser:
+            raise PermissionDenied("You can only edit your own shortcuts.")
+
+        data = request.data.copy()
+
+        # Validate sets - user can only use their own personal sets
+        set_ids = data.get('sets', [])
+        if set_ids:
+            allowed_sets = ShortcutSet.objects.filter(
+                id__in=set_ids,
+                set_type='personal',
+                owner=user
+            )
+            if allowed_sets.count() != len(set_ids):
+                raise PermissionDenied("You can only add shortcuts to your own personal sets.")
+
+        serializer = self.get_serializer(instance, data=data, partial=False)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(updated_by=user)
+
+        return Response(serializer.data)
+
+    def destroy(self, request, *args, **kwargs):
+        """
+        DELETE /api/shortcuts/{id}/
+        Delete a shortcut. Only the owner can delete their shortcuts.
+        """
+        instance = self.get_object()
+        user = request.user
+
+        if instance.owner != user and not user.is_superuser:
+            raise PermissionDenied("You can only delete your own shortcuts.")
+
+        instance.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 @api_view(['POST'])
