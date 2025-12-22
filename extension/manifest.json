@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "AutoText - Text Expansion",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Seamless text expansion system - type shortcuts and press Tab to expand",
   "permissions": [
     "storage",
@@ -63,5 +63,11 @@
       },
       "description": "Open AutoText popup"
     }
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["lib/tinymce/*"],
+      "matches": ["<all_urls>"]
+    }
+  ]
 }

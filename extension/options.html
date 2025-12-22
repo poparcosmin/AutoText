@@ -845,8 +845,8 @@
     .modal {
       background: var(--card-light);
       border-radius: 12px;
-      width: 90%;
-      max-width: 500px;
+      width: 95%;
+      max-width: 975px;
       max-height: 90vh;
       overflow-y: auto;
       box-shadow: 0 10px 40px rgba(0,0,0,0.3);
@@ -997,8 +997,26 @@
       border: 2px solid var(--border-light);
       border-radius: 6px;
       resize: vertical;
-      min-height: 100px;
+      min-height: 150px;
       font-family: inherit;
+    }
+
+    /* TinyMCE editor styling */
+    .tox-tinymce {
+      border-radius: 6px !important;
+    }
+
+    .content-type-hint {
+      font-size: 12px;
+      color: var(--text-secondary-light);
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    body.dark .content-type-hint {
+      color: var(--text-secondary-dark);
     }
 
     body.dark .form-group textarea {
@@ -1238,11 +1256,13 @@
           </div>
           <div class="form-group" id="text-content-group">
             <label for="shortcut-value">Expansion Text</label>
-            <textarea id="shortcut-value" placeholder="Text that replaces the shortcut..." rows="4"></textarea>
+            <textarea id="shortcut-value" placeholder="Type the text that will replace your shortcut when you press Tab...&#10;&#10;Example: If shortcut is '/sig', this text appears when you type /sig and press Tab." rows="5"></textarea>
+            <p class="content-type-hint">💡 Use this for simple text without formatting</p>
           </div>
           <div class="form-group" id="html-content-group" style="display: none;">
-            <label for="shortcut-html">Rich Text (HTML)</label>
-            <textarea id="shortcut-html" placeholder="<b>Formatted</b> content..." rows="4"></textarea>
+            <label>Rich Text Editor</label>
+            <textarea id="tinymce-editor"></textarea>
+            <p class="content-type-hint">💡 Select text and click the link button (🔗) to add URLs</p>
           </div>
           <div class="form-group">
             <label for="shortcut-set">Add to Set</label>
@@ -1253,6 +1273,7 @@
         </form>
       </div>
       <div class="modal-footer">
+        <button class="btn-outline hidden" id="modal-download-original" title="Restore original content from Birou">⬇️ Descarcă original</button>
         <button class="btn-outline" id="modal-cancel">Cancel</button>
         <button class="btn-add" id="modal-save">Save Shortcut</button>
       </div>
@@ -1264,6 +1285,7 @@
   </div>
 
   <script src="config.js"></script>
+  <script src="lib/tinymce/tinymce.min.js"></script>
   <script src="options.js"></script>
 </body>
 </html>

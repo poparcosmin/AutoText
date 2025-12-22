@@ -374,6 +374,11 @@ function attachEventListeners() {
       const type = btn.dataset.type;
       document.getElementById('text-content-group').style.display = type === 'text' ? 'block' : 'none';
       document.getElementById('html-content-group').style.display = type === 'html' ? 'block' : 'none';
+
+      // Initialize TinyMCE when switching to HTML mode (lazy init for proper rendering)
+      if (type === 'html') {
+        initTinyMCE();
+      }
     });
   });
 
@@ -429,26 +434,34 @@ function renderShortcutsPreview(shortcuts) {
     keyBadge.className = 'shortcut-key-badge';
     keyBadge.textContent = key;
 
-    const value = document.createElement('span');
-    value.className = 'shortcut-value';
-    value.textContent = data.value || (data.html_value ? '[Rich text]' : '');
-
     row.appendChild(keyBadge);
-    row.appendChild(value);
 
-    // Add set badges if available
-    if (data.set_name) {
+    // Add set badges if available (after key, before value)
+    const setNames = data.sets || (data.set_name ? [data.set_name] : []);
+    if (setNames.length > 0) {
       const setsDiv = document.createElement('div');
       setsDiv.className = 'shortcut-sets';
+      setsDiv.style.cssText = 'display: flex; gap: 4px; flex-wrap: wrap;';
 
-      const badge = document.createElement('span');
-      badge.className = 'set-badge';
-      badge.textContent = data.set_name;
-      setsDiv.appendChild(badge);
+      setNames.forEach(setName => {
+        const badge = document.createElement('span');
+        badge.className = 'set-badge';
+        badge.textContent = setName;
+        // Special styling for Birou set
+        if (setName === 'Birou') {
+          badge.style.cssText = 'background: #6c757d; color: white;';
+        }
+        setsDiv.appendChild(badge);
+      });
 
       row.appendChild(setsDiv);
     }
 
+    const value = document.createElement('span');
+    value.className = 'shortcut-value';
+    value.textContent = data.value || (data.html_value ? '[Rich text]' : '');
+
+    row.appendChild(value);
     container.appendChild(row);
   });
 }
@@ -937,7 +950,19 @@ async function loadManageShortcuts() {
     // Also fetch personal sets for the dropdown
     await loadPersonalSetsForSelect();
 
-    renderManageShortcuts(manageShortcuts);
+    // Apply current search filter if any, otherwise show all
+    const searchInput = document.getElementById('manage-search');
+    const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+    if (query) {
+      const filtered = manageShortcuts.filter(s =>
+        s.key.toLowerCase().includes(query) ||
+        (s.value && s.value.toLowerCase().includes(query))
+      );
+      renderManageShortcuts(filtered);
+    } else {
+      renderManageShortcuts(manageShortcuts);
+    }
   } catch (error) {
     console.error('[Manage] Error:', error);
     container.textContent = '';
@@ -966,7 +991,28 @@ function renderManageShortcuts(shortcuts) {
   const container = document.getElementById('manage-shortcuts-list');
   container.textContent = '';
 
-  if (shortcuts.length === 0) {
+  // Find keys that exist in personal sets (not Birou)
+  const personalKeys = new Set();
+  shortcuts.forEach(s => {
+    const setNames = s.set_names || [];
+    const isPersonal = setNames.some(name => name !== 'Birou');
+    if (isPersonal) {
+      personalKeys.add(s.key);
+    }
+  });
+
+  // Filter out Birou shortcuts if the same key exists in a personal set
+  const filteredShortcuts = shortcuts.filter(shortcut => {
+    const setNames = shortcut.set_names || [];
+    const isOnlyBirou = setNames.length === 1 && setNames[0] === 'Birou';
+    // Hide if it's only in Birou AND the key exists in personal
+    if (isOnlyBirou && personalKeys.has(shortcut.key)) {
+      return false;
+    }
+    return true;
+  });
+
+  if (filteredShortcuts.length === 0) {
     const emptyDiv = document.createElement('div');
     emptyDiv.style.cssText = 'text-align: center; padding: 30px; color: var(--text-secondary-light);';
     emptyDiv.textContent = 'No shortcuts yet. Click "+ Add New" to create one.';
@@ -974,7 +1020,7 @@ function renderManageShortcuts(shortcuts) {
     return;
   }
 
-  shortcuts.forEach(shortcut => {
+  filteredShortcuts.forEach(shortcut => {
     const row = document.createElement('div');
     row.className = 'shortcut-row';
     row.style.cssText = 'display: flex; align-items: center; gap: 10px;';
@@ -982,6 +1028,23 @@ function renderManageShortcuts(shortcuts) {
     const keyBadge = document.createElement('span');
     keyBadge.className = 'shortcut-key-badge';
     keyBadge.textContent = shortcut.key;
+
+    // Add set badges
+    const setsDiv = document.createElement('div');
+    setsDiv.className = 'shortcut-sets';
+    setsDiv.style.cssText = 'display: flex; gap: 4px; flex-wrap: wrap;';
+
+    const setNames = shortcut.set_names || [];
+    setNames.forEach(setName => {
+      const badge = document.createElement('span');
+      badge.className = 'set-badge';
+      badge.textContent = setName;
+      // Special styling for Birou set
+      if (setName === 'Birou') {
+        badge.style.cssText = 'background: #6c757d; color: white;';
+      }
+      setsDiv.appendChild(badge);
+    });
 
     const value = document.createElement('span');
     value.className = 'shortcut-value';
@@ -991,26 +1054,97 @@ function renderManageShortcuts(shortcuts) {
     const actions = document.createElement('div');
     actions.className = 'shortcut-actions';
 
-    const editBtn = document.createElement('button');
-    editBtn.className = 'btn-edit';
-    editBtn.textContent = '✏️';
-    editBtn.title = 'Edit';
-    editBtn.addEventListener('click', () => openShortcutModal(shortcut));
+    // Check if shortcut belongs to "Birou" set (read-only)
+    const isFromBirou = setNames.includes('Birou');
 
-    const deleteBtn = document.createElement('button');
-    deleteBtn.className = 'btn-delete';
-    deleteBtn.textContent = '🗑️';
-    deleteBtn.title = 'Delete';
-    deleteBtn.addEventListener('click', () => deleteShortcut(shortcut.id));
+    if (isFromBirou) {
+      // Add "Copy to Personal" button for Birou shortcuts
+      const copyBtn = document.createElement('button');
+      copyBtn.className = 'btn-copy';
+      copyBtn.textContent = '📋';
+      copyBtn.title = 'Copy to Personal Set';
+      copyBtn.style.cssText = 'background: var(--primary); color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;';
+      copyBtn.addEventListener('click', () => copyToPersonalSet(shortcut));
+      actions.appendChild(copyBtn);
+    } else {
+      // Normal edit/delete for personal shortcuts
+      const editBtn = document.createElement('button');
+      editBtn.className = 'btn-edit';
+      editBtn.textContent = '✏️';
+      editBtn.title = 'Edit';
+      editBtn.addEventListener('click', () => openShortcutModal(shortcut));
 
-    actions.appendChild(editBtn);
-    actions.appendChild(deleteBtn);
+      const deleteBtn = document.createElement('button');
+      deleteBtn.className = 'btn-delete';
+      deleteBtn.textContent = '🗑️';
+      deleteBtn.title = 'Delete';
+      deleteBtn.addEventListener('click', () => deleteShortcut(shortcut.id));
+
+      actions.appendChild(editBtn);
+      actions.appendChild(deleteBtn);
+    }
 
     row.appendChild(keyBadge);
+    row.appendChild(setsDiv);
     row.appendChild(value);
     row.appendChild(actions);
     container.appendChild(row);
   });
+}
+
+// Copy a shortcut to a personal set
+async function copyToPersonalSet(shortcut) {
+  // Check if we have personal sets available
+  if (personalSetsForSelect.length === 0) {
+    alert('No personal sets available. Create a personal set first.');
+    return;
+  }
+
+  // If only one personal set, use it directly
+  let targetSetId;
+  if (personalSetsForSelect.length === 1) {
+    targetSetId = personalSetsForSelect[0].id;
+  } else {
+    // Show selection if multiple personal sets
+    const setNames = personalSetsForSelect.map(s => s.name).join(', ');
+    const selectedName = prompt(`Enter the name of the personal set to copy to:\nAvailable: ${setNames}`);
+    if (!selectedName) return;
+
+    const targetSet = personalSetsForSelect.find(s => s.name.toLowerCase() === selectedName.toLowerCase());
+    if (!targetSet) {
+      alert('Set not found. Please enter an exact name.');
+      return;
+    }
+    targetSetId = targetSet.id;
+  }
+
+  try {
+    const response = await fetch(`${CONFIG.API_URL}/shortcuts/`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Token ${authToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        key: shortcut.key,
+        content_type: shortcut.content_type,
+        value: shortcut.value || '',
+        html_value: shortcut.html_value || '',
+        sets: [targetSetId]
+      })
+    });
+
+    if (response.ok) {
+      alert('Shortcut copied to personal set! You can now edit it.');
+      await loadManageShortcuts();
+    } else {
+      const error = await response.json();
+      alert(`Error: ${JSON.stringify(error)}`);
+    }
+  } catch (error) {
+    console.error('Error copying shortcut:', error);
+    alert('Failed to copy shortcut.');
+  }
 }
 
 function handleManageSearch(e) {
@@ -1032,13 +1166,54 @@ function handleManageSearch(e) {
 // MODAL: Create/Edit Shortcut
 // ==========================================
 
+// TinyMCE editor instance
+let tinyMCEEditor = null;
+
+// Initialize TinyMCE rich text editor (called when switching to HTML mode)
+let tinyMCEInitialized = false;
+
+function initTinyMCE() {
+  if (typeof tinymce === 'undefined') {
+    console.warn('TinyMCE not loaded yet, retrying...');
+    setTimeout(initTinyMCE, 500);
+    return;
+  }
+
+  // If already initialized, just make sure the editor is visible
+  if (tinyMCEInitialized && tinyMCEEditor) {
+    return;
+  }
+
+  // Get the extension's base URL for TinyMCE resources
+  const tinyMCEBaseUrl = chrome.runtime.getURL('lib/tinymce');
+
+  tinymce.init({
+    selector: '#tinymce-editor',
+    height: 350,
+    menubar: false,
+    plugins: 'link lists autolink',
+    toolbar: 'bold italic underline strikethrough | bullist numlist | alignleft aligncenter alignright | link unlink | removeformat',
+    toolbar_mode: 'wrap',
+    placeholder: 'Type your formatted text here...',
+    content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 14px; }',
+    base_url: tinyMCEBaseUrl,
+    suffix: '.min',
+    link_default_target: '_blank',
+    link_title: false,
+    default_link_target: '_blank',
+    setup: function(editor) {
+      tinyMCEEditor = editor;
+      tinyMCEInitialized = true;
+    }
+  });
+}
+
 function openShortcutModal(shortcut = null) {
   const modal = document.getElementById('shortcut-modal');
   const title = document.getElementById('modal-title');
   const idField = document.getElementById('shortcut-id');
   const keyField = document.getElementById('shortcut-key');
   const valueField = document.getElementById('shortcut-value');
-  const htmlField = document.getElementById('shortcut-html');
   const setSelect = document.getElementById('shortcut-set');
 
   // Reset content type toggle
@@ -1067,7 +1242,11 @@ function openShortcutModal(shortcut = null) {
     idField.value = shortcut.id;
     keyField.value = shortcut.key;
     valueField.value = shortcut.value || '';
-    htmlField.value = shortcut.html_value || '';
+
+    // Set TinyMCE content
+    if (tinyMCEEditor) {
+      tinyMCEEditor.setContent(shortcut.html_value || '');
+    }
 
     // Set content type
     if (shortcut.content_type === 'html') {
@@ -1075,11 +1254,61 @@ function openShortcutModal(shortcut = null) {
       document.querySelector('.content-type-btn[data-type="html"]').classList.add('active');
       document.getElementById('text-content-group').style.display = 'none';
       document.getElementById('html-content-group').style.display = 'block';
+      // Initialize TinyMCE when opening HTML shortcut
+      initTinyMCE();
+      // Set content after a short delay to ensure TinyMCE is ready
+      setTimeout(() => {
+        if (tinyMCEEditor) {
+          tinyMCEEditor.setContent(shortcut.html_value || '');
+        }
+      }, 100);
     }
 
-    // Select set if shortcut belongs to one
-    if (shortcut.sets && shortcut.sets.length > 0) {
-      setSelect.value = shortcut.sets[0].id || shortcut.sets[0];
+    // Select set if shortcut belongs to one (set_names contains string names from API)
+    if (shortcut.set_names && shortcut.set_names.length > 0) {
+      // Find the personal set that matches one of the shortcut's set names
+      const matchingSet = personalSetsForSelect.find(s =>
+        shortcut.set_names.includes(s.name)
+      );
+      if (matchingSet) {
+        setSelect.value = matchingSet.id;
+      }
+    }
+
+    // Check if this shortcut key also exists in Birou (for "Download Original" button)
+    const birouOriginal = manageShortcuts.find(s =>
+      s.key === shortcut.key &&
+      s.set_names &&
+      s.set_names.includes('Birou') &&
+      s.id !== shortcut.id
+    );
+
+    const downloadBtn = document.getElementById('modal-download-original');
+    if (downloadBtn) {
+      if (birouOriginal) {
+        downloadBtn.classList.remove('hidden');
+        downloadBtn.onclick = () => {
+          // Restore content from Birou original
+          valueField.value = birouOriginal.value || '';
+          if (tinyMCEEditor) {
+            tinyMCEEditor.setContent(birouOriginal.html_value || '');
+          }
+          // Also set content type if different
+          if (birouOriginal.content_type === 'html') {
+            document.querySelectorAll('.content-type-btn').forEach(b => b.classList.remove('active'));
+            document.querySelector('.content-type-btn[data-type="html"]').classList.add('active');
+            document.getElementById('text-content-group').style.display = 'none';
+            document.getElementById('html-content-group').style.display = 'block';
+          } else {
+            document.querySelectorAll('.content-type-btn').forEach(b => b.classList.remove('active'));
+            document.querySelector('.content-type-btn[data-type="text"]').classList.add('active');
+            document.getElementById('text-content-group').style.display = 'block';
+            document.getElementById('html-content-group').style.display = 'none';
+          }
+        };
+      } else {
+        downloadBtn.classList.add('hidden');
+      }
     }
   } else {
     // Create mode
@@ -1087,8 +1316,19 @@ function openShortcutModal(shortcut = null) {
     idField.value = '';
     keyField.value = '';
     valueField.value = '';
-    htmlField.value = '';
+
+    // Clear TinyMCE content
+    if (tinyMCEEditor) {
+      tinyMCEEditor.setContent('');
+    }
+
     setSelect.value = '';
+
+    // Hide download original button in create mode
+    const downloadBtn = document.getElementById('modal-download-original');
+    if (downloadBtn) {
+      downloadBtn.classList.add('hidden');
+    }
   }
 
   modal.classList.remove('hidden');
@@ -1102,7 +1342,8 @@ async function saveShortcut() {
   const id = document.getElementById('shortcut-id').value;
   const key = document.getElementById('shortcut-key').value.trim();
   const value = document.getElementById('shortcut-value').value;
-  const htmlValue = document.getElementById('shortcut-html').value;
+  // Read HTML from TinyMCE editor
+  const htmlValue = tinyMCEEditor ? tinyMCEEditor.getContent() : '';
   const setId = document.getElementById('shortcut-set').value;
 
   const isHtml = document.querySelector('.content-type-btn.active').dataset.type === 'html';

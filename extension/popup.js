@@ -104,8 +104,8 @@ async function loadShortcuts() {
     return (b.lastUsed || 0) - (a.lastUsed || 0);
   });
 
-  // Display top 10
-  const topShortcuts = shortcutsWithStats.slice(0, 10);
+  // Display top 3
+  const topShortcuts = shortcutsWithStats.slice(0, 3);
 
   topShortcuts.forEach(shortcut => {
     const item = createShortcutItem(shortcut);
