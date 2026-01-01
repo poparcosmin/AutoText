@@ -283,12 +283,14 @@ class ShortcutAdmin(admin.ModelAdmin):
                     Q(owner=request.user) | Q(visible_to=request.user)
                 ).distinct().order_by('set_type', 'name')
 
-            # Pre-select personal set for new shortcuts (when adding, not editing)
-            if 'object_id' not in request.resolver_match.kwargs:
-                personal_set = self.get_personal_set(request.user)
-                kwargs['initial'] = [personal_set.pk]
-
         return super().formfield_for_manytomany(db_field, request, **kwargs)
+
+    def get_changeform_initial_data(self, request):
+        """Pre-select personal set for new shortcuts"""
+        initial = super().get_changeform_initial_data(request)
+        personal_set = self.get_personal_set(request.user)
+        initial['sets'] = [personal_set.pk]
+        return initial
 
     def get_fieldsets(self, request, obj=None):
         """Simplified fieldsets for staff users"""
