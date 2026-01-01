@@ -161,11 +161,14 @@ class ShortcutSetFilter(admin.SimpleListFilter):
         if request.user.is_superuser:
             sets = ShortcutSet.objects.all()
         else:
-            # Staff see: their sets + general sets (Birou) + sets shared with them
+            # Staff see:
+            # - General sets (Birou)
+            # - Their own personal sets ONLY
+            # - Shared sets where they're in visible_to
             sets = ShortcutSet.objects.filter(
-                Q(owner=request.user) |
                 Q(set_type='general') |
-                Q(visible_to=request.user)
+                (Q(set_type='personal') & Q(owner=request.user)) |
+                (Q(set_type='shared') & Q(visible_to=request.user))
             ).distinct()
 
         return [
@@ -375,13 +378,13 @@ class ShortcutAdmin(admin.ModelAdmin):
                 kwargs['queryset'] = ShortcutSet.objects.all().order_by('set_type', 'name')
             else:
                 # Staff users see:
-                # 1. Their own sets (personal)
-                # 2. General sets like Birou (set_type='general')
-                # 3. Sets shared with them via visible_to
+                # - General sets (Birou)
+                # - Their own personal sets ONLY
+                # - Shared sets where they're in visible_to
                 kwargs['queryset'] = ShortcutSet.objects.filter(
-                    Q(owner=request.user) |
                     Q(set_type='general') |
-                    Q(visible_to=request.user)
+                    (Q(set_type='personal') & Q(owner=request.user)) |
+                    (Q(set_type='shared') & Q(visible_to=request.user))
                 ).distinct().order_by('set_type', 'name')
 
         return super().formfield_for_manytomany(db_field, request, **kwargs)

@@ -64,10 +64,13 @@ class ShortcutSetViewSet(viewsets.ReadOnlyModelViewSet):
             return base_qs.order_by('set_type', 'name')
 
         # Business rule:
-        # - General sets: visible to everyone (no filter)
-        # - Personal sets: visible only to owner
+        # - General sets: visible to everyone
+        # - Personal sets: visible ONLY to owner (not via visible_to)
+        # - Shared sets: visible to those in visible_to
         return base_qs.filter(
-            Q(set_type='general') | Q(owner=user) | Q(visible_to=user)
+            Q(set_type='general') |
+            (Q(set_type='personal') & Q(owner=user)) |
+            (Q(set_type='shared') & Q(visible_to=user))
         ).distinct().order_by('set_type', 'name')
 
 
@@ -123,9 +126,14 @@ class ShortcutViewSet(viewsets.ModelViewSet):
         if user.is_superuser:
             accessible_sets = ShortcutSet.objects.all()
         else:
-            # User can access: general sets + their own personal sets
+            # User can access:
+            # - General sets: visible to everyone
+            # - Personal sets: ONLY their own (not via visible_to)
+            # - Shared sets: via visible_to
             accessible_sets = ShortcutSet.objects.filter(
-                Q(set_type='general') | Q(owner=user) | Q(visible_to=user)
+                Q(set_type='general') |
+                (Q(set_type='personal') & Q(owner=user)) |
+                (Q(set_type='shared') & Q(visible_to=user))
             ).distinct()
 
         # Filter by sets parameter (if provided)

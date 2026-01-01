@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "AutoText - Text Expansion",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "description": "Seamless text expansion system - type shortcuts and press Tab to expand",
   "permissions": [
     "storage",
@@ -17,8 +17,12 @@
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"],
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js"
+      ],
       "run_at": "document_end",
       "all_frames": true
     }
@@ -66,8 +70,12 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["lib/tinymce/*"],
-      "matches": ["<all_urls>"]
+      "resources": [
+        "lib/tinymce/*"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
     }
   ]
 }
