@@ -212,18 +212,22 @@ async function trackShortcutUsage(shortcutKey, shortcutId) {
 // Send usage data to server API for centralized analytics
 async function sendUsageToServer(shortcutId, domain) {
   try {
-    const authResult = await chrome.storage.local.get('authToken');
-    if (!authResult.authToken) return;
+    const result = await chrome.storage.local.get(['auth_token', 'api_url']);
 
-    const serverResult = await chrome.storage.local.get('serverUrl');
-    const serverUrl = serverResult.serverUrl || 'http://localhost:8000';
+    // SECURITY: Skip if not properly configured
+    // Never fall back to localhost - this would send data to whatever
+    // service is running on the user's local machine (potential data leak)
+    if (!result.auth_token || !result.api_url) {
+      debugLog("AutoText: Skipping usage tracking - not configured");
+      return;
+    }
 
     // Fire-and-forget: don't await response to avoid blocking
-    fetch(`${serverUrl}/api/track-usage/`, {
+    fetch(`${result.api_url}/track-usage/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Token ${authResult.authToken}`
+        'Authorization': `Token ${result.auth_token}`
       },
       body: JSON.stringify({
         shortcut_id: shortcutId,

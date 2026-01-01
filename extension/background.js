@@ -11,24 +11,11 @@ const debugLog = (...args) => {
 // Offline/Online status tracking
 let isOnline = true;
 
-// Keep-alive mechanism for Service Worker (Manifest V3)
-// Service workers become inactive after ~30s, we need to keep them alive
-let keepAliveInterval;
-
-function startKeepAlive() {
-  // Clear any existing interval
-  if (keepAliveInterval) {
-    clearInterval(keepAliveInterval);
-  }
-
-  // Send keepalive message every 20 seconds to prevent worker from sleeping
-  keepAliveInterval = setInterval(() => {
-    debugLog('AutoText: Service Worker keepalive ping');
-  }, 20000);
-}
-
-// Start keepalive on worker activation
-startKeepAlive();
+// NOTE: Service Worker lifecycle is event-driven in Manifest V3
+// The worker will naturally sleep between events - this is expected behavior.
+// We rely on chrome.alarms for periodic sync (see initializeListeners).
+// DO NOT use setInterval keep-alive hacks - they don't work reliably in MV3
+// and may be terminated by the browser at any time.
 
 /**
  * Update online/offline status and badge
@@ -341,10 +328,8 @@ function mergeShortcutsWithPriority(shortcuts) {
 function initializeListeners() {
   debugLog("AutoText: Initializing event listeners...");
 
-  // Ensure keepalive is running
-  startKeepAlive();
-
-  // Periodic sync every 5 minutes (300000 ms)
+  // Periodic sync every 5 minutes using chrome.alarms (MV3-compliant)
+  // The alarm will wake up the service worker when it fires
   chrome.alarms.create("syncShortcuts", { periodInMinutes: 5 });
 }
 

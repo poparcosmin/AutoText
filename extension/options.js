@@ -174,7 +174,8 @@ async function handleLogin(e) {
     await chrome.storage.local.set({
       auth_token: authToken,
       username: currentUser,
-      token_expires_at: data.expires_at
+      token_expires_at: data.expires_at,
+      api_url: CONFIG.API_URL  // Save API URL for content scripts
     });
 
     console.log('Login successful for user:', currentUser);

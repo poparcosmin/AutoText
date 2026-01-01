@@ -89,7 +89,7 @@
 <body>
     <div class="container">
         <h1>Privacy Policy</h1>
-        <p class="last-updated">Last Updated: October 31, 2025</p>
+        <p class="last-updated">Last Updated: January 1, 2026</p>
 
         <p>AutoText ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our Chrome browser extension.</p>
 
@@ -201,10 +201,42 @@
         <p>AutoText requires the following Chrome permissions:</p>
         <ul>
             <li><strong>Storage:</strong> To save your shortcuts locally for offline access</li>
-            <li><strong>All URLs:</strong> To enable text expansion on all websites you visit</li>
             <li><strong>Alarms:</strong> For periodic synchronization of shortcuts</li>
             <li><strong>Notifications:</strong> To inform you about sync status and important updates</li>
+            <li><strong>Clipboard Write:</strong> To copy expanded text to clipboard when needed</li>
         </ul>
+
+        <h3>11.1 Why We Need Access to All Websites ("All URLs" Permission)</h3>
+
+        <div class="highlight">
+            <strong>This permission is essential for core functionality.</strong>
+        </div>
+
+        <p>AutoText is a <strong>global text expansion tool</strong> that works by detecting when you type a shortcut (like "addr") and replacing it with your saved expansion (like your full address). For this to work, the extension must be able to:</p>
+
+        <ul>
+            <li><strong>Detect keystrokes:</strong> Listen for the trigger key (Tab) in any text input field</li>
+            <li><strong>Read text before cursor:</strong> Check if the text you just typed matches one of your shortcuts</li>
+            <li><strong>Replace text:</strong> Substitute the shortcut with your saved expansion</li>
+        </ul>
+
+        <p><strong>What we DO with this permission:</strong></p>
+        <ul>
+            <li>Run a content script that listens for your shortcuts in text fields</li>
+            <li>Replace matched shortcuts with your saved expansions</li>
+            <li>Show visual feedback when an expansion occurs</li>
+        </ul>
+
+        <p><strong>What we DO NOT do with this permission:</strong></p>
+        <ul>
+            <li>Read, collect, or transmit any content from web pages</li>
+            <li>Track your browsing history or behavior</li>
+            <li>Access passwords, form data, or sensitive information</li>
+            <li>Modify web page content (except for text replacement in input fields)</li>
+            <li>Inject advertisements or third-party scripts</li>
+        </ul>
+
+        <p>The extension only activates when you press the trigger key (Tab) in a text input field, and only processes the text immediately before your cursor to check for shortcut matches. No other page content is ever read or transmitted.</p>
 
         <p>These permissions are used solely for the extension's core functionality and not for data collection or tracking.</p>
 
