@@ -99,12 +99,56 @@ class ShortcutSetAdmin(admin.ModelAdmin):
 class ShortcutAdminForm(forms.ModelForm):
     """Custom form for Shortcut with TinyMCE editor for html_value"""
 
+    # Custom field for staff users - radio button to choose set
+    save_to_set = forms.ChoiceField(
+        widget=forms.RadioSelect,
+        required=False,
+        label="Save to Set",
+        help_text="Choose where to save this shortcut"
+    )
+
     class Meta:
         model = Shortcut
         fields = '__all__'
         widgets = {
             'html_value': TinyMCE(),
         }
+
+    def __init__(self, *args, **kwargs):
+        # Extract user from kwargs (passed by admin)
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+
+        if self.user and not self.user.is_superuser:
+            # Build choices for staff users
+            choices = []
+
+            # Get or create personal set
+            personal_set, _ = ShortcutSet.objects.get_or_create(
+                owner=self.user,
+                set_type='personal',
+                defaults={
+                    'name': self.user.username,
+                    'description': f'Personal shortcuts for {self.user.username}'
+                }
+            )
+            choices.append((f'personal_{personal_set.pk}', f'📁 {personal_set.name} (Personal)'))
+
+            # Get general sets (Birou)
+            general_sets = ShortcutSet.objects.filter(set_type='general')
+            for gs in general_sets:
+                choices.append((f'general_{gs.pk}', f'🏢 {gs.name} (Birou)'))
+
+            self.fields['save_to_set'].choices = choices
+            # Default to personal set
+            self.fields['save_to_set'].initial = f'personal_{personal_set.pk}'
+
+            # If editing existing shortcut, set initial based on current sets
+            if self.instance and self.instance.pk:
+                current_sets = self.instance.sets.all()
+                if current_sets.exists():
+                    first_set = current_sets.first()
+                    self.fields['save_to_set'].initial = f'{first_set.set_type}_{first_set.pk}'
 
 
 class ShortcutSetFilter(admin.SimpleListFilter):
@@ -256,6 +300,18 @@ class ShortcutAdmin(admin.ModelAdmin):
             Q(sets__visible_to=request.user)
         ).distinct().order_by('key')
 
+    def get_form(self, request, obj=None, **kwargs):
+        """Pass user to form for dynamic field population"""
+        Form = super().get_form(request, obj, **kwargs)
+
+        # Create a wrapper that injects the user
+        class FormWithUser(Form):
+            def __new__(cls, *args, **form_kwargs):
+                form_kwargs['user'] = request.user
+                return Form(*args, **form_kwargs)
+
+        return FormWithUser
+
     def save_model(self, request, obj, form, change):
         """Auto-assign owner, updated_by, and auto-detect content_type"""
         # Set owner to current user if not set (new objects or without owner)
@@ -276,6 +332,24 @@ class ShortcutAdmin(admin.ModelAdmin):
             obj.content_type = 'text'
 
         super().save_model(request, obj, form, change)
+
+    def save_related(self, request, form, formsets, change):
+        """Handle the save_to_set radio button for staff users"""
+        super().save_related(request, form, formsets, change)
+
+        # For staff users, handle the save_to_set field
+        if not request.user.is_superuser:
+            save_to_set = form.cleaned_data.get('save_to_set')
+            if save_to_set:
+                # Parse the value (e.g., 'personal_5' or 'general_1')
+                set_type, set_pk = save_to_set.rsplit('_', 1)
+                try:
+                    selected_set = ShortcutSet.objects.get(pk=int(set_pk))
+                    # Clear existing sets and add the selected one
+                    form.instance.sets.clear()
+                    form.instance.sets.add(selected_set)
+                except (ShortcutSet.DoesNotExist, ValueError):
+                    pass
 
     def get_personal_set(self, user):
         """Get or create the user's personal set"""
@@ -324,7 +398,7 @@ class ShortcutAdmin(admin.ModelAdmin):
         if request.user.is_superuser:
             return self.fieldsets
 
-        # Staff users get a simpler view - no content_type dropdown (auto-detected)
+        # Staff users get a simpler view with radio buttons for set selection
         return (
             ('Shortcut Key', {
                 'fields': ('key',),
@@ -341,8 +415,8 @@ class ShortcutAdmin(admin.ModelAdmin):
                 'description': 'Use the editor for rich text with formatting. If both fields have content, rich text takes priority.'
             }),
             ('Save to Set', {
-                'fields': ('sets',),
-                'description': 'Select which set(s) to save this shortcut to. Your personal set is pre-selected.'
+                'fields': ('save_to_set',),
+                'description': 'Choose where to save this shortcut.'
             }),
         )
 
