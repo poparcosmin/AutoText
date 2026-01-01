@@ -31,10 +31,16 @@ class ShortcutSerializer(serializers.ModelSerializer):
     set_names = serializers.SerializerMethodField()
     set_types = serializers.SerializerMethodField()
     owner_username = serializers.SerializerMethodField()
+    # Allow writing sets via PrimaryKeyRelatedField
+    sets = serializers.PrimaryKeyRelatedField(
+        queryset=ShortcutSet.objects.all(),
+        many=True,
+        required=False
+    )
 
     class Meta:
         model = Shortcut
-        fields = ["id", "key", "content_type", "value", "html_value", "owner_username", "set_names", "set_types", "updated_at"]
+        fields = ["id", "key", "content_type", "value", "html_value", "owner_username", "sets", "set_names", "set_types", "updated_at"]
 
     def get_set_names(self, obj):
         """Return list of set names this shortcut belongs to"""

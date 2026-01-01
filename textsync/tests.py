@@ -680,6 +680,85 @@ class ShortcutAPITests(APITestCase):
         self.assertIn('set_types', shortcut_data)
         self.assertIn('test-set', shortcut_data['set_names'])
 
+    def test_create_shortcut_with_sets(self):
+        """Creating a shortcut should correctly save the sets relationship."""
+        # Create a personal set for the user
+        personal_set = ShortcutSet.objects.create(
+            name='my-personal-set',
+            set_type='personal',
+            owner=self.user
+        )
+
+        response = self.client.post('/api/shortcuts/', {
+            'key': 'new_shortcut',
+            'content_type': 'text',
+            'value': 'New value',
+            'sets': [personal_set.id]
+        }, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertIn('set_names', response.data)
+        self.assertIn('my-personal-set', response.data['set_names'])
+
+        # Verify in database
+        shortcut = Shortcut.objects.get(key='new_shortcut')
+        self.assertEqual(shortcut.sets.count(), 1)
+        self.assertEqual(shortcut.sets.first().name, 'my-personal-set')
+
+    def test_copy_birou_to_personal_creates_independent_shortcut(self):
+        """Copying a Birou shortcut to Personal should create an independent shortcut."""
+        # Create Birou set (general type)
+        birou_set = ShortcutSet.objects.create(
+            name='Birou',
+            set_type='general',
+            owner=None
+        )
+
+        # Create personal set
+        personal_set = ShortcutSet.objects.create(
+            name='Personal',
+            set_type='personal',
+            owner=self.user
+        )
+
+        # Create a Birou shortcut (owned by None or staff)
+        birou_shortcut = Shortcut.objects.create(
+            key='shared_key',
+            value='Original Birou value',
+            owner=None  # Birou shortcuts typically have no owner
+        )
+        birou_shortcut.sets.add(birou_set)
+
+        # Simulate "copy to personal" by creating a new shortcut with same key
+        response = self.client.post('/api/shortcuts/', {
+            'key': 'shared_key',  # Same key as Birou
+            'content_type': 'text',
+            'value': 'My personal version',
+            'sets': [personal_set.id]
+        }, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Verify we now have two shortcuts with the same key
+        shortcuts = Shortcut.objects.filter(key='shared_key')
+        self.assertEqual(shortcuts.count(), 2)
+
+        # Delete the personal shortcut
+        personal_shortcut = Shortcut.objects.get(key='shared_key', owner=self.user)
+        personal_shortcut_id = personal_shortcut.id
+
+        delete_response = self.client.delete(f'/api/shortcuts/{personal_shortcut_id}/')
+        self.assertEqual(delete_response.status_code, status.HTTP_204_NO_CONTENT)
+
+        # Verify Birou shortcut still exists
+        birou_shortcut.refresh_from_db()
+        self.assertEqual(birou_shortcut.key, 'shared_key')
+        self.assertEqual(birou_shortcut.value, 'Original Birou value')
+
+        # Only Birou shortcut should remain
+        shortcuts = Shortcut.objects.filter(key='shared_key')
+        self.assertEqual(shortcuts.count(), 1)
+
 
 class BulkSyncAPITests(APITestCase):
     """Tests for bulk sync endpoint."""

@@ -77,6 +77,24 @@ class ShortcutSetAdmin(admin.ModelAdmin):
             obj.owner = request.user
         super().save_model(request, obj, form, change)
 
+    # ========== Restrict visibility for staff users ==========
+
+    def has_module_permission(self, request):
+        """Only superusers can see ShortcutSet in admin sidebar"""
+        return request.user.is_superuser
+
+    def has_view_permission(self, request, obj=None):
+        return request.user.is_superuser
+
+    def has_add_permission(self, request):
+        return request.user.is_superuser
+
+    def has_change_permission(self, request, obj=None):
+        return request.user.is_superuser
+
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser
+
 
 class ShortcutAdminForm(forms.ModelForm):
     """Custom form for Shortcut with TinyMCE editor for html_value"""
@@ -236,6 +254,81 @@ class ShortcutAdmin(admin.ModelAdmin):
         obj.updated_by = request.user
 
         super().save_model(request, obj, form, change)
+
+    def get_personal_set(self, user):
+        """Get or create the user's personal set"""
+        personal_set, created = ShortcutSet.objects.get_or_create(
+            owner=user,
+            set_type='personal',
+            defaults={
+                'name': user.username,
+                'description': f'Personal shortcuts for {user.username}'
+            }
+        )
+        return personal_set
+
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        """
+        Customize the 'sets' field:
+        - Filter to show only sets the user can access
+        - Pre-select personal set for new shortcuts
+        """
+        if db_field.name == 'sets':
+            if request.user.is_superuser:
+                # Superusers see all sets
+                kwargs['queryset'] = ShortcutSet.objects.all().order_by('set_type', 'name')
+            else:
+                # Staff users see only their sets or sets shared with them
+                kwargs['queryset'] = ShortcutSet.objects.filter(
+                    Q(owner=request.user) | Q(visible_to=request.user)
+                ).distinct().order_by('set_type', 'name')
+
+            # Pre-select personal set for new shortcuts (when adding, not editing)
+            if 'object_id' not in request.resolver_match.kwargs:
+                personal_set = self.get_personal_set(request.user)
+                kwargs['initial'] = [personal_set.pk]
+
+        return super().formfield_for_manytomany(db_field, request, **kwargs)
+
+    def get_fieldsets(self, request, obj=None):
+        """Simplified fieldsets for staff users"""
+        if request.user.is_superuser:
+            return self.fieldsets
+
+        # Staff users get a simpler view without metadata and usage stats
+        return (
+            ('Shortcut', {
+                'fields': ('key', 'content_type'),
+                'description': 'Enter the shortcut key (e.g., /sig, /addr)'
+            }),
+            ('Plain Text Content', {
+                'fields': ('value',),
+                'classes': ('content-type-section', 'text-section'),
+            }),
+            ('Rich Text Content', {
+                'fields': ('html_value',),
+                'classes': ('content-type-section', 'html-section'),
+                'description': 'Use the editor for rich text with formatting.'
+            }),
+            ('Save to Set', {
+                'fields': ('sets',),
+                'description': 'Select which set(s) to save this shortcut to. Your personal set is pre-selected.'
+            }),
+        )
+
+    def get_list_display(self, request):
+        """Simplified list for staff users"""
+        if request.user.is_superuser:
+            return self.list_display
+        # Staff don't need to see owner (it's always them)
+        return ["key", "content_type", "value_preview", "get_sets", "updated_at"]
+
+    def get_list_filter(self, request):
+        """Simplified filters for staff users"""
+        if request.user.is_superuser:
+            return self.list_filter
+        # Staff don't need owner filter
+        return [ShortcutSetFilter, "content_type", "updated_at"]
 
     # ========== Bulk Operations: Import/Export CSV ==========
 
@@ -400,6 +493,24 @@ class ExpiringTokenAdmin(admin.ModelAdmin):
     is_valid.boolean = True
     is_valid.short_description = "Valid"
 
+    # ========== Restrict visibility for staff users ==========
+
+    def has_module_permission(self, request):
+        """Only superusers can see ExpiringToken in admin"""
+        return request.user.is_superuser
+
+    def has_view_permission(self, request, obj=None):
+        return request.user.is_superuser
+
+    def has_add_permission(self, request):
+        return request.user.is_superuser
+
+    def has_change_permission(self, request, obj=None):
+        return request.user.is_superuser
+
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser
+
 
 @admin.register(ShortcutUsageLog)
 class ShortcutUsageLogAdmin(admin.ModelAdmin):
@@ -416,6 +527,15 @@ class ShortcutUsageLogAdmin(admin.ModelAdmin):
     shortcut_key.short_description = "Shortcut"
     shortcut_key.admin_order_field = "shortcut__key"
 
+    # ========== Restrict visibility for staff users ==========
+
+    def has_module_permission(self, request):
+        """Only superusers can see ShortcutUsageLog in admin"""
+        return request.user.is_superuser
+
+    def has_view_permission(self, request, obj=None):
+        return request.user.is_superuser
+
     def has_add_permission(self, request):
         """Usage logs are created automatically, not manually."""
         return False
@@ -423,6 +543,9 @@ class ShortcutUsageLogAdmin(admin.ModelAdmin):
     def has_change_permission(self, request, obj=None):
         """Usage logs are read-only."""
         return False
+
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser
 
     def changelist_view(self, request, extra_context=None):
         """Add analytics summary to the changelist view."""

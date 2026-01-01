@@ -468,10 +468,11 @@
 
     .shortcut-row {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       padding: 12px 15px;
       border-bottom: 1px solid var(--border-light);
       transition: background 0.2s;
+      gap: 10px;
     }
 
     body.dark .shortcut-row {
@@ -497,17 +498,19 @@
       border-radius: 4px;
       font-family: monospace;
       font-weight: 600;
-      margin-right: 15px;
       min-width: 60px;
       text-align: center;
+      flex-shrink: 0;
     }
 
     .shortcut-value {
       flex: 1;
       color: var(--text-secondary-light);
-      white-space: nowrap;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
       overflow: hidden;
-      text-overflow: ellipsis;
+      line-height: 1.4;
     }
 
     body.dark .shortcut-value {
@@ -517,6 +520,8 @@
     .shortcut-sets {
       display: flex;
       gap: 5px;
+      flex-shrink: 0;
+      flex-wrap: wrap;
     }
 
     .set-badge {

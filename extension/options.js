@@ -442,7 +442,6 @@ function renderShortcutsPreview(shortcuts) {
     if (setNames.length > 0) {
       const setsDiv = document.createElement('div');
       setsDiv.className = 'shortcut-sets';
-      setsDiv.style.cssText = 'display: flex; gap: 4px; flex-wrap: wrap;';
 
       setNames.forEach(setName => {
         const badge = document.createElement('span');
@@ -1024,7 +1023,6 @@ function renderManageShortcuts(shortcuts) {
   filteredShortcuts.forEach(shortcut => {
     const row = document.createElement('div');
     row.className = 'shortcut-row';
-    row.style.cssText = 'display: flex; align-items: center; gap: 10px;';
 
     const keyBadge = document.createElement('span');
     keyBadge.className = 'shortcut-key-badge';
@@ -1033,7 +1031,6 @@ function renderManageShortcuts(shortcuts) {
     // Add set badges
     const setsDiv = document.createElement('div');
     setsDiv.className = 'shortcut-sets';
-    setsDiv.style.cssText = 'display: flex; gap: 4px; flex-wrap: wrap;';
 
     const setNames = shortcut.set_names || [];
     setNames.forEach(setName => {
@@ -1049,7 +1046,6 @@ function renderManageShortcuts(shortcuts) {
 
     const value = document.createElement('span');
     value.className = 'shortcut-value';
-    value.style.flex = '1';
     value.textContent = shortcut.value || (shortcut.html_value ? '[Rich text]' : '');
 
     const actions = document.createElement('div');
