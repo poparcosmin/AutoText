@@ -117,8 +117,11 @@ class ShortcutSetFilter(admin.SimpleListFilter):
         if request.user.is_superuser:
             sets = ShortcutSet.objects.all()
         else:
+            # Staff see: their sets + general sets (Birou) + sets shared with them
             sets = ShortcutSet.objects.filter(
-                Q(owner=request.user) | Q(visible_to=request.user)
+                Q(owner=request.user) |
+                Q(set_type='general') |
+                Q(visible_to=request.user)
             ).distinct()
 
         return [
@@ -233,7 +236,7 @@ class ShortcutAdmin(admin.ModelAdmin):
     get_sets.short_description = "Sets"
 
     def get_queryset(self, request):
-        """Filter: staff see own shortcuts, superusers see all."""
+        """Filter: staff see own shortcuts + general set shortcuts, superusers see all."""
         qs = super().get_queryset(request)
 
         # Prefetch sets for better performance
@@ -242,16 +245,35 @@ class ShortcutAdmin(admin.ModelAdmin):
         # Filter by user permissions
         if request.user.is_superuser:
             return qs.order_by('key')
-        return qs.filter(owner=request.user).order_by('key')
+
+        # Staff users see:
+        # 1. Their own shortcuts
+        # 2. Shortcuts in general sets (like Birou)
+        # 3. Shortcuts in sets shared with them
+        return qs.filter(
+            Q(owner=request.user) |
+            Q(sets__set_type='general') |
+            Q(sets__visible_to=request.user)
+        ).distinct().order_by('key')
 
     def save_model(self, request, obj, form, change):
-        """Auto-assign owner and updated_by to current user"""
+        """Auto-assign owner, updated_by, and auto-detect content_type"""
         # Set owner to current user if not set (new objects or without owner)
         if not obj.owner:
             obj.owner = request.user
 
         # Always set updated_by to current user on any save
         obj.updated_by = request.user
+
+        # Auto-detect content_type based on which field has data
+        # Priority: html_value > value (if html is filled, use html type)
+        if obj.html_value and obj.html_value.strip():
+            obj.content_type = 'html'
+        elif obj.value and obj.value.strip():
+            obj.content_type = 'text'
+        # If neither has content, default to 'text'
+        else:
+            obj.content_type = 'text'
 
         super().save_model(request, obj, form, change)
 
@@ -271,16 +293,21 @@ class ShortcutAdmin(admin.ModelAdmin):
         """
         Customize the 'sets' field:
         - Filter to show only sets the user can access
-        - Pre-select personal set for new shortcuts
+        - Staff can see: their personal sets + general sets (Birou) + sets shared with them
         """
         if db_field.name == 'sets':
             if request.user.is_superuser:
                 # Superusers see all sets
                 kwargs['queryset'] = ShortcutSet.objects.all().order_by('set_type', 'name')
             else:
-                # Staff users see only their sets or sets shared with them
+                # Staff users see:
+                # 1. Their own sets (personal)
+                # 2. General sets like Birou (set_type='general')
+                # 3. Sets shared with them via visible_to
                 kwargs['queryset'] = ShortcutSet.objects.filter(
-                    Q(owner=request.user) | Q(visible_to=request.user)
+                    Q(owner=request.user) |
+                    Q(set_type='general') |
+                    Q(visible_to=request.user)
                 ).distinct().order_by('set_type', 'name')
 
         return super().formfield_for_manytomany(db_field, request, **kwargs)
@@ -297,20 +324,21 @@ class ShortcutAdmin(admin.ModelAdmin):
         if request.user.is_superuser:
             return self.fieldsets
 
-        # Staff users get a simpler view without metadata and usage stats
+        # Staff users get a simpler view - no content_type dropdown (auto-detected)
         return (
-            ('Shortcut', {
-                'fields': ('key', 'content_type'),
+            ('Shortcut Key', {
+                'fields': ('key',),
                 'description': 'Enter the shortcut key (e.g., /sig, /addr)'
             }),
             ('Plain Text Content', {
                 'fields': ('value',),
                 'classes': ('content-type-section', 'text-section'),
+                'description': 'For simple text without formatting.'
             }),
             ('Rich Text Content', {
                 'fields': ('html_value',),
                 'classes': ('content-type-section', 'html-section'),
-                'description': 'Use the editor for rich text with formatting.'
+                'description': 'Use the editor for rich text with formatting. If both fields have content, rich text takes priority.'
             }),
             ('Save to Set', {
                 'fields': ('sets',),
