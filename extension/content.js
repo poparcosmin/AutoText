@@ -1,7 +1,7 @@
 // AutoText Content Script - Core text expansion logic
 // Listens for Tab key, detects shortcuts, and replaces with expansions
 
-const DEBUG = false;
+const DEBUG = true; // TEMP: Enable to debug contenteditable issues
 const debugLog = (...args) => {
   if (DEBUG) {
     console.log(...args);
@@ -411,15 +411,32 @@ function replaceInContentEditable(element, shortcutKey, expansion, htmlExpansion
       selection.removeAllRanges();
       selection.addRange(range);
     } else {
-      // Insert plain text
-      const textNode = document.createTextNode(expansion);
-      range.insertNode(textNode);
+      // Insert plain text - convert newlines to <br> for contenteditable
+      if (expansion.includes('\n')) {
+        // Convert newlines to <br> and insert as HTML
+        const htmlContent = expansion
+          .split('\n')
+          .map(line => line.replace(/</g, '&lt;').replace(/>/g, '&gt;'))
+          .join('<br>');
+        const template = document.createElement('template');
+        template.innerHTML = htmlContent;
+        const fragment = template.content;
 
-      // Move cursor after inserted text
-      range.setStartAfter(textNode);
-      range.collapse(true);
-      selection.removeAllRanges();
-      selection.addRange(range);
+        range.insertNode(fragment);
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      } else {
+        // Single line - use text node
+        const textNode = document.createTextNode(expansion);
+        range.insertNode(textNode);
+
+        // Move cursor after inserted text
+        range.setStartAfter(textNode);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
     }
 
     // Trigger input event for the editor

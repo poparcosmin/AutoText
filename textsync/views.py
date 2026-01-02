@@ -59,14 +59,12 @@ class ShortcutSetViewSet(viewsets.ReadOnlyModelViewSet):
         base_qs = ShortcutSet.objects.select_related("owner")
         base_qs = base_qs.prefetch_related("visible_to")
         base_qs = base_qs.annotate(shortcut_count=Count("shortcuts", distinct=True))
-        if user.is_superuser:
-            # Superusers see all sets
-            return base_qs.order_by('set_type', 'name')
 
-        # Business rule:
+        # Business rule (applies to ALL users including superusers):
         # - General sets: visible to everyone
-        # - Personal sets: visible ONLY to owner (not via visible_to)
+        # - Personal sets: visible ONLY to owner
         # - Shared sets: visible to those in visible_to
+        # Note: Superusers can use Django Admin to manage all sets
         return base_qs.filter(
             Q(set_type='general') |
             (Q(set_type='personal') & Q(owner=user)) |
