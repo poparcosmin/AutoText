@@ -367,9 +367,104 @@ describe('Delta Sync Logic', () => {
     const { shortcuts, last_sync } = await chrome.storage.local.get(['shortcuts', 'last_sync']);
     const shortcutsCount = shortcuts ? Object.keys(shortcuts).length : 0;
 
-    // Logic from background.js
-    let shouldForceFull = shortcutsCount === 0 && last_sync;
+    // Logic from background.js — && short-circuits to the truthy operand (timestamp)
+    const shouldForceFull = shortcutsCount === 0 && last_sync;
 
-    expect(shouldForceFull).toBe(true);
+    expect(shouldForceFull).toBeTruthy();
+  });
+});
+
+
+// ============================================================================
+// Retry policy tests — verify markSyncFailure / markSyncSuccess in isolation.
+// We re-declare the helpers here because background.js is a service-worker
+// script (importScripts + chrome.runtime.onStartup) and can't be required as
+// a CommonJS module in Jest. If retry logic moves to a pure helper module,
+// these should switch to direct imports.
+// ============================================================================
+
+describe('Sync Retry Policy', () => {
+  const MAX_SYNC_RETRIES = 3;
+  const RETRY_DELAY_MINUTES = 1;
+
+  async function markSyncSuccess() {
+    await chrome.storage.local.remove([
+      'sync_retry_count', 'sync_error', 'sync_error_time'
+    ]);
+    try { await chrome.alarms.clear('syncRetry'); } catch (_) { /* noop */ }
+    await chrome.storage.local.set({ sync_status: 'success' });
+  }
+
+  async function markSyncFailure(errorMessage) {
+    const stored = await chrome.storage.local.get('sync_retry_count');
+    const attempt = (stored.sync_retry_count || 0) + 1;
+    await chrome.storage.local.set({
+      sync_status: 'error',
+      sync_error: errorMessage,
+      sync_error_time: Date.now(),
+      sync_retry_count: attempt,
+    });
+    if (attempt < MAX_SYNC_RETRIES) {
+      chrome.alarms.create('syncRetry', { delayInMinutes: RETRY_DELAY_MINUTES });
+    } else {
+      chrome.action.setBadgeText({ text: '!' });
+      chrome.action.setBadgeBackgroundColor({ color: '#F44336' });
+      chrome.action.setTitle({
+        title: `AutoText - Sync failed after ${MAX_SYNC_RETRIES} attempts. Click for options.`
+      });
+    }
+  }
+
+  it('schedules a retry alarm on first failure', async () => {
+    await markSyncFailure('boom');
+
+    expect(chrome.alarms.create).toHaveBeenCalledWith(
+      'syncRetry',
+      { delayInMinutes: 1 }
+    );
+    const { sync_retry_count } = await chrome.storage.local.get('sync_retry_count');
+    expect(sync_retry_count).toBe(1);
+  });
+
+  it('increments retry count across successive failures', async () => {
+    await markSyncFailure('err1');
+    await markSyncFailure('err2');
+
+    const { sync_retry_count } = await chrome.storage.local.get('sync_retry_count');
+    expect(sync_retry_count).toBe(2);
+  });
+
+  it('shows red badge after MAX_SYNC_RETRIES and stops scheduling retries', async () => {
+    await markSyncFailure('1');
+    await markSyncFailure('2');
+    await markSyncFailure('3');
+
+    // Third failure should NOT schedule another retry
+    const scheduleCalls = chrome.alarms.create.mock.calls.filter(
+      ([name]) => name === 'syncRetry'
+    );
+    expect(scheduleCalls).toHaveLength(2); // calls 1 and 2 scheduled, call 3 gives up
+
+    expect(chrome.action.setBadgeText).toHaveBeenCalledWith({ text: '!' });
+    expect(chrome.action.setBadgeBackgroundColor).toHaveBeenCalledWith({ color: '#F44336' });
+  });
+
+  it('clears retry state on success (counter + alarm)', async () => {
+    await markSyncFailure('bad');
+    await markSyncSuccess();
+
+    const data = await chrome.storage.local.get([
+      'sync_retry_count', 'sync_error', 'sync_status'
+    ]);
+    expect(data.sync_retry_count).toBeUndefined();
+    expect(data.sync_error).toBeUndefined();
+    expect(data.sync_status).toBe('success');
+    expect(chrome.alarms.clear).toHaveBeenCalledWith('syncRetry');
+  });
+
+  it('stores the error message so the options page can surface it', async () => {
+    await markSyncFailure('HTTP 500: Internal Server Error');
+    const { sync_error } = await chrome.storage.local.get('sync_error');
+    expect(sync_error).toBe('HTTP 500: Internal Server Error');
   });
 });

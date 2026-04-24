@@ -11,6 +11,45 @@ const debugLog = (...args) => {
 // Offline/Online status tracking
 let isOnline = true;
 
+// Sync retry policy — fixed-delay retries via chrome.alarms (survives SW restarts).
+// Deliberately NOT exponential backoff: MV3 service workers can be killed before
+// long delays elapse, losing state. 1 min is the practical minimum for MV3 alarms.
+const MAX_SYNC_RETRIES = 3;
+const RETRY_DELAY_MINUTES = 1;
+
+async function markSyncSuccess() {
+  await chrome.storage.local.remove([
+    'sync_retry_count', 'sync_error', 'sync_error_time'
+  ]);
+  try { await chrome.alarms.clear('syncRetry'); } catch (_) { /* noop */ }
+  await chrome.storage.local.set({ sync_status: 'success' });
+}
+
+async function markSyncFailure(errorMessage) {
+  const stored = await chrome.storage.local.get('sync_retry_count');
+  const attempt = (stored.sync_retry_count || 0) + 1;
+
+  await chrome.storage.local.set({
+    sync_status: 'error',
+    sync_error: errorMessage,
+    sync_error_time: Date.now(),
+    sync_retry_count: attempt,
+  });
+
+  if (attempt < MAX_SYNC_RETRIES) {
+    chrome.alarms.create('syncRetry', { delayInMinutes: RETRY_DELAY_MINUTES });
+    debugLog(`AutoText: Sync failed (attempt ${attempt}/${MAX_SYNC_RETRIES}), retry in ${RETRY_DELAY_MINUTES} min`);
+  } else {
+    // Final failure — user-visible red badge, clear retry counter so next success restores green
+    chrome.action.setBadgeText({ text: '!' });
+    chrome.action.setBadgeBackgroundColor({ color: '#F44336' });
+    chrome.action.setTitle({
+      title: `AutoText - Sync failed after ${MAX_SYNC_RETRIES} attempts. Click for options.`
+    });
+    debugLog(`AutoText: Sync failed ${MAX_SYNC_RETRIES} times — giving up, red badge shown`);
+  }
+}
+
 // NOTE: Service Worker lifecycle is event-driven in Manifest V3
 // The worker will naturally sleep between events - this is expected behavior.
 // We rely on chrome.alarms for periodic sync (see initializeListeners).
@@ -187,6 +226,7 @@ async function syncShortcuts() {
       const errorText = await res.text();
       console.error("AutoText: Failed to sync shortcuts:", res.status, res.statusText);
       console.error("AutoText: Error details:", errorText);
+      await markSyncFailure(`HTTP ${res.status}: ${res.statusText}`);
       return;
     }
 
@@ -220,7 +260,8 @@ async function syncShortcuts() {
       sync_status: 'success'
     });
 
-    // Update badge with shortcut count
+    // Update badge with shortcut count (this also clears any red-badge retry state)
+    await markSyncSuccess();
     await updateBadgeWithShortcutCount();
 
     debugLog(`AutoText: Sync complete. Total shortcuts: ${Object.keys(shortcutsMap).length}`);
@@ -232,12 +273,7 @@ async function syncShortcuts() {
       updateOnlineStatus(false);
     }
 
-    // Store sync failure status
-    await chrome.storage.local.set({
-      sync_status: 'error',
-      sync_error: error.message,
-      sync_error_time: Date.now()
-    });
+    await markSyncFailure(error.message || 'Unknown sync error');
   }
 }
 
@@ -351,6 +387,9 @@ chrome.runtime.onInstalled.addListener(() => {
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === "syncShortcuts") {
     debugLog("AutoText: Periodic sync triggered");
+    syncShortcuts();
+  } else if (alarm.name === "syncRetry") {
+    debugLog("AutoText: Retry sync triggered");
     syncShortcuts();
   }
 });

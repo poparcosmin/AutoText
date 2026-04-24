@@ -564,24 +564,6 @@ function handleTriggerKey(event) {
   trackShortcutUsage(textBefore, shortcut.id);
 }
 
-// Listen for trigger key press
-document.addEventListener("keydown", handleTriggerKey, true);
-
-// Listen for settings changes
-chrome.storage.onChanged.addListener((changes, areaName) => {
-  if (areaName === "local") {
-    if (changes.settings) {
-      settings = { ...settings, ...changes.settings.newValue };
-      debugLog("AutoText: Settings updated");
-    }
-    // Listen for global enabled/disabled toggle (from keyboard shortcut)
-    if (changes.autotext_enabled !== undefined) {
-      autotextEnabled = changes.autotext_enabled.newValue !== false;
-      debugLog("AutoText: Extension", autotextEnabled ? "enabled" : "disabled");
-    }
-  }
-});
-
 // Initialize: load shortcuts and settings, inject styles
 async function initialize() {
   await loadSettings();
@@ -590,4 +572,36 @@ async function initialize() {
   debugLog("AutoText: Content script loaded and ready");
 }
 
-initialize();
+// Node (Jest) exposure — side effects wrapped so tests don't trigger listeners
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = {
+    isBlacklisted,
+    getTextBeforeCursor,
+    replaceInTextInput,
+    replaceInContentEditable,
+    loadSettings,
+    // Allow tests to mutate module state via setters
+    _getSettings: () => settings,
+    _setSettings: (next) => { settings = { ...settings, ...next }; },
+    _setShortcuts: (next) => { shortcuts = next; },
+    _setEnabled: (v) => { autotextEnabled = v; },
+  };
+} else {
+  // Browser content script — attach listeners and boot
+  document.addEventListener("keydown", handleTriggerKey, true);
+
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName === "local") {
+      if (changes.settings) {
+        settings = { ...settings, ...changes.settings.newValue };
+        debugLog("AutoText: Settings updated");
+      }
+      if (changes.autotext_enabled !== undefined) {
+        autotextEnabled = changes.autotext_enabled.newValue !== false;
+        debugLog("AutoText: Extension", autotextEnabled ? "enabled" : "disabled");
+      }
+    }
+  });
+
+  initialize();
+}

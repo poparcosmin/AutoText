@@ -9,6 +9,11 @@
 // =============================================================================
 
 const mockStorage = {
+  onChanged: {
+    addListener: jest.fn(),
+    removeListener: jest.fn(),
+  },
+
   local: {
     _data: {},
 

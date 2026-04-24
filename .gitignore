@@ -50,6 +50,10 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 cover/
+extension/coverage/
+
+# Node.js / extension
+node_modules/
 
 # Translations
 *.mo
