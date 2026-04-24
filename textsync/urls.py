@@ -1,17 +1,11 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
-from .views import (
-    ShortcutViewSet,
-    ShortcutSetViewSet,
-    login_view,
-    logout_view,
-    verify_token_view,
-    refresh_token_view,
-    bulk_sync_view,
-    health_check_view,
-    track_usage_view,
-)
+from .views.shortcuts import ShortcutViewSet, ShortcutSetViewSet
+from .views.auth import login_view, logout_view, verify_token_view, refresh_token_view
+from .views.sync import bulk_sync_view
+from .views.usage import track_usage_view
+from .views.health import health_check_view
 
 router = DefaultRouter()
 router.register(r"sets", ShortcutSetViewSet, basename="shortcutset")

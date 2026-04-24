@@ -23,4 +23,13 @@ dependencies = [
 [dependency-groups]
 dev = [
     "ruff>=0.14",
+    "mypy>=1.11",
 ]
+
+[tool.mypy]
+python_version = "3.13"
+strict_optional = true
+warn_unused_ignores = true
+ignore_missing_imports = true
+files = ["textsync/services", "config/settings.py"]
+exclude = ["migrations/"]

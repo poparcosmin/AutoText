@@ -16,7 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from textsync.views import privacy_view
+from textsync.views.health import privacy_view
 
 urlpatterns = [
     path('admin/', admin.site.urls),
