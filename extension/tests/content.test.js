@@ -536,4 +536,74 @@ describe('content.js — text expansion core', () => {
       expect(content.isTriggerKey({ key: 'Tab' }, { triggerKey: 'Tab' })).toBe(true);
     });
   });
+
+  // ---------------------------------------------------------------------------
+  describe('processSnippetNesting()', () => {
+    it('passes through text without nesting tokens', () => {
+      expect(content.processSnippetNesting('hello', {})).toBe('hello');
+    });
+
+    it('expands a single nested snippet', () => {
+      const map = { sig: { value: 'Cosmin Popa' } };
+      expect(
+        content.processSnippetNesting('Best,\n[[%s(sig)]]', map)
+      ).toBe('Best,\nCosmin Popa');
+    });
+
+    it('expands multiple nested references', () => {
+      const map = {
+        greet: { value: 'Salut' },
+        sig: { value: 'Cosmin' },
+      };
+      expect(
+        content.processSnippetNesting('[[%s(greet)]], [[%s(sig)]]', map)
+      ).toBe('Salut, Cosmin');
+    });
+
+    it('expands 2-level nesting', () => {
+      const map = {
+        sig: { value: 'Best,\n[[%s(name)]]' },
+        name: { value: 'Cosmin Popa' },
+      };
+      expect(content.processSnippetNesting('[[%s(sig)]]', map)).toBe('Best,\nCosmin Popa');
+    });
+
+    it('detects self-reference cycle', () => {
+      const map = {
+        loop: { value: 'A [[%s(loop)]] B' },
+      };
+      const result = content.processSnippetNesting('[[%s(loop)]]', map);
+      expect(result).toContain('[cycle:loop]');
+    });
+
+    it('detects mutual-reference cycle', () => {
+      const map = {
+        a: { value: '[[%s(b)]]' },
+        b: { value: '[[%s(a)]]' },
+      };
+      const result = content.processSnippetNesting('[[%s(a)]]', map);
+      expect(result).toContain('[cycle:a]');
+    });
+
+    it('marks missing snippets explicitly', () => {
+      const result = content.processSnippetNesting('pre [[%s(ghost)]] post', {});
+      expect(result).toBe('pre [missing:ghost] post');
+    });
+
+    it('stops at depth limit (5)', () => {
+      // Build a 7-deep chain
+      const map = {};
+      for (let i = 0; i < 7; i++) {
+        map[`n${i}`] = { value: i === 6 ? 'LEAF' : `[[%s(n${i + 1})]]` };
+      }
+      const result = content.processSnippetNesting('[[%s(n0)]]', map);
+      // Should not contain LEAF (depth-capped before reaching it)
+      expect(result).not.toContain('LEAF');
+    });
+
+    it('uses html_value when value is missing', () => {
+      const map = { h: { html_value: '<p>HTML body</p>' } };
+      expect(content.processSnippetNesting('[[%s(h)]]', map)).toBe('<p>HTML body</p>');
+    });
+  });
 });

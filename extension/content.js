@@ -451,6 +451,38 @@ function _formatDate(date, format) {
   return `${_pad(date.getDate())}.${_pad(date.getMonth() + 1)}.${date.getFullYear()}`;
 }
 
+// ----------------------------------------------------------------------------
+// Snippet nesting — [[%s(otherShortcut)]] expands another snippet inline.
+// Allows composition: "email-footer" used inside 20 templates, update once.
+// Safety: depth cap of 5 + visited set catch infinite recursion.
+// ----------------------------------------------------------------------------
+const NESTING_RE = /\[\[%s\(([^)]+)\)\]\]/g;
+const MAX_NESTING_DEPTH = 5;
+
+function processSnippetNesting(input, shortcutsMap, depth = 0, visited = new Set()) {
+  if (!input || typeof input !== 'string') return input;
+  if (depth >= MAX_NESTING_DEPTH) {
+    console.warn(`AutoText: nesting depth ${MAX_NESTING_DEPTH} exceeded, stopping`);
+    return input;
+  }
+  return input.replace(NESTING_RE, (match, name) => {
+    const trimmed = name.trim();
+    if (visited.has(trimmed)) {
+      console.warn(`AutoText: nesting cycle detected on "${trimmed}"`);
+      return `[cycle:${trimmed}]`;
+    }
+    const nested = shortcutsMap && shortcutsMap[trimmed];
+    if (!nested) {
+      return `[missing:${trimmed}]`;
+    }
+    const body = nested.value || nested.html_value || '';
+    // Recursive expand — add this name to visited so we catch self-reference
+    const nextVisited = new Set(visited);
+    nextVisited.add(trimmed);
+    return processSnippetNesting(body, shortcutsMap, depth + 1, nextVisited);
+  });
+}
+
 function processDateMacros(input, now = new Date()) {
   if (!input || typeof input !== 'string') return input;
   return input.replace(DATE_MACRO_RE, (match, kind, sign, amount, unit, format) => {
@@ -754,8 +786,15 @@ function handleTriggerKey(event) {
     textContent = (doc.body && doc.body.textContent) || '';
   }
 
-  // Resolve dynamic macros ([[date]], [[date+7d]], etc.) before insert.
-  // Run on both text and HTML paths so snippets authored either way work.
+  // Expansion pipeline (ordering matters):
+  //   1. Snippet nesting — flatten [[%s(other)]] references recursively
+  //   2. Date macros — [[date]], [[date+7d]], etc. (nested snippets can
+  //      themselves contain date macros)
+  // Cursor marker ($|$) is handled later, inside replace* functions.
+  textContent = processSnippetNesting(textContent, shortcuts);
+  if (htmlContent) {
+    htmlContent = processSnippetNesting(htmlContent, shortcuts);
+  }
   textContent = processDateMacros(textContent);
   if (htmlContent) {
     htmlContent = processDateMacros(htmlContent);
@@ -806,6 +845,7 @@ if (typeof module !== "undefined" && module.exports) {
     isGmailFormNavigation,
     extractCursorMarker,
     processDateMacros,
+    processSnippetNesting,
     isTriggerKey,
     loadSettings,
     // Allow tests to mutate module state via setters
