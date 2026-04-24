@@ -15,29 +15,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function initializePopup() {
   try {
-    // Check authentication status
-    const { auth_token, username } = await chrome.storage.local.get(['auth_token', 'username']);
-
-    if (!auth_token) {
-      showLoginPrompt();
-      return;
-    }
-
-    // Load and display data
+    // Always load and display what we have locally — never block UI behind login.
+    // If no token, user still sees their cached shortcuts and stats.
     await loadStats();
     await loadShortcuts();
     await updateSyncStatus();
 
+    // Subtle hint in status bar if not authenticated; no blocking prompt.
+    const { auth_token } = await chrome.storage.local.get(['auth_token']);
+    if (!auth_token) {
+      updateStatus('offline', 'Not synced · open Options to login');
+    }
   } catch (error) {
     console.error('Popup initialization error:', error);
     updateStatus('error', 'Error');
   }
-}
-
-function showLoginPrompt() {
-  document.getElementById('login-prompt').classList.remove('hidden');
-  document.getElementById('main-content').classList.add('hidden');
-  updateStatus('offline', 'Not logged in');
 }
 
 async function loadStats() {

@@ -167,10 +167,10 @@ async function syncShortcuts() {
       has_last_sync: !!last_sync
     });
 
-    // Check if user is authenticated
+    // Check if user is authenticated — silent skip, no OS popup.
+    // User can login from Options page when they choose to.
     if (!auth_token) {
-      debugLog("AutoText: No auth token found. User needs to login via Options page.");
-      notifyUserToLogin();
+      debugLog("AutoText: No auth token — sync skipped silently. Login via Options to sync.");
       return;
     }
 
@@ -278,36 +278,13 @@ async function syncShortcuts() {
 }
 
 /**
- * Handle authentication failure (401)
- * Clear auth token and notify user to login again
+ * Handle authentication failure (401) — clears auth silently.
+ * No OS notification: the popup and Options page surface auth state;
+ * nagging notifications on every sync cycle was hostile UX.
  */
 async function handleAuthenticationFailure() {
-  // Clear auth token
   await chrome.storage.local.remove(['auth_token', 'username']);
-
-  // Notify user
-  chrome.notifications.create('autotext-auth-error', {
-    type: 'basic',
-    iconUrl: 'icon48.png',
-    title: 'AutoText - Session Expired',
-    message: 'Your session has expired. Please open Options to login again.',
-    priority: 2
-  });
-
-  debugLog("AutoText: Auth token cleared. User needs to re-login.");
-}
-
-/**
- * Notify user they need to login
- */
-function notifyUserToLogin() {
-  chrome.notifications.create('autotext-login-required', {
-    type: 'basic',
-    iconUrl: 'icon48.png',
-    title: 'AutoText - Login Required',
-    message: 'Please open AutoText Options to login.',
-    priority: 1
-  });
+  debugLog("AutoText: Auth token cleared after 401. Login via Options when ready.");
 }
 
 /**

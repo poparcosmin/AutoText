@@ -282,39 +282,30 @@ describe('Background Service Worker', () => {
     });
   });
 
-  describe('Notifications', () => {
-    it('should show login required notification', async () => {
-      await chrome.notifications.create('autotext-login-required', {
-        type: 'basic',
-        iconUrl: 'icon48.png',
-        title: 'AutoText - Login Required',
-        message: 'Please open AutoText Options to login.',
-        priority: 1
+  describe('Silent auth handling', () => {
+    it('clears auth token without creating any OS notification', async () => {
+      await chrome.storage.local.set({
+        auth_token: 'to-be-cleared',
+        username: 'u',
       });
 
-      expect(chrome.notifications.create).toHaveBeenCalledWith(
-        'autotext-login-required',
-        expect.objectContaining({
-          type: 'basic',
-          title: 'AutoText - Login Required'
-        })
-      );
-    });
+      // Reproduce handleAuthenticationFailure behavior (inline — SW not requirable)
+      await chrome.storage.local.remove(['auth_token', 'username']);
 
-    it('should show session expired notification', async () => {
-      await chrome.notifications.create('autotext-auth-error', {
-        type: 'basic',
-        iconUrl: 'icon48.png',
-        title: 'AutoText - Session Expired',
-        message: 'Your session has expired. Please open Options to login again.',
-        priority: 2
-      });
+      const { auth_token, username } = await chrome.storage.local.get([
+        'auth_token', 'username'
+      ]);
+      expect(auth_token).toBeUndefined();
+      expect(username).toBeUndefined();
 
-      expect(chrome.notifications.create).toHaveBeenCalledWith(
+      // The key assertion: no user-facing popup was triggered
+      expect(chrome.notifications.create).not.toHaveBeenCalledWith(
         'autotext-auth-error',
-        expect.objectContaining({
-          title: 'AutoText - Session Expired'
-        })
+        expect.anything()
+      );
+      expect(chrome.notifications.create).not.toHaveBeenCalledWith(
+        'autotext-login-required',
+        expect.anything()
       );
     });
   });
