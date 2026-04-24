@@ -423,6 +423,14 @@ chrome.commands.onCommand.addListener(async (command) => {
 
 // Manual sync trigger and status queries (must be at top level)
 chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
+  // Only accept messages from our own extension contexts (popup, options,
+  // content scripts). Without this, any script via externally_connectable
+  // could invoke privileged actions. OWASP Browser Extension cheat sheet.
+  if (sender.id !== chrome.runtime.id) {
+    debugLog("AutoText Background: rejected message from sender.id=", sender.id);
+    return false;
+  }
+
   debugLog("AutoText Background: Received message:", req);
 
   if (req.action === "sync") {

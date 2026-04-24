@@ -7,6 +7,10 @@
 
 require('./setup');
 
+// DOMPurify is loaded as a separate content script before content.js in prod.
+// In Jest we need to globally expose it so safeHTML picks it up.
+global.DOMPurify = require('dompurify');
+
 const content = require('../content');
 
 describe('content.js — text expansion core', () => {
@@ -129,6 +133,136 @@ describe('content.js — text expansion core', () => {
       // Event should bubble
       expect(listener.mock.calls[0][0].bubbles).toBe(true);
     });
+
+    it('writes through the HTMLInputElement prototype setter (React tracker path)', () => {
+      // React patches the instance-level value setter to intercept writes.
+      // Our fix must route through the prototype descriptor setter so
+      // React's internal _valueTracker sees the change. This simulates
+      // React's patched instance setter and verifies the prototype route.
+      const input = document.createElement('input');
+      input.value = '//sig';
+      document.body.appendChild(input);
+      input.setSelectionRange(input.value.length, input.value.length);
+
+      const protoSetter = Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype, 'value'
+      ).set;
+      const protoSpy = jest.fn(function (v) { protoSetter.call(this, v); });
+      Object.defineProperty(HTMLInputElement.prototype, 'value', {
+        configurable: true,
+        get: Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').get,
+        set: protoSpy,
+      });
+
+      try {
+        content.replaceInTextInput(input, '//sig', 'Popa');
+        expect(protoSpy).toHaveBeenCalledWith('Popa');
+        expect(input.value).toBe('Popa');
+      } finally {
+        Object.defineProperty(HTMLInputElement.prototype, 'value', {
+          configurable: true,
+          get: Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').get,
+          set: protoSetter,
+        });
+      }
+    });
+
+    it('setNativeValue falls back to direct assignment when descriptor is missing', () => {
+      const input = document.createElement('input');
+      document.body.appendChild(input);
+
+      content.setNativeValue(input, 'direct-assign');
+      expect(input.value).toBe('direct-assign');
+    });
+
+    describe('safeHTML() — XSS guard', () => {
+      it('strips <script> tags', () => {
+        const hostile = '<p>hi</p><script>alert(1)</script>';
+        const clean = content.safeHTML(hostile);
+        expect(clean).toContain('<p>hi</p>');
+        expect(clean).not.toContain('<script');
+        expect(clean).not.toContain('alert(1)');
+      });
+
+      it('strips onerror inline handler', () => {
+        const hostile = '<img src=x onerror="alert(1)">';
+        const clean = content.safeHTML(hostile);
+        expect(clean).not.toMatch(/onerror/i);
+      });
+
+      it('strips javascript: href', () => {
+        const hostile = '<a href="javascript:alert(1)">click</a>';
+        const clean = content.safeHTML(hostile);
+        expect(clean).not.toContain('javascript:');
+      });
+
+      it('preserves safe formatting tags', () => {
+        const input = '<p><strong>bold</strong> and <em>italic</em></p>';
+        const clean = content.safeHTML(input);
+        expect(clean).toContain('<strong>bold</strong>');
+        expect(clean).toContain('<em>italic</em>');
+      });
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  describe('isGmailFormNavigation()', () => {
+    const originalLocation = window.location;
+
+    afterEach(() => {
+      // Restore hostname if mutated
+      Object.defineProperty(window, 'location', {
+        configurable: true,
+        value: originalLocation,
+      });
+    });
+
+    function setHostname(hostname) {
+      Object.defineProperty(window, 'location', {
+        configurable: true,
+        value: { ...originalLocation, hostname },
+      });
+    }
+
+    it('returns true for Tab on input inside form on mail.google.com', () => {
+      setHostname('mail.google.com');
+      const form = document.createElement('form');
+      const input = document.createElement('input');
+      input.name = 'to';
+      form.appendChild(input);
+      document.body.appendChild(form);
+
+      expect(content.isGmailFormNavigation(input, 'Tab')).toBe(true);
+    });
+
+    it('returns false for Tab on contenteditable body (compose body)', () => {
+      setHostname('mail.google.com');
+      const editable = document.createElement('div');
+      editable.setAttribute('contenteditable', 'true');
+      document.body.appendChild(editable);
+
+      expect(content.isGmailFormNavigation(editable, 'Tab')).toBe(false);
+    });
+
+    it('returns false for non-Tab trigger key', () => {
+      setHostname('mail.google.com');
+      const form = document.createElement('form');
+      const input = document.createElement('input');
+      form.appendChild(input);
+      document.body.appendChild(form);
+
+      expect(content.isGmailFormNavigation(input, 'Space')).toBe(false);
+    });
+
+    it('returns false on other hostnames', () => {
+      setHostname('example.com');
+      const form = document.createElement('form');
+      const input = document.createElement('input');
+      form.appendChild(input);
+      document.body.appendChild(form);
+
+      expect(content.isGmailFormNavigation(input, 'Tab')).toBe(false);
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -165,6 +299,73 @@ describe('content.js — text expansion core', () => {
       expect(() => {
         content.replaceInContentEditable(editable, '//sig', 'Cosmin', null);
       }).not.toThrow();
+    });
+
+    describe('detectEditorFramework()', () => {
+      it('detects ProseMirror by classname on ancestor', () => {
+        const editor = document.createElement('div');
+        editor.className = 'ProseMirror';
+        const inner = document.createElement('span');
+        editor.appendChild(inner);
+        document.body.appendChild(editor);
+
+        expect(content.detectEditorFramework(inner)).toBe('prosemirror');
+      });
+
+      it('detects Lexical by data attribute', () => {
+        const editor = document.createElement('div');
+        editor.dataset.lexicalEditor = 'true';
+        const inner = document.createElement('p');
+        editor.appendChild(inner);
+        document.body.appendChild(editor);
+
+        expect(content.detectEditorFramework(inner)).toBe('lexical');
+      });
+
+      it('detects Slate by data attribute', () => {
+        const editor = document.createElement('div');
+        editor.dataset.slateEditor = 'true';
+        document.body.appendChild(editor);
+
+        expect(content.detectEditorFramework(editor)).toBe('slate');
+      });
+
+      it('returns null for plain contenteditable (Gmail, etc.)', () => {
+        const editor = document.createElement('div');
+        editor.setAttribute('contenteditable', 'true');
+        document.body.appendChild(editor);
+
+        expect(content.detectEditorFramework(editor)).toBeNull();
+      });
+    });
+
+    it('routes through execCommand when ProseMirror is detected', () => {
+      const editor = document.createElement('div');
+      editor.className = 'ProseMirror';
+      editor.setAttribute('contenteditable', 'true');
+      const textNode = document.createTextNode('hello //sig');
+      editor.appendChild(textNode);
+      document.body.appendChild(editor);
+
+      const range = document.createRange();
+      range.setStart(textNode, textNode.length);
+      range.setEnd(textNode, textNode.length);
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+
+      // jsdom doesn't implement execCommand natively; attach + spy.
+      const execSpy = jest.fn(() => true);
+      const original = document.execCommand;
+      document.execCommand = execSpy;
+
+      try {
+        content.replaceInContentEditable(editor, '//sig', 'Popa', null);
+        expect(execSpy).toHaveBeenCalledWith('insertText', false, 'Popa');
+      } finally {
+        if (original) document.execCommand = original;
+        else delete document.execCommand;
+      }
     });
   });
 

@@ -282,6 +282,55 @@ describe('Background Service Worker', () => {
     });
   });
 
+  describe('Message sender validation', () => {
+    // Reproduces the guard from background.js onMessage listener.
+    // An external page with externally_connectable could otherwise send
+    // arbitrary {action: 'sync'} messages to the extension.
+    function guardedHandler(req, sender, sendResponse) {
+      if (sender.id !== chrome.runtime.id) return false;
+      sendResponse({ status: 'accepted', action: req.action });
+      return true;
+    }
+
+    beforeEach(() => {
+      chrome.runtime.id = 'autotext-extension-id';
+    });
+
+    it('accepts messages from our own extension', () => {
+      const sendResponse = jest.fn();
+      const result = guardedHandler(
+        { action: 'sync' },
+        { id: 'autotext-extension-id' },
+        sendResponse
+      );
+      expect(result).toBe(true);
+      expect(sendResponse).toHaveBeenCalledWith({
+        status: 'accepted', action: 'sync'
+      });
+    });
+
+    it('rejects messages from a different extension or web page', () => {
+      const sendResponse = jest.fn();
+      const result = guardedHandler(
+        { action: 'sync' },
+        { id: 'some-other-extension' },
+        sendResponse
+      );
+      expect(result).toBe(false);
+      expect(sendResponse).not.toHaveBeenCalled();
+    });
+
+    it('rejects messages with undefined sender.id (malformed)', () => {
+      const sendResponse = jest.fn();
+      const result = guardedHandler(
+        { action: 'sync' },
+        { id: undefined },
+        sendResponse
+      );
+      expect(result).toBe(false);
+    });
+  });
+
   describe('Silent auth handling', () => {
     it('clears auth token without creating any OS notification', async () => {
       await chrome.storage.local.set({

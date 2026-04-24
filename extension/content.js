@@ -366,6 +366,42 @@ function getTextBeforeCursor(element) {
   return "";
 }
 
+// Sanitize HTML before inserting into DOM. Server-side bleach is not enough:
+// once HTML hits the browser, mutation-XSS vectors (SVG foreignObject,
+// noscript tricks) can surface. DOMPurify handles the client-side layer.
+// We bundle lib/dompurify.min.js as a content script loaded before this one.
+function safeHTML(dirty) {
+  if (typeof DOMPurify !== 'undefined' && DOMPurify.sanitize) {
+    return DOMPurify.sanitize(dirty, {
+      USE_PROFILES: { html: true },
+      FORBID_TAGS: ['style', 'script'],
+      FORBID_ATTR: ['onerror', 'onload', 'onclick']
+    });
+  }
+  // DOMPurify not loaded — refuse HTML entirely rather than risk XSS.
+  // Caller should fall back to textContent path.
+  console.warn('AutoText: DOMPurify unavailable, refusing HTML insert');
+  return '';
+}
+
+// Set input/textarea value via the prototype's native setter so React's
+// internal value tracker ("_valueTracker") sees the mutation. Without this,
+// React re-renders using the last tracked value and overwrites our expansion
+// on SPAs like Linear, Notion, Jira, Slack web, Facebook.
+// See React issue #11488 and #10135 for the canonical pattern.
+function setNativeValue(element, value) {
+  const proto = element.tagName === 'TEXTAREA'
+    ? HTMLTextAreaElement.prototype
+    : HTMLInputElement.prototype;
+  const descriptor = Object.getOwnPropertyDescriptor(proto, 'value');
+  const setter = descriptor && descriptor.set;
+  if (setter) {
+    setter.call(element, value);
+  } else {
+    element.value = value;
+  }
+}
+
 // Replace text in input/textarea
 function replaceInTextInput(element, shortcutKey, expansion) {
   const cursorPos = element.selectionStart;
@@ -375,7 +411,7 @@ function replaceInTextInput(element, shortcutKey, expansion) {
   // Remove the shortcut key and add expansion
   const newTextBefore = textBefore.slice(0, -shortcutKey.length) + expansion;
 
-  element.value = newTextBefore + textAfter;
+  setNativeValue(element, newTextBefore + textAfter);
 
   // Set cursor position after the expansion
   const newCursorPos = newTextBefore.length;
@@ -385,11 +421,49 @@ function replaceInTextInput(element, shortcutKey, expansion) {
   element.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
+// Detect modern rich-text editor frameworks whose internal state must be
+// notified via beforeinput/input events. For these, Range.deleteContents
+// + insertNode leaves the framework's internal doc model untouched and the
+// next render overwrites our insertion. execCommand('insertText') is formally
+// deprecated but remains the only reliable path for ProseMirror / Lexical
+// / Slate-based editors (Notion, modern Slack, Reddit composer, etc.).
+function detectEditorFramework(element) {
+  // Walk up to document root looking for framework markers
+  let node = element;
+  while (node && node.nodeType === 1) {
+    if (node.classList && node.classList.contains('ProseMirror')) return 'prosemirror';
+    if (node.dataset && node.dataset.lexicalEditor === 'true') return 'lexical';
+    if (node.dataset && node.dataset.slateEditor === 'true') return 'slate';
+    node = node.parentNode;
+  }
+  return null;
+}
+
 // Replace text in contenteditable (Gmail, rich text editors)
 function replaceInContentEditable(element, shortcutKey, expansion, htmlExpansion) {
   try {
     const selection = window.getSelection();
     if (!selection.rangeCount) return;
+
+    // Framework-aware fast path: ProseMirror / Lexical / Slate intercept
+    // beforeinput events and update their own model. Plain Range manipulation
+    // is ignored and reverted on next render. execCommand('insertText') feeds
+    // the framework its expected signal.
+    const framework = detectEditorFramework(element);
+    if (framework && !htmlExpansion) {
+      const range = selection.getRangeAt(0);
+      range.setStart(range.endContainer, range.endOffset - shortcutKey.length);
+      selection.removeAllRanges();
+      selection.addRange(range);
+      // execCommand is sync; returns false if not supported in this context.
+      if (document.execCommand && document.execCommand('insertText', false, expansion)) {
+        debugLog(`AutoText: framework=${framework}, used execCommand insertText`);
+        return;
+      }
+      // If execCommand refused (Firefox extension context, older Chrome), fall
+      // through to Range manipulation — better than crashing.
+      debugLog(`AutoText: framework=${framework}, execCommand refused, fallback`);
+    }
 
     const range = selection.getRangeAt(0);
 
@@ -397,30 +471,29 @@ function replaceInContentEditable(element, shortcutKey, expansion, htmlExpansion
     range.setStart(range.endContainer, range.endOffset - shortcutKey.length);
     range.deleteContents();
 
-    // Insert the expansion (HTML if available, otherwise plain text)
+    // Insert the expansion (HTML if available, otherwise plain text).
+    // Use Range.createContextualFragment — parses HTML in the caret's node
+    // context. Combined with DOMPurify upstream, this is the safest pattern
+    // (no direct innerHTML assignment).
     if (htmlExpansion) {
-      // Create a document fragment from HTML
-      const template = document.createElement('template');
-      template.innerHTML = htmlExpansion;
-      const fragment = template.content;
+      const clean = safeHTML(htmlExpansion);
+      const fragment = range.createContextualFragment(clean);
 
       range.insertNode(fragment);
 
-      // Move cursor to end of inserted content
       range.collapse(false);
       selection.removeAllRanges();
       selection.addRange(range);
     } else {
-      // Insert plain text - convert newlines to <br> for contenteditable
+      // Insert plain text — convert newlines to <br> for contenteditable.
+      // Escape angle brackets first; DOMPurify re-sanitizes defensively.
       if (expansion.includes('\n')) {
-        // Convert newlines to <br> and insert as HTML
-        const htmlContent = expansion
+        const escaped = expansion
           .split('\n')
           .map(line => line.replace(/</g, '&lt;').replace(/>/g, '&gt;'))
           .join('<br>');
-        const template = document.createElement('template');
-        template.innerHTML = htmlContent;
-        const fragment = template.content;
+        const clean = safeHTML(escaped);
+        const fragment = range.createContextualFragment(clean);
 
         range.insertNode(fragment);
         range.collapse(false);
@@ -447,6 +520,22 @@ function replaceInContentEditable(element, shortcutKey, expansion, htmlExpansion
 }
 
 // Main handler for trigger key press
+// Returns true when the Tab key on Gmail's To:/Cc:/Bcc:/Subject: fields
+// should stay with Gmail for field navigation. Intercepting Tab there
+// breaks keyboard nav — reported repeatedly on similar extensions
+// (ProKeys issue thread). Gmail compose body is NOT affected.
+function isGmailFormNavigation(element, triggerKey) {
+  if (triggerKey !== 'Tab') return false;
+  if (window.location.hostname !== 'mail.google.com') return false;
+  if (!element || !element.closest) return false;
+  // Gmail recipient / subject inputs live inside a <form> as plain inputs.
+  // Body composer is contenteditable (div), no enclosing <form>.
+  const form = element.closest('form');
+  if (!form) return false;
+  const tag = element.tagName;
+  return tag === 'INPUT' || tag === 'TEXTAREA';
+}
+
 function handleTriggerKey(event) {
   // Check if AutoText is globally disabled (via keyboard shortcut toggle)
   if (!autotextEnabled) {
@@ -465,6 +554,12 @@ function handleTriggerKey(event) {
   }
 
   let element = event.target;
+
+  // Gmail form navigation takes priority over expansion on To:/Subject:
+  if (isGmailFormNavigation(element, triggerKey)) {
+    debugLog('AutoText: Gmail form Tab — yielding to native navigation');
+    return;
+  }
 
   // Check if element is inside a contenteditable (for Gmail and complex editors)
   let isInContentEditable = false;
@@ -579,6 +674,10 @@ if (typeof module !== "undefined" && module.exports) {
     getTextBeforeCursor,
     replaceInTextInput,
     replaceInContentEditable,
+    setNativeValue,
+    detectEditorFramework,
+    safeHTML,
+    isGmailFormNavigation,
     loadSettings,
     // Allow tests to mutate module state via setters
     _getSettings: () => settings,

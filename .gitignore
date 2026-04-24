@@ -17,6 +17,11 @@ eggs/
 lib/
 lib64/
 parts/
+# Exception: extension's DOMPurify content-script dep must be tracked.
+# TinyMCE stays out of git (4.2 MB bundle) — devs run `pnpm install` locally.
+!extension/lib/
+/extension/lib/tinymce/
+!extension/lib/dompurify.min.js
 sdist/
 var/
 wheels/
