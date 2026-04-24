@@ -12,6 +12,7 @@ let shortcuts = {};
 let autotextEnabled = true;  // Global toggle state
 let settings = {
   triggerKey: 'Tab',
+  triggerMode: 'key',   // 'key' (Tab/configured key) | 'space' (auto-expand on Space/Enter)
   showToast: true,
   showHighlight: true,
   playSound: false,
@@ -402,19 +403,107 @@ function setNativeValue(element, value) {
   }
 }
 
+// ----------------------------------------------------------------------------
+// Dynamic macros — evaluated at expansion time, before cursor marker handling.
+// Supported syntax:
+//   [[date]]                       → today, ISO short (DD.MM.YYYY)
+//   [[date:short|medium|long]]     → localized format
+//   [[date:DD.MM.YYYY]]            → custom tokens: YYYY MM DD HH mm
+//   [[date+7d]], [[date-30d]]       → offset by days (d), weeks (w), months (m), years (y)
+//   [[date+7d:DD.MM.YYYY]]          → offset + format combined
+//   [[time]]                        → HH:mm
+// Unknown tokens are preserved so snippets don't silently mangle content.
+// ----------------------------------------------------------------------------
+const DATE_MACRO_RE = /\[\[(date|time)(?:([+-])(\d+)([dwmy]))?(?::([^\]]+))?\]\]/g;
+
+function _applyOffset(date, sign, amount, unit) {
+  const mult = sign === '-' ? -1 : 1;
+  const n = amount * mult;
+  const d = new Date(date.getTime());
+  switch (unit) {
+    case 'd': d.setDate(d.getDate() + n); break;
+    case 'w': d.setDate(d.getDate() + n * 7); break;
+    case 'm': d.setMonth(d.getMonth() + n); break;
+    case 'y': d.setFullYear(d.getFullYear() + n); break;
+  }
+  return d;
+}
+
+function _pad(n) {
+  return String(n).padStart(2, '0');
+}
+
+function _formatDate(date, format) {
+  // Custom token replacement (avoid overlapping matches via single pass)
+  if (format && /YYYY|MM|DD|HH|mm/.test(format)) {
+    return format
+      .replace(/YYYY/g, date.getFullYear())
+      .replace(/MM/g, _pad(date.getMonth() + 1))
+      .replace(/DD/g, _pad(date.getDate()))
+      .replace(/HH/g, _pad(date.getHours()))
+      .replace(/mm/g, _pad(date.getMinutes()));
+  }
+  // Intl preset (short/medium/long/full) — explicit names only
+  if (['short', 'medium', 'long', 'full'].includes(format)) {
+    return new Intl.DateTimeFormat(undefined, { dateStyle: format }).format(date);
+  }
+  // Default: DD.MM.YYYY (Romanian/European-friendly, deterministic)
+  return `${_pad(date.getDate())}.${_pad(date.getMonth() + 1)}.${date.getFullYear()}`;
+}
+
+function processDateMacros(input, now = new Date()) {
+  if (!input || typeof input !== 'string') return input;
+  return input.replace(DATE_MACRO_RE, (match, kind, sign, amount, unit, format) => {
+    try {
+      const target = (sign && amount && unit)
+        ? _applyOffset(now, sign, parseInt(amount, 10), unit)
+        : now;
+      if (kind === 'time') {
+        return format
+          ? _formatDate(target, format)
+          : `${_pad(target.getHours())}:${_pad(target.getMinutes())}`;
+      }
+      return _formatDate(target, format);
+    } catch (e) {
+      console.warn('AutoText: date macro error for', match, e);
+      return match;
+    }
+  });
+}
+
+// Extract cursor marker position from expansion. Returns {text, cursorOffset}
+// where cursorOffset is the index in `text` where the caret should land,
+// or null if no marker. Marker is literal "$|$" — picked because it's
+// unlikely in natural user content and keeps snippets copy-pasteable.
+const CURSOR_MARKER = '$|$';
+function extractCursorMarker(expansion) {
+  const idx = expansion.indexOf(CURSOR_MARKER);
+  if (idx === -1) return { text: expansion, cursorOffset: null };
+  return {
+    text: expansion.slice(0, idx) + expansion.slice(idx + CURSOR_MARKER.length),
+    cursorOffset: idx,
+  };
+}
+
 // Replace text in input/textarea
 function replaceInTextInput(element, shortcutKey, expansion) {
   const cursorPos = element.selectionStart;
   const textBefore = element.value.substring(0, cursorPos);
   const textAfter = element.value.substring(cursorPos);
 
+  // Resolve cursor marker (if any) before splicing
+  const { text: expansionText, cursorOffset } = extractCursorMarker(expansion);
+
   // Remove the shortcut key and add expansion
-  const newTextBefore = textBefore.slice(0, -shortcutKey.length) + expansion;
+  const newTextBefore = textBefore.slice(0, -shortcutKey.length) + expansionText;
 
   setNativeValue(element, newTextBefore + textAfter);
 
-  // Set cursor position after the expansion
-  const newCursorPos = newTextBefore.length;
+  // Cursor lands at marker if present, otherwise at end of expansion
+  const base = newTextBefore.length - expansionText.length;
+  const newCursorPos = cursorOffset !== null
+    ? base + cursorOffset
+    : newTextBefore.length;
   element.selectionStart = element.selectionEnd = newCursorPos;
 
   // Trigger input event for frameworks (React, Vue, etc.)
@@ -455,13 +544,20 @@ function replaceInContentEditable(element, shortcutKey, expansion, htmlExpansion
       range.setStart(range.endContainer, range.endOffset - shortcutKey.length);
       selection.removeAllRanges();
       selection.addRange(range);
+
+      const { text: frameworkText, cursorOffset } = extractCursorMarker(expansion);
       // execCommand is sync; returns false if not supported in this context.
-      if (document.execCommand && document.execCommand('insertText', false, expansion)) {
+      if (document.execCommand && document.execCommand('insertText', false, frameworkText)) {
+        // Position caret at marker if present
+        if (cursorOffset !== null) {
+          const backSteps = frameworkText.length - cursorOffset;
+          for (let i = 0; i < backSteps; i++) {
+            selection.modify('move', 'backward', 'character');
+          }
+        }
         debugLog(`AutoText: framework=${framework}, used execCommand insertText`);
         return;
       }
-      // If execCommand refused (Firefox extension context, older Chrome), fall
-      // through to Range manipulation — better than crashing.
       debugLog(`AutoText: framework=${framework}, execCommand refused, fallback`);
     }
 
@@ -500,13 +596,19 @@ function replaceInContentEditable(element, shortcutKey, expansion, htmlExpansion
         selection.removeAllRanges();
         selection.addRange(range);
       } else {
-        // Single line - use text node
-        const textNode = document.createTextNode(expansion);
+        // Single line - use text node with cursor marker support
+        const { text: plainText, cursorOffset } = extractCursorMarker(expansion);
+        const textNode = document.createTextNode(plainText);
         range.insertNode(textNode);
 
-        // Move cursor after inserted text
-        range.setStartAfter(textNode);
-        range.collapse(true);
+        if (cursorOffset !== null) {
+          // Land caret at marker position within the inserted text node
+          range.setStart(textNode, cursorOffset);
+          range.collapse(true);
+        } else {
+          range.setStartAfter(textNode);
+          range.collapse(true);
+        }
         selection.removeAllRanges();
         selection.addRange(range);
       }
@@ -536,6 +638,17 @@ function isGmailFormNavigation(element, triggerKey) {
   return tag === 'INPUT' || tag === 'TEXTAREA';
 }
 
+// Determine whether `event.key` is the configured trigger in the current mode.
+// 'key' mode: one specific key (Tab by default).
+// 'space' mode: auto-expand when user finishes a word — Space or Enter.
+function isTriggerKey(event, currentSettings) {
+  const mode = currentSettings.triggerMode || 'key';
+  if (mode === 'space') {
+    return event.key === ' ' || event.key === 'Enter';
+  }
+  return event.key === (currentSettings.triggerKey || 'Tab');
+}
+
 function handleTriggerKey(event) {
   // Check if AutoText is globally disabled (via keyboard shortcut toggle)
   if (!autotextEnabled) {
@@ -547,11 +660,12 @@ function handleTriggerKey(event) {
     return;
   }
 
-  // Check for configured trigger key (default: Tab)
-  const triggerKey = settings.triggerKey || 'Tab';
-  if (event.key !== triggerKey) {
+  // Respect configured trigger: Tab (default), custom key, or Space/Enter mode.
+  if (!isTriggerKey(event, settings)) {
     return;
   }
+  const triggerKey = event.key;
+  const isSpaceMode = (settings.triggerMode || 'key') === 'space';
 
   let element = event.target;
 
@@ -620,19 +734,31 @@ function handleTriggerKey(event) {
 
   debugLog("AutoText Debug: Shortcut match found!", textBefore);
 
-  // We found a match! Prevent default Tab behavior
-  event.preventDefault();
-  event.stopPropagation();
+  // In 'key' mode (Tab), prevent focus change. In 'space' mode, let Space/
+  // Enter type naturally after expansion — that's the natural UX (word ends
+  // with the space/newline user just pressed).
+  if (!isSpaceMode) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
 
   // Determine what content to use
   let textContent = shortcut.value;
   let htmlContent = shortcut.html_value;
 
-  // If text is empty but HTML exists, extract text from HTML
+  // If text is empty but HTML exists, extract text from HTML without
+  // touching innerHTML (mutation-XSS surface). DOMParser gives a detached
+  // document whose textContent is safe to read.
   if (!textContent && htmlContent) {
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = htmlContent;
-    textContent = tempDiv.textContent || tempDiv.innerText || '';
+    const doc = new DOMParser().parseFromString(htmlContent, 'text/html');
+    textContent = (doc.body && doc.body.textContent) || '';
+  }
+
+  // Resolve dynamic macros ([[date]], [[date+7d]], etc.) before insert.
+  // Run on both text and HTML paths so snippets authored either way work.
+  textContent = processDateMacros(textContent);
+  if (htmlContent) {
+    htmlContent = processDateMacros(htmlContent);
   }
 
   debugLog(`AutoText: Expanding "${textBefore}" -> "${textContent || htmlContent}"`);
@@ -678,6 +804,9 @@ if (typeof module !== "undefined" && module.exports) {
     detectEditorFramework,
     safeHTML,
     isGmailFormNavigation,
+    extractCursorMarker,
+    processDateMacros,
+    isTriggerKey,
     loadSettings,
     // Allow tests to mutate module state via setters
     _getSettings: () => settings,

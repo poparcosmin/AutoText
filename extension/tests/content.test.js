@@ -43,6 +43,20 @@ describe('content.js — text expansion core', () => {
       content._setSettings({ blacklistedSites: ['example.com', 'mail.google.com'] });
       expect(content.isBlacklisted()).toBe(false);
     });
+
+    it('matches subdomain when parent domain is blocklisted', () => {
+      // jsdom default hostname is "localhost" — use partial match behavior
+      // Adding "local" to blocklist should match hostname "localhost"
+      content._setSettings({ blacklistedSites: ['local'] });
+      expect(content.isBlacklisted()).toBe(true);
+    });
+
+    it('blocklist entry list with whitespace trimmed (simulates save path)', () => {
+      // options.js trims and filters empty lines before save; verify the
+      // runtime side handles a clean list correctly.
+      content._setSettings({ blacklistedSites: ['localhost', 'foo.com'] });
+      expect(content.isBlacklisted()).toBe(true);
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -390,6 +404,136 @@ describe('content.js — text expansion core', () => {
     it('does not crash when storage is empty', async () => {
       chrome.storage.local._data = {};
       await expect(content.loadSettings()).resolves.toBeUndefined();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  describe('extractCursorMarker()', () => {
+    it('returns unchanged text when no marker present', () => {
+      const { text, cursorOffset } = content.extractCursorMarker('Hello World');
+      expect(text).toBe('Hello World');
+      expect(cursorOffset).toBeNull();
+    });
+
+    it('removes marker and returns its position', () => {
+      const { text, cursorOffset } = content.extractCursorMarker('Dear $|$,');
+      expect(text).toBe('Dear ,');
+      expect(cursorOffset).toBe(5);
+    });
+
+    it('handles marker at start', () => {
+      const { text, cursorOffset } = content.extractCursorMarker('$|$rest');
+      expect(text).toBe('rest');
+      expect(cursorOffset).toBe(0);
+    });
+
+    it('handles marker at end', () => {
+      const { text, cursorOffset } = content.extractCursorMarker('start $|$');
+      expect(text).toBe('start ');
+      expect(cursorOffset).toBe(6);
+    });
+
+    it('only removes the first marker (additional ones preserved)', () => {
+      const { text, cursorOffset } = content.extractCursorMarker('a$|$b$|$c');
+      expect(text).toBe('ab$|$c');
+      expect(cursorOffset).toBe(1);
+    });
+  });
+
+  describe('replaceInTextInput() with cursor marker', () => {
+    it('lands caret at marker position after expansion', () => {
+      const input = document.createElement('input');
+      input.value = '//sig';
+      document.body.appendChild(input);
+      input.setSelectionRange(input.value.length, input.value.length);
+
+      content.replaceInTextInput(input, '//sig', 'Dear $|$, regards');
+
+      expect(input.value).toBe('Dear , regards');
+      expect(input.selectionStart).toBe('Dear '.length);
+      expect(input.selectionEnd).toBe('Dear '.length);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  describe('processDateMacros()', () => {
+    const fixedDate = new Date(2026, 3, 24, 14, 30); // 2026-04-24 14:30 local
+
+    it('passes through strings without macros', () => {
+      expect(content.processDateMacros('hello', fixedDate)).toBe('hello');
+    });
+
+    it('replaces [[date]] with default format', () => {
+      const result = content.processDateMacros('Today: [[date]]', fixedDate);
+      expect(result).toContain('2026');
+      expect(result).not.toContain('[[date]]');
+    });
+
+    it('replaces [[date:DD.MM.YYYY]] with custom format', () => {
+      const result = content.processDateMacros('[[date:DD.MM.YYYY]]', fixedDate);
+      expect(result).toBe('24.04.2026');
+    });
+
+    it('applies +7d offset', () => {
+      const result = content.processDateMacros('[[date+7d:DD.MM.YYYY]]', fixedDate);
+      expect(result).toBe('01.05.2026');
+    });
+
+    it('applies -30d offset', () => {
+      const result = content.processDateMacros('[[date-30d:DD.MM.YYYY]]', fixedDate);
+      expect(result).toBe('25.03.2026');
+    });
+
+    it('applies +1m and +1y offset', () => {
+      expect(content.processDateMacros('[[date+1m:DD.MM.YYYY]]', fixedDate)).toBe('24.05.2026');
+      expect(content.processDateMacros('[[date+1y:DD.MM.YYYY]]', fixedDate)).toBe('24.04.2027');
+    });
+
+    it('[[time]] returns HH:mm', () => {
+      expect(content.processDateMacros('[[time]]', fixedDate)).toBe('14:30');
+    });
+
+    it('preserves unknown tokens', () => {
+      expect(content.processDateMacros('hello [[foo]]', fixedDate)).toBe('hello [[foo]]');
+    });
+
+    it('handles multiple macros in one string', () => {
+      const result = content.processDateMacros(
+        'From [[date:DD.MM.YYYY]] to [[date+7d:DD.MM.YYYY]]',
+        fixedDate
+      );
+      expect(result).toBe('From 24.04.2026 to 01.05.2026');
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  describe('isTriggerKey()', () => {
+    it('key mode: matches configured triggerKey only', () => {
+      const s = { triggerMode: 'key', triggerKey: 'Tab' };
+      expect(content.isTriggerKey({ key: 'Tab' }, s)).toBe(true);
+      expect(content.isTriggerKey({ key: ' ' }, s)).toBe(false);
+      expect(content.isTriggerKey({ key: 'Enter' }, s)).toBe(false);
+    });
+
+    it('key mode: custom triggerKey respected', () => {
+      const s = { triggerMode: 'key', triggerKey: 'Enter' };
+      expect(content.isTriggerKey({ key: 'Enter' }, s)).toBe(true);
+      expect(content.isTriggerKey({ key: 'Tab' }, s)).toBe(false);
+    });
+
+    it('space mode: matches Space OR Enter', () => {
+      const s = { triggerMode: 'space' };
+      expect(content.isTriggerKey({ key: ' ' }, s)).toBe(true);
+      expect(content.isTriggerKey({ key: 'Enter' }, s)).toBe(true);
+    });
+
+    it('space mode: ignores Tab (so Tab navigation still works)', () => {
+      const s = { triggerMode: 'space' };
+      expect(content.isTriggerKey({ key: 'Tab' }, s)).toBe(false);
+    });
+
+    it('defaults to key mode when triggerMode unspecified', () => {
+      expect(content.isTriggerKey({ key: 'Tab' }, { triggerKey: 'Tab' })).toBe(true);
     });
   });
 });

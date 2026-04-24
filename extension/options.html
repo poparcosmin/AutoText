@@ -1149,8 +1149,18 @@
           <h3>Trigger Settings</h3>
           <div class="setting-item">
             <div class="setting-label">
+              <span class="setting-title">Trigger Mode</span>
+              <span class="setting-description">How AutoText detects end of a shortcut</span>
+            </div>
+            <select class="setting-select" id="setting-trigger-mode">
+              <option value="key">Press a specific key (Tab / Space / Enter)</option>
+              <option value="space">Auto-expand on Space or Enter (no extra key)</option>
+            </select>
+          </div>
+          <div class="setting-item">
+            <div class="setting-label">
               <span class="setting-title">Trigger Key</span>
-              <span class="setting-description">Key to press after typing a shortcut</span>
+              <span class="setting-description">Only used when mode = "Press a specific key"</span>
             </div>
             <select class="setting-select" id="setting-trigger-key">
               <option value="Tab">Tab</option>

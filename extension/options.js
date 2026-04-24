@@ -498,6 +498,7 @@ async function loadUserSettings() {
 
   // Populate UI
   document.getElementById('setting-trigger-key').value = userSettings.triggerKey || 'Tab';
+  document.getElementById('setting-trigger-mode').value = userSettings.triggerMode || 'key';
   document.getElementById('setting-show-toast').checked = userSettings.showToast !== false;
   document.getElementById('setting-play-sound').checked = userSettings.playSound || false;
   document.getElementById('setting-blacklist').value =
@@ -506,6 +507,7 @@ async function loadUserSettings() {
 
 async function saveUserSettings() {
   const triggerKey = document.getElementById('setting-trigger-key').value;
+  const triggerMode = document.getElementById('setting-trigger-mode').value;
   const showToast = document.getElementById('setting-show-toast').checked;
   const playSound = document.getElementById('setting-play-sound').checked;
   const blacklistText = document.getElementById('setting-blacklist').value;
@@ -518,6 +520,7 @@ async function saveUserSettings() {
 
   userSettings = {
     triggerKey,
+    triggerMode,
     showToast,
     showHighlight: true,
     playSound,
