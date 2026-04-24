@@ -145,11 +145,15 @@ CACHES = {
     }
 }
 
-# Cache timeouts for different data types
+# Cache timeouts (named constants preferred for new code; dict kept for legacy .get() lookups)
+CACHE_TTL_SHORTCUTS = 60 * 5       # 5 minutes
+CACHE_TTL_SHORTCUT_SETS = 60 * 10  # 10 minutes
+CACHE_TTL_USER_DATA = 60 * 2       # 2 minutes
+
 CACHE_TIMEOUTS = {
-    "shortcuts": 60 * 5,      # 5 minutes for shortcuts
-    "shortcut_sets": 60 * 10, # 10 minutes for sets
-    "user_data": 60 * 2,      # 2 minutes for user-specific data
+    "shortcuts": CACHE_TTL_SHORTCUTS,
+    "shortcut_sets": CACHE_TTL_SHORTCUT_SETS,
+    "user_data": CACHE_TTL_USER_DATA,
 }
 
 # Password validation
