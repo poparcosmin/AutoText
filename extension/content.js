@@ -452,6 +452,50 @@ function _formatDate(date, format) {
 }
 
 // ----------------------------------------------------------------------------
+// Form placeholders — {{name}}, {{name:Label}}, {{name:Label|default}}
+// At expansion time each unique placeholder prompts for a value. Answers
+// substitute all occurrences of the same name in the snippet. Cancel aborts
+// the entire expansion (returns null; caller leaves shortcut text intact).
+// Note: uses native prompt() — minimal UX. A proper inline popup with
+// shadow-DOM CSS isolation is tracked as a separate follow-up.
+// ----------------------------------------------------------------------------
+const PLACEHOLDER_RE = /\{\{([a-zA-Z_][a-zA-Z0-9_]*)(?::([^|}]*))?(?:\|([^}]*))?\}\}/g;
+
+function extractPlaceholders(input) {
+  if (!input || typeof input !== 'string') return [];
+  const seen = new Set();
+  const fields = [];
+  let m;
+  PLACEHOLDER_RE.lastIndex = 0;
+  while ((m = PLACEHOLDER_RE.exec(input)) !== null) {
+    const [, name, label, def] = m;
+    if (seen.has(name)) continue;
+    seen.add(name);
+    fields.push({ name, label: (label || name).trim(), default: (def || '').trim() });
+  }
+  return fields;
+}
+
+function substitutePlaceholders(input, values) {
+  return input.replace(PLACEHOLDER_RE, (_match, name) => {
+    return Object.prototype.hasOwnProperty.call(values, name) ? values[name] : '';
+  });
+}
+
+// Ask the user for each placeholder value via native prompt().
+// Returns {values: {...}} on success, {cancelled: true} if user cancels any.
+function promptForPlaceholders(fields, askFn) {
+  const ask = askFn || ((label, def) => window.prompt(label, def));
+  const values = {};
+  for (const f of fields) {
+    const answer = ask(f.label, f.default);
+    if (answer === null) return { cancelled: true };
+    values[f.name] = answer;
+  }
+  return { values };
+}
+
+// ----------------------------------------------------------------------------
 // Snippet nesting — [[%s(otherShortcut)]] expands another snippet inline.
 // Allows composition: "email-footer" used inside 20 templates, update once.
 // Safety: depth cap of 5 + visited set catch infinite recursion.
@@ -788,8 +832,8 @@ function handleTriggerKey(event) {
 
   // Expansion pipeline (ordering matters):
   //   1. Snippet nesting — flatten [[%s(other)]] references recursively
-  //   2. Date macros — [[date]], [[date+7d]], etc. (nested snippets can
-  //      themselves contain date macros)
+  //   2. Date macros — [[date]], [[date+7d]], etc.
+  //   3. Form placeholders — {{name:Label|default}}, prompted interactively
   // Cursor marker ($|$) is handled later, inside replace* functions.
   textContent = processSnippetNesting(textContent, shortcuts);
   if (htmlContent) {
@@ -798,6 +842,20 @@ function handleTriggerKey(event) {
   textContent = processDateMacros(textContent);
   if (htmlContent) {
     htmlContent = processDateMacros(htmlContent);
+  }
+
+  // Collect placeholders across both text and html (same field fills both).
+  const fields = extractPlaceholders((textContent || '') + '\n' + (htmlContent || ''));
+  if (fields.length > 0) {
+    const result = promptForPlaceholders(fields);
+    if (result.cancelled) {
+      debugLog('AutoText: placeholder fill cancelled, aborting expansion');
+      return;
+    }
+    textContent = substitutePlaceholders(textContent, result.values);
+    if (htmlContent) {
+      htmlContent = substitutePlaceholders(htmlContent, result.values);
+    }
   }
 
   debugLog(`AutoText: Expanding "${textBefore}" -> "${textContent || htmlContent}"`);
@@ -846,6 +904,9 @@ if (typeof module !== "undefined" && module.exports) {
     extractCursorMarker,
     processDateMacros,
     processSnippetNesting,
+    extractPlaceholders,
+    substitutePlaceholders,
+    promptForPlaceholders,
     isTriggerKey,
     loadSettings,
     // Allow tests to mutate module state via setters

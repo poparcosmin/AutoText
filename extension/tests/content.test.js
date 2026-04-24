@@ -606,4 +606,98 @@ describe('content.js — text expansion core', () => {
       expect(content.processSnippetNesting('[[%s(h)]]', map)).toBe('<p>HTML body</p>');
     });
   });
+
+  // ---------------------------------------------------------------------------
+  describe('extractPlaceholders()', () => {
+    it('returns [] for text without placeholders', () => {
+      expect(content.extractPlaceholders('hello world')).toEqual([]);
+    });
+
+    it('extracts a single name-only placeholder', () => {
+      expect(content.extractPlaceholders('Hi {{name}}')).toEqual([
+        { name: 'name', label: 'name', default: '' },
+      ]);
+    });
+
+    it('extracts name + label', () => {
+      expect(content.extractPlaceholders('{{desc:Description}}')).toEqual([
+        { name: 'desc', label: 'Description', default: '' },
+      ]);
+    });
+
+    it('extracts name + label + default', () => {
+      expect(content.extractPlaceholders('{{num:Ticket ID|TICKET-001}}')).toEqual([
+        { name: 'num', label: 'Ticket ID', default: 'TICKET-001' },
+      ]);
+    });
+
+    it('deduplicates repeated names', () => {
+      const fields = content.extractPlaceholders('{{x}} and {{x:Later}} again {{y}}');
+      expect(fields.map(f => f.name)).toEqual(['x', 'y']);
+    });
+
+    it('ignores empty {{}}', () => {
+      expect(content.extractPlaceholders('hi {{}}')).toEqual([]);
+    });
+  });
+
+  describe('substitutePlaceholders()', () => {
+    it('replaces each placeholder with its value', () => {
+      expect(
+        content.substitutePlaceholders('Hi {{name}}!', { name: 'Cosmin' })
+      ).toBe('Hi Cosmin!');
+    });
+
+    it('replaces all occurrences of the same placeholder', () => {
+      expect(
+        content.substitutePlaceholders('{{x}} + {{x}} = 2x', { x: '7' })
+      ).toBe('7 + 7 = 2x');
+    });
+
+    it('substitutes empty string when value missing', () => {
+      expect(
+        content.substitutePlaceholders('Hi {{name}}', {})
+      ).toBe('Hi ');
+    });
+  });
+
+  describe('promptForPlaceholders()', () => {
+    it('collects answers via injected askFn', () => {
+      const fields = [
+        { name: 'a', label: 'A', default: 'dA' },
+        { name: 'b', label: 'B', default: '' },
+      ];
+      const ask = jest.fn()
+        .mockReturnValueOnce('ans1')
+        .mockReturnValueOnce('ans2');
+      const result = content.promptForPlaceholders(fields, ask);
+      expect(result).toEqual({ values: { a: 'ans1', b: 'ans2' } });
+      expect(ask).toHaveBeenNthCalledWith(1, 'A', 'dA');
+      expect(ask).toHaveBeenNthCalledWith(2, 'B', '');
+    });
+
+    it('returns cancelled when askFn returns null', () => {
+      const ask = jest.fn().mockReturnValueOnce(null);
+      const result = content.promptForPlaceholders(
+        [{ name: 'x', label: 'X', default: '' }],
+        ask
+      );
+      expect(result).toEqual({ cancelled: true });
+    });
+
+    it('stops asking after first cancel (no more prompts)', () => {
+      const ask = jest.fn()
+        .mockReturnValueOnce('ok')
+        .mockReturnValueOnce(null);
+      content.promptForPlaceholders(
+        [
+          { name: 'a', label: 'A', default: '' },
+          { name: 'b', label: 'B', default: '' },
+          { name: 'c', label: 'C', default: '' },
+        ],
+        ask
+      );
+      expect(ask).toHaveBeenCalledTimes(2);  // stopped after cancel on 'b'
+    });
+  });
 });
