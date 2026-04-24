@@ -882,6 +882,222 @@ function handleTriggerKey(event) {
   trackShortcutUsage(textBefore, shortcut.id);
 }
 
+// ----------------------------------------------------------------------------
+// Command palette — inline overlay, Alt+Shift+P to open.
+// Substring-match search across shortcut keys and values; Enter inserts the
+// matched expansion at the saved focus target.
+// Shadow DOM wraps the overlay so page CSS doesn't bleed into our UI.
+// ----------------------------------------------------------------------------
+let paletteState = null;  // { host, shadow, input, list, savedTarget, savedRange }
+
+function filterShortcuts(query, shortcutsMap) {
+  const q = (query || '').toLowerCase().trim();
+  const entries = Object.entries(shortcutsMap || {});
+  if (!q) return entries.slice(0, 50).map(([key, s]) => ({ key, ...s }));
+  const scored = [];
+  for (const [key, s] of entries) {
+    const keyL = key.toLowerCase();
+    const valL = ((s.value || s.html_value) || '').toLowerCase();
+    let score = 0;
+    if (keyL === q) score = 100;
+    else if (keyL.startsWith(q)) score = 80;
+    else if (keyL.includes(q)) score = 60;
+    else if (valL.includes(q)) score = 30;
+    if (score > 0) scored.push({ key, score, ...s });
+  }
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, 50);
+}
+
+function saveFocusTarget() {
+  const active = document.activeElement;
+  if (!active) return null;
+  const isText = active.tagName === 'INPUT' || active.tagName === 'TEXTAREA';
+  const isCE = active.isContentEditable;
+  if (!isText && !isCE) return null;
+  const saved = { target: active };
+  if (isText) {
+    saved.selectionStart = active.selectionStart;
+    saved.selectionEnd = active.selectionEnd;
+  } else {
+    const sel = window.getSelection();
+    saved.range = sel.rangeCount ? sel.getRangeAt(0).cloneRange() : null;
+  }
+  return saved;
+}
+
+function restoreFocusAndInsert(saved, expansion) {
+  if (!saved || !saved.target) return;
+  const el = saved.target;
+  el.focus();
+  if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+    const start = saved.selectionStart || 0;
+    const before = el.value.substring(0, start);
+    const after = el.value.substring(saved.selectionEnd || start);
+    const { text: plainText, cursorOffset } = extractCursorMarker(expansion);
+    setNativeValue(el, before + plainText + after);
+    const newPos = cursorOffset !== null
+      ? before.length + cursorOffset
+      : before.length + plainText.length;
+    el.selectionStart = el.selectionEnd = newPos;
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  } else if (el.isContentEditable && saved.range) {
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(saved.range);
+    const { text: plainText, cursorOffset } = extractCursorMarker(expansion);
+    const node = document.createTextNode(plainText);
+    saved.range.insertNode(node);
+    if (cursorOffset !== null) {
+      saved.range.setStart(node, cursorOffset);
+      saved.range.collapse(true);
+    } else {
+      saved.range.setStartAfter(node);
+      saved.range.collapse(true);
+    }
+    sel.removeAllRanges();
+    sel.addRange(saved.range);
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+}
+
+function closeCommandPalette() {
+  if (paletteState && paletteState.host && paletteState.host.parentNode) {
+    paletteState.host.parentNode.removeChild(paletteState.host);
+  }
+  paletteState = null;
+}
+
+function renderPaletteList(query) {
+  if (!paletteState) return;
+  const results = filterShortcuts(query, shortcuts);
+  const list = paletteState.list;
+  while (list.firstChild) list.removeChild(list.firstChild);
+  results.forEach((r, idx) => {
+    const row = document.createElement('div');
+    row.className = 'at-row' + (idx === 0 ? ' at-active' : '');
+    row.dataset.shortcutKey = r.key;
+    const k = document.createElement('span');
+    k.className = 'at-key';
+    k.textContent = r.key;
+    const v = document.createElement('span');
+    v.className = 'at-preview';
+    const body = (r.value || r.html_value || '').slice(0, 60);
+    v.textContent = body;
+    row.appendChild(k);
+    row.appendChild(v);
+    row.addEventListener('click', () => selectPaletteRow(row));
+    list.appendChild(row);
+  });
+  if (!results.length) {
+    const empty = document.createElement('div');
+    empty.className = 'at-empty';
+    empty.textContent = query ? 'No matches' : 'No shortcuts yet — add some in Options';
+    list.appendChild(empty);
+  }
+}
+
+function moveActive(direction) {
+  if (!paletteState) return;
+  const rows = paletteState.list.querySelectorAll('.at-row');
+  if (!rows.length) return;
+  let idx = -1;
+  rows.forEach((r, i) => { if (r.classList.contains('at-active')) idx = i; });
+  rows.forEach(r => r.classList.remove('at-active'));
+  const next = Math.max(0, Math.min(rows.length - 1, idx + direction));
+  rows[next].classList.add('at-active');
+  rows[next].scrollIntoView({ block: 'nearest' });
+}
+
+function selectPaletteRow(row) {
+  if (!row || !paletteState) return;
+  const key = row.dataset.shortcutKey;
+  const s = shortcuts[key];
+  if (!s) { closeCommandPalette(); return; }
+  const expansion = s.value || s.html_value || '';
+  const saved = paletteState.savedTarget;
+  closeCommandPalette();
+  if (saved) restoreFocusAndInsert(saved, expansion);
+}
+
+function confirmActivePalette() {
+  if (!paletteState) return;
+  const active = paletteState.list.querySelector('.at-row.at-active');
+  if (active) selectPaletteRow(active);
+}
+
+function openCommandPalette() {
+  if (paletteState) return;  // already open
+  const savedTarget = saveFocusTarget();
+
+  const host = document.createElement('div');
+  host.id = 'autotext-palette-host';
+  host.style.cssText =
+    'position:fixed;inset:0;z-index:2147483647;pointer-events:none;';
+  const shadow = host.attachShadow({ mode: 'closed' });
+
+  // Inline styles — isolated from page CSS via shadow DOM.
+  const style = document.createElement('style');
+  style.textContent = `
+    .at-backdrop { position:fixed;inset:0;background:rgba(0,0,0,0.35);pointer-events:auto; }
+    .at-box { position:fixed;top:15vh;left:50%;transform:translateX(-50%);
+      width:min(560px,90vw);background:#fff;color:#222;border-radius:10px;
+      box-shadow:0 10px 40px rgba(0,0,0,0.3);font-family:-apple-system,BlinkMacSystemFont,
+      "Segoe UI",sans-serif;overflow:hidden;pointer-events:auto; }
+    .at-input { width:100%;border:none;outline:none;padding:16px 18px;font-size:16px;
+      box-sizing:border-box;border-bottom:1px solid #eee; }
+    .at-list { max-height:50vh;overflow-y:auto; }
+    .at-row { display:flex;gap:12px;padding:10px 18px;cursor:pointer;align-items:center; }
+    .at-row.at-active { background:#f0f4ff; }
+    .at-row:hover { background:#f7f7f7; }
+    .at-key { font-weight:600;color:#4CAF50;min-width:90px;font-family:monospace; }
+    .at-preview { color:#666;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+    .at-empty { padding:24px 18px;text-align:center;color:#999; }
+    @media (prefers-color-scheme: dark) {
+      .at-box { background:#1e1e1e;color:#eee; }
+      .at-input { background:transparent;color:#eee;border-bottom-color:#333; }
+      .at-row.at-active { background:#2a3550; }
+      .at-row:hover { background:#2a2a2a; }
+      .at-preview { color:#aaa; }
+    }
+  `;
+  shadow.appendChild(style);
+
+  const backdrop = document.createElement('div');
+  backdrop.className = 'at-backdrop';
+  backdrop.addEventListener('click', closeCommandPalette);
+  shadow.appendChild(backdrop);
+
+  const box = document.createElement('div');
+  box.className = 'at-box';
+
+  const input = document.createElement('input');
+  input.className = 'at-input';
+  input.type = 'text';
+  input.placeholder = 'Search shortcuts...';
+  input.spellcheck = false;
+  box.appendChild(input);
+
+  const list = document.createElement('div');
+  list.className = 'at-list';
+  box.appendChild(list);
+  shadow.appendChild(box);
+  document.documentElement.appendChild(host);
+
+  paletteState = { host, shadow, input, list, savedTarget };
+
+  input.addEventListener('input', () => renderPaletteList(input.value));
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); closeCommandPalette(); }
+    else if (e.key === 'ArrowDown') { e.preventDefault(); moveActive(1); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); moveActive(-1); }
+    else if (e.key === 'Enter') { e.preventDefault(); confirmActivePalette(); }
+  });
+
+  renderPaletteList('');
+  input.focus();
+}
+
 // Initialize: load shortcuts and settings, inject styles
 async function initialize() {
   await loadSettings();
@@ -907,6 +1123,9 @@ if (typeof module !== "undefined" && module.exports) {
     extractPlaceholders,
     substitutePlaceholders,
     promptForPlaceholders,
+    filterShortcuts,
+    openCommandPalette,
+    closeCommandPalette,
     isTriggerKey,
     loadSettings,
     // Allow tests to mutate module state via setters
@@ -918,6 +1137,18 @@ if (typeof module !== "undefined" && module.exports) {
 } else {
   // Browser content script — attach listeners and boot
   document.addEventListener("keydown", handleTriggerKey, true);
+
+  // Command palette: opened via keyboard shortcut (Alt+Shift+P), routed from
+  // background.js via chrome.tabs.sendMessage to the active tab.
+  chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
+    if (sender.id !== chrome.runtime.id) return false;
+    if (req && req.action === 'openPalette') {
+      openCommandPalette();
+      sendResponse({ status: 'opened' });
+      return true;
+    }
+    return false;
+  });
 
   chrome.storage.onChanged.addListener((changes, areaName) => {
     if (areaName === "local") {

@@ -67,6 +67,12 @@
         "default": "Alt+Shift+T"
       },
       "description": "Open AutoText popup"
+    },
+    "open-palette": {
+      "suggested_key": {
+        "default": "Alt+Shift+P"
+      },
+      "description": "Open command palette (inline shortcut search)"
     }
   },
   "web_accessible_resources": [

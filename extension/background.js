@@ -418,6 +418,17 @@ chrome.commands.onCommand.addListener(async (command) => {
       // Open options page
       chrome.runtime.openOptionsPage();
       break;
+
+    case "open-palette": {
+      // Forward to the active tab's content script (it owns the overlay)
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab && tab.id) {
+        chrome.tabs.sendMessage(tab.id, { action: 'openPalette' }).catch(() => {
+          // Tab has no content script (chrome:// pages etc.) — ignore.
+        });
+      }
+      break;
+    }
   }
 });
 

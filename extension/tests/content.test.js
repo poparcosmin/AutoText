@@ -700,4 +700,73 @@ describe('content.js — text expansion core', () => {
       expect(ask).toHaveBeenCalledTimes(2);  // stopped after cancel on 'b'
     });
   });
+
+  // ---------------------------------------------------------------------------
+  describe('filterShortcuts()', () => {
+    const map = {
+      sig: { value: 'Cosmin Popa', id: 1 },
+      addr: { value: 'Str. Exemplu 10', id: 2 },
+      phone: { value: '+40 700 000 000', id: 3 },
+    };
+
+    it('returns all entries (truncated) when query empty', () => {
+      const result = content.filterShortcuts('', map);
+      expect(result).toHaveLength(3);
+    });
+
+    it('ranks exact key match highest', () => {
+      const result = content.filterShortcuts('sig', map);
+      expect(result[0].key).toBe('sig');
+    });
+
+    it('matches prefix before substring', () => {
+      const m = {
+        abc: { value: 'x' },
+        xabcy: { value: 'y' },
+      };
+      const result = content.filterShortcuts('abc', m);
+      expect(result[0].key).toBe('abc');
+      expect(result[1].key).toBe('xabcy');
+    });
+
+    it('falls back to value text match', () => {
+      const result = content.filterShortcuts('Popa', map);
+      expect(result.length).toBeGreaterThan(0);
+      expect(result[0].key).toBe('sig');
+    });
+
+    it('returns empty for no matches', () => {
+      const result = content.filterShortcuts('zzzzzz', map);
+      expect(result).toHaveLength(0);
+    });
+  });
+
+  describe('openCommandPalette() / closeCommandPalette()', () => {
+    afterEach(() => {
+      content.closeCommandPalette();
+    });
+
+    it('mounts a shadow-DOM host in the document', () => {
+      content._setShortcuts({ foo: { value: 'Bar' } });
+      content.openCommandPalette();
+      const host = document.getElementById('autotext-palette-host');
+      expect(host).not.toBeNull();
+      expect(host.shadowRoot).toBeNull();  // closed shadow, shadowRoot isn't exposed
+    });
+
+    it('close removes the host from DOM', () => {
+      content._setShortcuts({ foo: { value: 'Bar' } });
+      content.openCommandPalette();
+      content.closeCommandPalette();
+      expect(document.getElementById('autotext-palette-host')).toBeNull();
+    });
+
+    it('opening twice is a no-op (single instance)', () => {
+      content._setShortcuts({ foo: { value: 'Bar' } });
+      content.openCommandPalette();
+      content.openCommandPalette();
+      const hosts = document.querySelectorAll('#autotext-palette-host');
+      expect(hosts).toHaveLength(1);
+    });
+  });
 });
