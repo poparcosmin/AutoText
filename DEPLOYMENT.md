@@ -4,6 +4,28 @@ Ghid complet pentru deployment pe `autotext.zua.ro`
 
 ---
 
+## Quick reference (2026-04 — după migrare la uv + pyproject)
+
+| Vechi | Nou |
+|---|---|
+| `python -m venv .venv && uv sync  # creează venv + instalează deps din pyproject.toml + uv.lock` | `uv sync` (creează venv automat din `pyproject.toml` + `uv.lock`) |
+| `.venv/bin/python manage.py <cmd>` | `uv run python manage.py <cmd>` |
+| `pip install gunicorn` | deja în dependencies; vine cu `uv sync` |
+| `python manage.py test` | `uv run python manage.py test` |
+
+Profiling opt-in (dev only):
+```bash
+ENABLE_SILK=True uv run python manage.py migrate  # aplică migrațiile silk
+ENABLE_SILK=True uv run python manage.py runserver
+# Dashboard: http://localhost:8000/silk/
+```
+
+Restul pașilor de mai jos sunt valabili — doar înlocuiește comenzile `pip install` și
+`python manage.py` cu echivalentele `uv` din tabel. Tot ce ține de Gunicorn, Nginx,
+SSL rămâne neschimbat.
+
+---
+
 ## 📋 Prezentare Generală
 
 ### Arhitectură:
@@ -196,7 +218,7 @@ cd autotext
 cd /var/www/autotext
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+uv sync  # creează venv + instalează deps din pyproject.toml + uv.lock
 ```
 
 #### 3. Configurează .env pe Server

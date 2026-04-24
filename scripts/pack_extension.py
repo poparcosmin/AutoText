@@ -68,17 +68,31 @@ def update_manifest_version(new_version):
 
 
 def create_zip(output_path):
-    """Create a ZIP file of the extension"""
-    # Files/folders to exclude
-    exclude = {'.git', '__pycache__', '.DS_Store', 'Thumbs.db', '*.pyc', '.env'}
+    """Create a ZIP file of the extension, skipping dev-only files."""
+    # Directories never shipped to users
+    EXCLUDE_DIRS = {
+        '.git', '__pycache__', 'tests', 'node_modules', 'coverage',
+    }
+    # Exact filenames never shipped
+    EXCLUDE_FILES = {
+        '.DS_Store', 'Thumbs.db', '.env', '.eslintrc', '.eslintrc.js',
+        '.eslintrc.json', 'package.json', 'pnpm-lock.yaml', 'yarn.lock',
+        'package-lock.json', 'jest.config.js', 'babel.config.js',
+        # Dev-only content script variants — never ship to users
+        'content-debug.js', 'content-test.js',
+    }
+    # Suffix-based exclusions (compiled/test/debug artifacts)
+    EXCLUDE_SUFFIXES = ('.pyc', '.test.js', '.spec.js', '.map')
 
     with zipfile.ZipFile(output_path, 'w', zipfile.ZIP_DEFLATED) as zf:
         for root, dirs, files in os.walk(EXTENSION_DIR):
-            # Filter out excluded directories
-            dirs[:] = [d for d in dirs if d not in exclude]
+            # Filter directories in-place so os.walk skips them
+            dirs[:] = [d for d in dirs if d not in EXCLUDE_DIRS]
 
             for file in files:
-                if file in exclude or file.endswith('.pyc'):
+                if file in EXCLUDE_FILES:
+                    continue
+                if any(file.endswith(sfx) for sfx in EXCLUDE_SUFFIXES):
                     continue
 
                 file_path = Path(root) / file
