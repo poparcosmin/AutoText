@@ -14,6 +14,7 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+from django.conf import settings
 from django.contrib import admin
 from django.urls import path, include
 from textsync.views.health import privacy_view
@@ -24,3 +25,7 @@ urlpatterns = [
     path('tinymce/', include('tinymce.urls')),
     path('privacy.html', privacy_view, name='privacy'),
 ]
+
+# django-silk profiling dashboard — enabled via ENABLE_SILK env var
+if 'silk' in settings.INSTALLED_APPS:
+    urlpatterns += [path('silk/', include('silk.urls', namespace='silk'))]

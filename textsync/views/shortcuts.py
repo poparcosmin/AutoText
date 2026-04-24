@@ -13,7 +13,7 @@ from rest_framework.response import Response
 
 from ..models import Shortcut, ShortcutSet
 from ..serializers import ShortcutSerializer, ShortcutSetSerializer
-from ..cache import get_user_shortcuts_key, get_user_sets_key
+from ..cache import get_user_shortcuts_key, get_user_sets_key, invalidate_user_cache
 
 logger = structlog.get_logger(__name__)
 
@@ -226,6 +226,7 @@ class ShortcutViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save(owner=user, updated_by=user)
 
+        invalidate_user_cache(user.id)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def update(self, request, *args, **kwargs):
@@ -256,6 +257,7 @@ class ShortcutViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save(updated_by=user)
 
+        invalidate_user_cache(user.id)
         return Response(serializer.data)
 
     def destroy(self, request, *args, **kwargs):
@@ -270,4 +272,5 @@ class ShortcutViewSet(viewsets.ModelViewSet):
             raise PermissionDenied("You can only delete your own shortcuts.")
 
         instance.delete()
+        invalidate_user_cache(user.id)
         return Response(status=status.HTTP_204_NO_CONTENT)

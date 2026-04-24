@@ -94,6 +94,19 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+# django-silk — dev-only profiling. Opt-in via env (ENABLE_SILK=True) so tests
+# stay fast and clean. Access at /silk/ after `uv run python manage.py migrate`.
+if os.getenv("ENABLE_SILK", "False") == "True":
+    try:
+        import silk  # noqa: F401
+        INSTALLED_APPS += ["silk"]
+        MIDDLEWARE = ["silk.middleware.SilkyMiddleware"] + MIDDLEWARE
+        SILKY_PYTHON_PROFILER = True
+        SILKY_AUTHENTICATION = False
+        SILKY_AUTHORISATION = False
+    except ImportError:
+        pass
+
 ROOT_URLCONF = "config.urls"
 
 TEMPLATES = [

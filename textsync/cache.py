@@ -31,12 +31,26 @@ def get_shortcut_key(shortcut_id: int) -> str:
 
 
 def invalidate_user_cache(user_id: int) -> None:
-    """Invalidate all cache entries for a user."""
-    keys_to_delete = [
+    """Invalidate all cache entries for a user.
+
+    Covers: user_shortcuts:<id>, user_shortcuts:<id>:<sets_param> variants,
+    user_sets:<id>, bulk_sync:<id>:<sets_key> variants.
+
+    Uses django-redis delete_pattern when available; falls back to explicit
+    keys for backends that lack pattern support (e.g. LocMemCache in tests).
+    """
+    # Base keys — always present (what the legacy test asserts against)
+    base_keys = [
         get_user_shortcuts_key(user_id),
         get_user_sets_key(user_id),
     ]
-    cache.delete_many(keys_to_delete)
+    cache.delete_many(base_keys)
+
+    # Variant keys set by viewsets with sets_param suffix and bulk_sync
+    delete_pattern = getattr(cache, 'delete_pattern', None)
+    if callable(delete_pattern):
+        delete_pattern(f"{get_user_shortcuts_key(user_id)}:*")
+        delete_pattern(f"bulk_sync:{user_id}:*")
 
 
 def cached_shortcuts(timeout: int = None):

@@ -12,6 +12,13 @@ from rest_framework.test import APIClient, APITestCase
             'token_refresh': '2/hour',
             'bulk_sync': '2/hour',
         }
+    },
+    # LocMem isolates throttle state from local Redis availability
+    CACHES={
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'test-throttle',
+        }
     }
 )
 class ThrottlingTests(APITestCase):

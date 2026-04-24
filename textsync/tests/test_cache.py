@@ -1,6 +1,10 @@
-"""Tests for cache utilities."""
+"""Tests for cache utilities.
+
+Uses LocMemCache to stay independent of whether Redis runs on the dev machine.
+Production uses django-redis (see settings.CACHES).
+"""
 from django.core.cache import cache
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 from ..cache import (
     get_cache_key,
@@ -10,6 +14,14 @@ from ..cache import (
 )
 
 
+@override_settings(
+    CACHES={
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'test-cache',
+        }
+    }
+)
 class CacheTests(TestCase):
     """Tests for cache utilities."""
 
