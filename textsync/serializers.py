@@ -80,9 +80,35 @@ class ShortcutSerializer(serializers.ModelSerializer):
             "id", "key", "content_type", "value", "html_value",
             "owner_username", "sets", "set_names", "set_types",
             "aliases", "aliases_input",
+            "variants",
             "updated_at", "usage_count", "last_used_at",
         ]
         read_only_fields = ["usage_count", "last_used_at"]
+
+    MAX_VARIANTS = 3
+
+    def validate_variants(self, value):
+        # Empty list / None → opt-out (single-body behavior). Always allowed.
+        if not value:
+            return []
+
+        if not isinstance(value, list):
+            raise serializers.ValidationError('variants must be a list of strings.')
+        if len(value) > self.MAX_VARIANTS:
+            raise serializers.ValidationError(
+                f'Maximum {self.MAX_VARIANTS} variants supported.'
+            )
+        cleaned = []
+        for entry in value:
+            if not isinstance(entry, str):
+                raise serializers.ValidationError(
+                    'Each variant must be a string body matching the shortcut content_type.'
+                )
+            stripped = entry.strip()
+            if not stripped:
+                continue  # skip blank entries silently — UI may submit empties
+            cleaned.append(entry)  # preserve user formatting (newlines, indents)
+        return cleaned
 
     def get_aliases(self, obj):
         return [a.alias_key for a in obj.aliases.all()]
@@ -164,6 +190,18 @@ class ShortcutSerializer(serializers.ModelSerializer):
         encoding, and keeps the bleach allowlist from textsync.validators.
         """
         return sanitize_html(value) if value else value
+
+    def validate(self, attrs):
+        # Variants inherit the same XSS surface as html_value when the
+        # parent shortcut is in HTML mode — apply bleach to each entry
+        # so the storefront can trust the field uniformly.
+        content_type = attrs.get('content_type') or (
+            self.instance.content_type if self.instance else 'text'
+        )
+        variants = attrs.get('variants')
+        if content_type == 'html' and variants:
+            attrs['variants'] = [sanitize_html(v) for v in variants]
+        return attrs
 
     def validate_key(self, value):
         ok, err = validate_shortcut_key(value)

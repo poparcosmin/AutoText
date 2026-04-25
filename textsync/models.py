@@ -88,6 +88,14 @@ class Shortcut(models.Model):
     # Usage tracking
     usage_count = models.PositiveIntegerField(default=0, help_text='Total times this shortcut has been expanded')
     last_used_at = models.DateTimeField(null=True, blank=True, help_text='Last time this shortcut was used')
+    # Optional alternative bodies the extension picks from at random when
+    # the shortcut expands. Empty list = single-body behavior (default).
+    # Each entry is a string in the same content_type as the parent
+    # (text or html); the UI enforces matching format on input. Max 3
+    # entries — beyond that the user can't realistically tell variants
+    # apart and the random feel becomes noise.
+    variants = models.JSONField(default=list, blank=True,
+                                help_text='Alternative bodies for random pick at expand time. Max 3.')
 
     class Meta:
         ordering = ['key']

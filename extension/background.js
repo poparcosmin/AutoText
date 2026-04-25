@@ -338,6 +338,9 @@ function mergeShortcutsWithPriority(shortcuts) {
       id: shortcut.id,
       sets: shortcut.set_names || [],
       is_personal: hasPersonal,
+      // Optional alternative bodies; content.js rolls a random pick
+      // across [primary, ...variants] at expand time.
+      variants: shortcut.variants || [],
       // Primary key recorded so the alias entries know which row they
       // mirror; useful when restoring or counting.
       primary_key: shortcut.key,

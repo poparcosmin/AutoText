@@ -1915,10 +1915,14 @@ function openShortcutModal(shortcut = null) {
     }
   }
 
-  // Aliases field is reset on every open so reopening on a different
+  // Aliases + variants reset on every open so reopening on a different
   // shortcut never leaks the previous row's values.
   const aliasesField = document.getElementById('shortcut-aliases');
+  const variantsField = document.getElementById('shortcut-variants');
   if (aliasesField) aliasesField.value = '';
+  if (variantsField) variantsField.value = '';
+  const variantsWarning = document.getElementById('shortcut-variants-warning');
+  if (variantsWarning) variantsWarning.classList.add('hidden');
 
   if (shortcut) {
     // Edit mode
@@ -1928,6 +1932,11 @@ function openShortcutModal(shortcut = null) {
     valueField.value = shortcut.value || '';
     if (aliasesField && Array.isArray(shortcut.aliases)) {
       aliasesField.value = shortcut.aliases.join(', ');
+    }
+    if (variantsField && Array.isArray(shortcut.variants) && shortcut.variants.length) {
+      // `---` on its own line is the separator; preserve any internal
+      // newlines so multi-line variants survive a round-trip.
+      variantsField.value = shortcut.variants.join('\n---\n');
     }
 
     // Set TinyMCE content
@@ -2065,6 +2074,24 @@ async function saveShortcut() {
     ? aliasesRaw.split(',').map(s => s.trim()).filter(Boolean)
     : [];
 
+  // Parse `---`-separated variants. Each chunk is a full body (newlines
+  // inside a variant are preserved). Cap at 3 client-side; server
+  // double-checks but the user gets immediate feedback either way.
+  const variantsRaw = document.getElementById('shortcut-variants')?.value || '';
+  const variantsList = variantsRaw.trim()
+    ? variantsRaw.split(/^---$/m).map(s => s.trim()).filter(Boolean)
+    : [];
+  const variantsWarn = document.getElementById('shortcut-variants-warning');
+  if (variantsWarn) variantsWarn.classList.add('hidden');
+  if (variantsList.length > 3) {
+    if (variantsWarn) {
+      variantsWarn.textContent = `Maxim 3 variante (ai introdus ${variantsList.length}).`;
+      variantsWarn.classList.remove('hidden');
+      variantsWarn.classList.add('error');
+    }
+    return;
+  }
+
   const payload = {
     key,
     content_type: isHtml ? 'html' : 'text',
@@ -2072,6 +2099,7 @@ async function saveShortcut() {
     html_value: isHtml ? htmlValue : '',
     sets: [parseInt(setId)],
     aliases_input: aliasesList,
+    variants: variantsList,
   };
 
   try {

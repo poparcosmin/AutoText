@@ -1061,9 +1061,32 @@ async function handleTriggerKey(event) {
     event.stopPropagation();
   }
 
-  // Determine what content to use
+  // A/B variants: if the shortcut row carries a non-empty `variants`
+  // list, treat the primary body as one option and roll a uniform pick
+  // across [primary, ...variants]. Empty/missing variants → no random,
+  // single-body behavior preserved. This runs BEFORE the resolution
+  // pipeline so [[date]], placeholders, etc. all evaluate against the
+  // chosen variant.
   let textContent = shortcut.value;
   let htmlContent = shortcut.html_value;
+  const variants = Array.isArray(shortcut.variants) ? shortcut.variants : [];
+  if (variants.length > 0) {
+    const pool = [
+      { value: shortcut.value, html_value: shortcut.html_value },
+      ...variants.map(v => (
+        // The server stores variants in the same content_type as the
+        // parent. We mirror that on read: if html mode, the variant is
+        // the html body; otherwise the text body.
+        shortcut.html_value
+          ? { value: '', html_value: v }
+          : { value: v, html_value: '' }
+      )),
+    ];
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    textContent = pick.value;
+    htmlContent = pick.html_value;
+    debugLog(`AutoText: variants pick → ${pool.indexOf(pick)} of ${pool.length}`);
+  }
 
   // If text is empty but HTML exists, extract text from HTML without
   // touching innerHTML (mutation-XSS surface). DOMParser gives a detached
