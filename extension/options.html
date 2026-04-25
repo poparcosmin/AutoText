@@ -790,6 +790,91 @@
       color: var(--text-secondary-dark);
     }
 
+    /* Cheatsheet pentru variabile dinamice */
+    .cheatsheet {
+      background: linear-gradient(135deg, #f0f7ff 0%, #e8f1ff 100%);
+      border: 1px solid #c7dbf7;
+      border-radius: 8px;
+      margin: 15px 0;
+      padding: 0;
+    }
+    body.dark .cheatsheet {
+      background: linear-gradient(135deg, #1a2332 0%, #1f2a3d 100%);
+      border-color: #2d3f5a;
+    }
+    .cheatsheet > summary {
+      cursor: pointer;
+      padding: 12px 16px;
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--primary);
+      user-select: none;
+      list-style: none;
+    }
+    .cheatsheet > summary::-webkit-details-marker { display: none; }
+    .cheatsheet > summary:hover { background: rgba(0, 122, 204, 0.06); }
+    .cheatsheet[open] > summary {
+      border-bottom: 1px solid #c7dbf7;
+    }
+    body.dark .cheatsheet[open] > summary {
+      border-bottom-color: #2d3f5a;
+    }
+    .cheatsheet-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      padding: 16px;
+    }
+    .cheatsheet-section h4 {
+      margin: 0 0 8px 0;
+      font-size: 13px;
+      color: var(--text-light);
+      font-weight: 600;
+    }
+    body.dark .cheatsheet-section h4 { color: #e1e7ed; }
+    .cheatsheet-section ul {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .cheatsheet-section li {
+      padding: 4px 0;
+      font-size: 12px;
+      color: #555;
+      line-height: 1.5;
+    }
+    body.dark .cheatsheet-section li { color: #b8c2cc; }
+    .cheatsheet-section code {
+      background: rgba(0, 0, 0, 0.06);
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace;
+      font-size: 11px;
+      color: #d63384;
+    }
+    body.dark .cheatsheet-section code {
+      background: rgba(255, 255, 255, 0.08);
+      color: #ff7eb3;
+    }
+    .cheatsheet-example {
+      grid-column: 1 / -1;
+    }
+    .cheatsheet-example pre {
+      background: rgba(0, 0, 0, 0.04);
+      padding: 10px 12px;
+      border-radius: 4px;
+      font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.5;
+      color: #333;
+      margin: 0;
+      white-space: pre-wrap;
+    }
+    body.dark .cheatsheet-example pre {
+      background: rgba(0, 0, 0, 0.3);
+      color: #d8e0e8;
+    }
+
     /* CRUD Section */
     .crud-section {
       margin-bottom: 25px;
@@ -1132,6 +1217,84 @@
           <p class="setting-description" style="margin-bottom: 15px;">
             Create, edit, or delete your personal shortcuts. Changes sync to the server automatically.
           </p>
+
+          <!-- Cheatsheet pentru variabile dinamice -->
+          <details class="cheatsheet">
+            <summary>📚 Cheatsheet — variabile și sintaxă (click)</summary>
+            <div class="cheatsheet-grid">
+              <div class="cheatsheet-section">
+                <h4>📅 Date & timp</h4>
+                <ul>
+                  <li><code>[[date]]</code> — data curentă (DD.MM.YYYY)</li>
+                  <li><code>[[date:DD.MM.YYYY]]</code> — format custom</li>
+                  <li><code>[[date+7d:DD.MM.YYYY]]</code> — peste 7 zile</li>
+                  <li><code>[[date-30d]]</code> — acum 30 zile</li>
+                  <li><code>[[date+1m]]</code> / <code>[[date+1y]]</code> — peste 1 lună / 1 an</li>
+                  <li><code>[[time]]</code> — ora curentă (HH:mm)</li>
+                  <li><code>[[time:HH:mm]]</code> — format custom oră</li>
+                  <li><code>[[day]]</code> — numele zilei (Luni, Marți...)</li>
+                  <li><code>[[greeting]]</code> — Bună dimineața / ziua / seara</li>
+                </ul>
+              </div>
+
+              <div class="cheatsheet-section">
+                <h4>🎯 Context user</h4>
+                <ul>
+                  <li><code>[[user]]</code> — username-ul tău (ex: cosmin)</li>
+                  <li><code>[[clipboard]]</code> — text din clipboard</li>
+                  <li><code>[[recipient]]</code> — destinatar Gmail (compose / reply)</li>
+                </ul>
+              </div>
+
+              <div class="cheatsheet-section">
+                <h4>🎲 Aleator & alegeri</h4>
+                <ul>
+                  <li><code>[[random:Mersi|Mulțumesc|Cu drag]]</code> — pick aleator</li>
+                  <li><code>[[select:Opțiunea A|Opțiunea B|Opțiunea C]]</code> — te întreabă la expand</li>
+                </ul>
+              </div>
+
+              <div class="cheatsheet-section">
+                <h4>📝 Form prompts (manual)</h4>
+                <ul>
+                  <li><code>{{nume}}</code> — întreabă "nume"</li>
+                  <li><code>{{nume:Numele tău}}</code> — cu label</li>
+                  <li><code>{{nume:Numele tău|cosmin}}</code> — label + default</li>
+                  <li>Aceeași variabilă folosită de mai multe ori = un prompt singur</li>
+                </ul>
+              </div>
+
+              <div class="cheatsheet-section">
+                <h4>🔗 Compoziție</h4>
+                <ul>
+                  <li><code>[[%s(altShortcut)]]</code> — include alt shortcut inline</li>
+                  <li>Ex: <code>email-footer</code> reutilizat în 20 template-uri</li>
+                  <li>Adâncime maximă: 5 niveluri (anti-loop)</li>
+                </ul>
+              </div>
+
+              <div class="cheatsheet-section">
+                <h4>⌨️ Cursor</h4>
+                <ul>
+                  <li><code>$|$</code> — pune cursorul aici după expand</li>
+                  <li>Ex: <code>Salut $|$,</code> — cursor după "Salut "</li>
+                </ul>
+              </div>
+
+              <div class="cheatsheet-section cheatsheet-example">
+                <h4>💡 Exemplu complex</h4>
+                <pre>[[greeting]] [[recipient]],
+
+Vă confirm comanda din [[date]].
+Termen livrare: [[date+7d:DD.MM.YYYY]].
+
+Cu [[random:respect|stimă|drag]],
+[[user]]
+$|$</pre>
+              </div>
+            </div>
+          </details>
+
           <div class="search-container">
             <div class="search-box">
               <input type="text" id="manage-search" placeholder="Filter your shortcuts...">
