@@ -7,7 +7,8 @@
     "storage",
     "alarms",
     "notifications",
-    "clipboardWrite"
+    "clipboardWrite",
+    "clipboardRead"
   ],
   "host_permissions": [
     "<all_urls>"

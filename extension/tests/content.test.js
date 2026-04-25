@@ -507,6 +507,93 @@ describe('content.js — text expansion core', () => {
   });
 
   // ---------------------------------------------------------------------------
+  describe('processSystemVars()', () => {
+    const friday = new Date(2026, 3, 24, 14, 30); // 2026-04-24 Friday 14:30
+    const morning = new Date(2026, 3, 24, 8, 0);  // 08:00
+    const evening = new Date(2026, 3, 24, 20, 0); // 20:00
+
+    beforeEach(() => {
+      // Mock chrome.storage.local + navigator.clipboard
+      global.chrome = global.chrome || {};
+      global.chrome.storage = {
+        local: {
+          get: jest.fn().mockResolvedValue({ username: 'cosmin' }),
+        },
+      };
+      global.navigator = global.navigator || {};
+      global.navigator.clipboard = {
+        readText: jest.fn().mockResolvedValue('clipped text'),
+      };
+    });
+
+    it('passes through strings without system vars', async () => {
+      expect(await content.processSystemVars('hello', friday)).toBe('hello');
+    });
+
+    it('[[day]] returns Romanian weekday name', async () => {
+      expect(await content.processSystemVars('Azi e [[day]]', friday)).toBe('Azi e Vineri');
+    });
+
+    it('[[greeting]] picks Buna ziua at 14:30', async () => {
+      expect(await content.processSystemVars('[[greeting]]', friday)).toBe('Buna ziua');
+    });
+
+    it('[[greeting]] picks Buna dimineata before 11:00', async () => {
+      expect(await content.processSystemVars('[[greeting]]', morning)).toBe('Buna dimineata');
+    });
+
+    it('[[greeting]] picks Buna seara at 18:00+', async () => {
+      expect(await content.processSystemVars('[[greeting]]', evening)).toBe('Buna seara');
+    });
+
+    it('[[user]] reads from chrome.storage.local', async () => {
+      const result = await content.processSystemVars('Salut [[user]]', friday);
+      expect(result).toBe('Salut cosmin');
+    });
+
+    it('[[user]] returns empty string when storage missing', async () => {
+      global.chrome.storage.local.get.mockResolvedValueOnce({});
+      expect(await content.processSystemVars('[[user]]', friday)).toBe('');
+    });
+
+    it('[[clipboard]] reads from navigator.clipboard', async () => {
+      const result = await content.processSystemVars('Pasted: [[clipboard]]', friday);
+      expect(result).toBe('Pasted: clipped text');
+    });
+
+    it('[[clipboard]] returns empty string on permission denial', async () => {
+      global.navigator.clipboard.readText.mockRejectedValueOnce(new Error('NotAllowedError'));
+      expect(await content.processSystemVars('[[clipboard]]', friday)).toBe('');
+    });
+
+    it('[[random:A|B|C]] picks one of the options', async () => {
+      const result = await content.processSystemVars('[[random:Mersi|Mulțumesc|Cu drag]]', friday);
+      expect(['Mersi', 'Mulțumesc', 'Cu drag']).toContain(result);
+    });
+
+    it('[[random]] without args returns empty string', async () => {
+      expect(await content.processSystemVars('[[random]]', friday)).toBe('');
+    });
+
+    it('handles multiple system vars in one string', async () => {
+      const result = await content.processSystemVars('[[greeting]] [[user]]!', friday);
+      expect(result).toBe('Buna ziua cosmin!');
+    });
+
+    it('preserves unknown system vars', async () => {
+      expect(await content.processSystemVars('hello [[foo]]', friday)).toBe('hello [[foo]]');
+    });
+
+    it('does not re-process replacement text containing [[...]]', async () => {
+      // _readClipboard returns text that LOOKS LIKE a system var
+      global.navigator.clipboard.readText.mockResolvedValueOnce('[[day]]');
+      const result = await content.processSystemVars('Got: [[clipboard]]', friday);
+      // Should NOT recurse and replace [[day]] inside the clipboard content
+      expect(result).toBe('Got: [[day]]');
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   describe('isTriggerKey()', () => {
     it('key mode: matches configured triggerKey only', () => {
       const s = { triggerMode: 'key', triggerKey: 'Tab' };

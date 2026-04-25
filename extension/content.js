@@ -547,6 +547,99 @@ function processDateMacros(input, now = new Date()) {
   });
 }
 
+// ----------------------------------------------------------------------------
+// System variables — [[day]], [[greeting]], [[user]], [[clipboard]],
+// [[random:A|B|C]]. Reuses [[...]] convention to stay consistent with date
+// macros and snippet nesting. Async because clipboard + user reads cross
+// the chrome.storage / clipboard boundaries; date macros remain sync since
+// they are pure computation on `new Date()`.
+//
+// Pipeline ordering (vezi handleTriggerKey): nesting -> date -> system ->
+// placeholders -> cursor. System vars run after date so [[date]] is resolved
+// first (defensive — current grammars don't overlap, but ordering is cheap
+// insurance for future additions).
+// ----------------------------------------------------------------------------
+const SYSTEM_VAR_RE = /\[\[(day|greeting|user|clipboard|random)(?::([^\]]*))?\]\]/g;
+
+const ROMANIAN_DAY_NAMES = [
+  'Duminica', 'Luni', 'Marti', 'Miercuri', 'Joi', 'Vineri', 'Sambata'
+];
+
+function _greeting(date) {
+  const h = date.getHours();
+  if (h < 11) return 'Buna dimineata';
+  if (h < 18) return 'Buna ziua';
+  return 'Buna seara';
+}
+
+function _randomPick(args) {
+  if (!args) return '';
+  const options = args.split('|').map(s => s.trim()).filter(Boolean);
+  if (options.length === 0) return '';
+  return options[Math.floor(Math.random() * options.length)];
+}
+
+async function _readUsername() {
+  try {
+    const stored = await chrome.storage.local.get('username');
+    return (stored && stored.username) || '';
+  } catch {
+    return '';
+  }
+}
+
+async function _readClipboard() {
+  try {
+    const text = await navigator.clipboard.readText();
+    return text || '';
+  } catch (err) {
+    // Permission denied or not in user-gesture context.
+    // showToast is defined later in the file; guard at call site.
+    if (typeof showToast === 'function') {
+      showToast('clipboard', 'Permite acces la clipboard din chrome://settings');
+    }
+    return '';
+  }
+}
+
+// Find all matches via matchAll, resolve async ones in parallel, then
+// reassemble via index-based slicing. Avoids reentrancy bug where
+// String.replace would re-scan replacement text — if a future resolver
+// returns text containing `[[...]]`, we must NOT process it again.
+async function processSystemVars(input, now = new Date()) {
+  if (!input || typeof input !== 'string') return input;
+  const matches = [...input.matchAll(SYSTEM_VAR_RE)];
+  if (matches.length === 0) return input;
+
+  const replacements = await Promise.all(matches.map(async (m) => {
+    const kind = m[1];
+    const args = m[2];
+    try {
+      switch (kind) {
+        case 'day': return ROMANIAN_DAY_NAMES[now.getDay()];
+        case 'greeting': return _greeting(now);
+        case 'random': return _randomPick(args || '');
+        case 'user': return await _readUsername();
+        case 'clipboard': return await _readClipboard();
+        default: return '';
+      }
+    } catch (err) {
+      console.warn('AutoText: system var', kind, 'failed:', err);
+      return '';
+    }
+  }));
+
+  const out = [];
+  let lastIdx = 0;
+  matches.forEach((m, i) => {
+    out.push(input.slice(lastIdx, m.index));
+    out.push(replacements[i]);
+    lastIdx = m.index + m[0].length;
+  });
+  out.push(input.slice(lastIdx));
+  return out.join('');
+}
+
 // Extract cursor marker position from expansion. Returns {text, cursorOffset}
 // where cursorOffset is the index in `text` where the caret should land,
 // or null if no marker. Marker is literal "$|$" — picked because it's
@@ -725,7 +818,7 @@ function isTriggerKey(event, currentSettings) {
   return event.key === (currentSettings.triggerKey || 'Tab');
 }
 
-function handleTriggerKey(event) {
+async function handleTriggerKey(event) {
   // Check if AutoText is globally disabled (via keyboard shortcut toggle)
   if (!autotextEnabled) {
     return;
@@ -833,7 +926,8 @@ function handleTriggerKey(event) {
   // Expansion pipeline (ordering matters):
   //   1. Snippet nesting — flatten [[%s(other)]] references recursively
   //   2. Date macros — [[date]], [[date+7d]], etc.
-  //   3. Form placeholders — {{name:Label|default}}, prompted interactively
+  //   3. System vars — [[day]], [[greeting]], [[user]], [[clipboard]], [[random:A|B|C]]
+  //   4. Form placeholders — {{name:Label|default}}, prompted interactively
   // Cursor marker ($|$) is handled later, inside replace* functions.
   textContent = processSnippetNesting(textContent, shortcuts);
   if (htmlContent) {
@@ -842,6 +936,10 @@ function handleTriggerKey(event) {
   textContent = processDateMacros(textContent);
   if (htmlContent) {
     htmlContent = processDateMacros(htmlContent);
+  }
+  textContent = await processSystemVars(textContent);
+  if (htmlContent) {
+    htmlContent = await processSystemVars(htmlContent);
   }
 
   // Collect placeholders across both text and html (same field fills both).
@@ -1119,6 +1217,7 @@ if (typeof module !== "undefined" && module.exports) {
     isGmailFormNavigation,
     extractCursorMarker,
     processDateMacros,
+    processSystemVars,
     processSnippetNesting,
     extractPlaceholders,
     substitutePlaceholders,
