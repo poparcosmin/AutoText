@@ -790,89 +790,100 @@
       color: var(--text-secondary-dark);
     }
 
-    /* Cheatsheet pentru variabile dinamice */
+    /* Cheatsheet — contrast first. Solid surfaces (no gradients), code
+       blocks with their own light background + dark text instead of the
+       previous pink-on-pale-blue. Verified against WCAG AA on both modes. */
     .cheatsheet {
-      background: linear-gradient(135deg, #f0f7ff 0%, #e8f1ff 100%);
-      border: 1px solid #c7dbf7;
+      background: #ffffff;
+      border: 1px solid #d1d5db;
       border-radius: 8px;
       margin: 15px 0;
       padding: 0;
     }
     body.dark .cheatsheet {
-      background: linear-gradient(135deg, #1a2332 0%, #1f2a3d 100%);
-      border-color: #2d3f5a;
+      background: #1f2937;
+      border-color: #374151;
     }
     .cheatsheet > summary {
       cursor: pointer;
       padding: 12px 16px;
       font-weight: 600;
       font-size: 14px;
-      color: var(--primary);
+      color: #0066cc;
       user-select: none;
       list-style: none;
     }
+    body.dark .cheatsheet > summary {
+      color: #5eb3ff;
+    }
     .cheatsheet > summary::-webkit-details-marker { display: none; }
-    .cheatsheet > summary:hover { background: rgba(0, 122, 204, 0.06); }
+    .cheatsheet > summary:hover { background: #f3f4f6; }
+    body.dark .cheatsheet > summary:hover { background: #111827; }
     .cheatsheet[open] > summary {
-      border-bottom: 1px solid #c7dbf7;
+      border-bottom: 1px solid #d1d5db;
     }
     body.dark .cheatsheet[open] > summary {
-      border-bottom-color: #2d3f5a;
+      border-bottom-color: #374151;
     }
     .cheatsheet-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 16px;
-      padding: 16px;
+      gap: 24px;
+      padding: 20px;
     }
     .cheatsheet-section h4 {
-      margin: 0 0 8px 0;
-      font-size: 13px;
-      color: var(--text-light);
-      font-weight: 600;
+      margin: 0 0 10px 0;
+      font-size: 14px;
+      color: #111827;
+      font-weight: 700;
     }
-    body.dark .cheatsheet-section h4 { color: #e1e7ed; }
+    body.dark .cheatsheet-section h4 { color: #f9fafb; }
     .cheatsheet-section ul {
       margin: 0;
       padding: 0;
       list-style: none;
     }
     .cheatsheet-section li {
-      padding: 4px 0;
-      font-size: 12px;
-      color: #555;
-      line-height: 1.5;
+      padding: 5px 0;
+      font-size: 13px;
+      color: #374151;
+      line-height: 1.55;
     }
-    body.dark .cheatsheet-section li { color: #b8c2cc; }
+    body.dark .cheatsheet-section li { color: #d1d5db; }
     .cheatsheet-section code {
-      background: rgba(0, 0, 0, 0.06);
-      padding: 1px 5px;
-      border-radius: 3px;
+      background: #f3f4f6;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid #e5e7eb;
       font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace;
-      font-size: 11px;
-      color: #d63384;
+      font-size: 12px;
+      color: #1f2937;
+      font-weight: 500;
     }
     body.dark .cheatsheet-section code {
-      background: rgba(255, 255, 255, 0.08);
-      color: #ff7eb3;
+      background: #0f172a;
+      border-color: #334155;
+      color: #e2e8f0;
     }
     .cheatsheet-example {
       grid-column: 1 / -1;
     }
     .cheatsheet-example pre {
-      background: rgba(0, 0, 0, 0.04);
-      padding: 10px 12px;
-      border-radius: 4px;
+      background: #f3f4f6;
+      border: 1px solid #e5e7eb;
+      padding: 12px 14px;
+      border-radius: 6px;
       font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace;
-      font-size: 12px;
-      line-height: 1.5;
-      color: #333;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #1f2937;
       margin: 0;
       white-space: pre-wrap;
     }
     body.dark .cheatsheet-example pre {
-      background: rgba(0, 0, 0, 0.3);
-      color: #d8e0e8;
+      background: #0f172a;
+      border-color: #334155;
+      color: #e2e8f0;
     }
 
     /* CRUD Section */
@@ -1047,8 +1058,72 @@
 
     .shortcut-actions {
       display: flex;
-      gap: 5px;
+      gap: 8px;
       margin-left: auto;
+      flex-wrap: wrap;
+    }
+
+    /* Action buttons — icon + text, neutral surface so the label does
+       the work instead of a saturated colour. Hover lifts and tints. */
+    .btn-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      background: #f1f3f5;
+      color: #374151;
+      border: 1px solid #d1d5db;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+      line-height: 1;
+    }
+    body.dark .btn-action {
+      background: #1f2937;
+      color: #e5e7eb;
+      border-color: #374151;
+    }
+    .btn-action:hover {
+      transform: translateY(-1px);
+    }
+    .btn-action-icon {
+      font-size: 14px;
+      line-height: 1;
+    }
+    .btn-action-label {
+      white-space: nowrap;
+    }
+    .btn-action-edit:hover {
+      background: #fef3c7;
+      border-color: #fbbf24;
+      color: #78350f;
+    }
+    body.dark .btn-action-edit:hover {
+      background: #422006;
+      border-color: #b45309;
+      color: #fde68a;
+    }
+    .btn-action-delete:hover {
+      background: #fee2e2;
+      border-color: #ef4444;
+      color: #7f1d1d;
+    }
+    body.dark .btn-action-delete:hover {
+      background: #450a0a;
+      border-color: #b91c1c;
+      color: #fecaca;
+    }
+    .btn-action-copy:hover {
+      background: #dbeafe;
+      border-color: #3b82f6;
+      color: #1e3a8a;
+    }
+    body.dark .btn-action-copy:hover {
+      background: #172554;
+      border-color: #2563eb;
+      color: #bfdbfe;
     }
 
     /* Content type toggle in modal */

@@ -65,6 +65,8 @@ def login_view(request):
             'id': user.id,
             'username': user.username,
             'email': user.email,
+            'is_superuser': user.is_superuser,
+            'is_birou_curator': user.groups.filter(name='birou-curators').exists(),
         }
     })
 
@@ -105,6 +107,8 @@ def verify_token_view(request):
             'id': request.user.id,
             'username': request.user.username,
             'email': request.user.email,
+            'is_superuser': request.user.is_superuser,
+            'is_birou_curator': request.user.groups.filter(name='birou-curators').exists(),
         }
     })
 
@@ -159,5 +163,7 @@ def refresh_token_view(request):
             'id': request.user.id,
             'username': request.user.username,
             'email': request.user.email,
+            'is_superuser': request.user.is_superuser,
+            'is_birou_curator': request.user.groups.filter(name='birou-curators').exists(),
         }
     })

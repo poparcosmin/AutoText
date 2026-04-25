@@ -254,11 +254,12 @@ class ShortcutViewSet(viewsets.ModelViewSet):
         """
         PUT /api/shortcuts/{id}/
 
-        Edit rules for an internal team:
+        Edit rules:
           - Owner can always edit their own shortcut.
           - Superuser can edit any shortcut.
-          - Any staff user can edit a shortcut that lives in a `general`
-            set (Birou) — these are shared team knowledge, not personal.
+          - For shortcuts in `general` sets (Birou): only members of the
+            'birou-curators' Django group may edit. Other staff users are
+            expected to use Copy-to-Personal and edit their own copy.
           - Personal shortcuts (only in personal sets) stay strict-owner.
         """
         instance = self.get_object()
@@ -266,7 +267,16 @@ class ShortcutViewSet(viewsets.ModelViewSet):
 
         is_owner = instance.owner == user
         is_in_general_set = instance.sets.filter(set_type='general').exists()
-        if not (user.is_superuser or is_owner or is_in_general_set):
+        is_birou_curator = (
+            is_in_general_set
+            and user.groups.filter(name='birou-curators').exists()
+        )
+        if not (user.is_superuser or is_owner or is_birou_curator):
+            if is_in_general_set:
+                raise PermissionDenied(
+                    "Only birou-curators or the owner can edit Birou shortcuts. "
+                    "Use Copy-to-Personal to make a private edit."
+                )
             raise PermissionDenied(
                 "Only the owner can edit personal shortcuts."
             )
@@ -298,17 +308,27 @@ class ShortcutViewSet(viewsets.ModelViewSet):
         """
         DELETE /api/shortcuts/{id}/
 
-        Same rules as update — owner / superuser / anyone-on-general.
-        Delete is destructive but `general` sets are team-shared and a
-        2-10 person team is small enough that anyone with team trust
-        can clean up the shared list.
+        Stricter than update: delete from Birou is allowed ONLY for
+        superusers (effectively a Django admin operation). The intent
+        is that team-shared shortcuts get curated edits but never
+        accidentally vanish — anyone making a mistake can use the admin
+        site (which has bulk-undo via history) instead of the API.
+
+          - Owner: can delete their own personal shortcut.
+          - Superuser: can delete anything.
+          - Anyone else on a Birou shortcut: blocked.
         """
         instance = self.get_object()
         user = request.user
 
         is_owner = instance.owner == user
         is_in_general_set = instance.sets.filter(set_type='general').exists()
-        if not (user.is_superuser or is_owner or is_in_general_set):
+        if not (user.is_superuser or (is_owner and not is_in_general_set)):
+            if is_in_general_set:
+                raise PermissionDenied(
+                    "Birou shortcuts can only be deleted from the Django admin "
+                    "(intentionally restricted to prevent accidental team-wide loss)."
+                )
             raise PermissionDenied(
                 "Only the owner can delete personal shortcuts."
             )

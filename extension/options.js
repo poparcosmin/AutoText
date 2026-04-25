@@ -6,6 +6,10 @@ let selectedSets = [];
 let currentUser = null;
 let authToken = null;
 let allShortcuts = {};
+// User role flags from /auth/login or /auth/check responses. Defaults
+// false so unauthenticated UI hides curator-only controls. Updated on
+// every successful login or token refresh.
+let userPerms = { is_superuser: false, is_birou_curator: false };
 let userSettings = {
   triggerKey: 'Tab',
   showToast: true,
@@ -84,9 +88,12 @@ function initializeTabs() {
 
 // Check if user has valid auth token
 async function checkAuthentication() {
-  const result = await chrome.storage.local.get(['auth_token', 'username']);
+  const result = await chrome.storage.local.get(['auth_token', 'username', 'user_perms']);
   authToken = result.auth_token;
   currentUser = result.username;
+  if (result.user_perms) {
+    userPerms = { ...userPerms, ...result.user_perms };
+  }
 
   if (!authToken) {
     // No token - show login form
@@ -107,6 +114,11 @@ async function checkAuthentication() {
       if (data.valid) {
         // Token is valid - proceed to show sets
         currentUser = data.user.username;
+        userPerms = {
+          is_superuser: !!data.user.is_superuser,
+          is_birou_curator: !!data.user.is_birou_curator,
+        };
+        await chrome.storage.local.set({ user_perms: userPerms });
         await loadSetsView();
       } else {
         // Token expired
@@ -170,10 +182,15 @@ async function handleLogin(e) {
     // Save token, username, and expiration time
     authToken = data.token;
     currentUser = data.user.username;
+    userPerms = {
+      is_superuser: !!data.user.is_superuser,
+      is_birou_curator: !!data.user.is_birou_curator,
+    };
 
     await chrome.storage.local.set({
       auth_token: authToken,
       username: currentUser,
+      user_perms: userPerms,
       token_expires_at: data.expires_at,
       api_url: CONFIG.API_URL  // Save API URL for content scripts
     });
@@ -1000,6 +1017,26 @@ async function loadPersonalSetsForSelect() {
   }
 }
 
+// Build an action button with an icon and a label side-by-side. The
+// previous design used colour-only pills which were harder to scan;
+// the new buttons share a neutral surface and rely on the icon + label
+// to convey intent. CSS class .btn-action carries the layout.
+function makeActionButton(kind, icon, label, onClick) {
+  const btn = document.createElement('button');
+  btn.className = `btn-action btn-action-${kind}`;
+  btn.title = label;
+  const iconSpan = document.createElement('span');
+  iconSpan.className = 'btn-action-icon';
+  iconSpan.textContent = icon;
+  const labelSpan = document.createElement('span');
+  labelSpan.className = 'btn-action-label';
+  labelSpan.textContent = label;
+  btn.appendChild(iconSpan);
+  btn.appendChild(labelSpan);
+  btn.addEventListener('click', onClick);
+  return btn;
+}
+
 function renderManageShortcuts(shortcuts) {
   const container = document.getElementById('manage-shortcuts-list');
   container.textContent = '';
@@ -1073,36 +1110,33 @@ function renderManageShortcuts(shortcuts) {
     const actions = document.createElement('div');
     actions.className = 'shortcut-actions';
 
-    // Birou (general) is now team-shared edit per server-side change —
-    // every staff user can edit/delete shortcuts there. Personal sets
-    // remain strict-owner; the API gates writes regardless.
     const isFromBirou = setNames.includes('Birou');
-
-    const editBtn = document.createElement('button');
-    editBtn.className = 'btn-edit';
-    editBtn.textContent = '✏️';
-    editBtn.title = isFromBirou ? 'Edit (shared with team)' : 'Edit';
-    editBtn.addEventListener('click', () => openShortcutModal(shortcut));
-
-    const deleteBtn = document.createElement('button');
-    deleteBtn.className = 'btn-delete';
-    deleteBtn.textContent = '🗑️';
-    deleteBtn.title = isFromBirou ? 'Delete (affects whole team)' : 'Delete';
-    deleteBtn.addEventListener('click', () => deleteShortcut(shortcut.id));
-
-    actions.appendChild(editBtn);
-    actions.appendChild(deleteBtn);
+    // Birou edit is gated to superusers + birou-curators (matches API).
+    // Birou delete is admin-only (API blocks even curators).
+    const canEditBirou = userPerms.is_superuser || userPerms.is_birou_curator;
+    const canDeleteBirou = userPerms.is_superuser;
 
     if (isFromBirou) {
-      // Keep "Copy to Personal" as a third option — useful when you want
-      // a personal variant without touching the team's shared snippet.
-      const copyBtn = document.createElement('button');
-      copyBtn.className = 'btn-copy';
-      copyBtn.textContent = '📋';
-      copyBtn.title = 'Copy to Personal Set';
-      copyBtn.style.cssText = 'background: var(--primary); color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; margin-left: 4px;';
-      copyBtn.addEventListener('click', () => copyToPersonalSet(shortcut));
+      // Edit, hidden if user can't edit Birou
+      if (canEditBirou) {
+        const editBtn = makeActionButton('edit', '✏️', 'Editează', () => openShortcutModal(shortcut));
+        actions.appendChild(editBtn);
+      }
+      // Delete, hidden unless superuser
+      if (canDeleteBirou) {
+        const deleteBtn = makeActionButton('delete', '🗑️', 'Șterge', () => deleteShortcut(shortcut.id));
+        actions.appendChild(deleteBtn);
+      }
+      // Copy to Personal — always available for everyone (workflow when
+      // they want a personal variant of a Birou shortcut)
+      const copyBtn = makeActionButton('copy', '📋', 'Copiază personal', () => copyToPersonalSet(shortcut));
       actions.appendChild(copyBtn);
+    } else {
+      // Personal shortcut — owner can always edit + delete
+      const editBtn = makeActionButton('edit', '✏️', 'Editează', () => openShortcutModal(shortcut));
+      const deleteBtn = makeActionButton('delete', '🗑️', 'Șterge', () => deleteShortcut(shortcut.id));
+      actions.appendChild(editBtn);
+      actions.appendChild(deleteBtn);
     }
 
     row.appendChild(keyBadge);
