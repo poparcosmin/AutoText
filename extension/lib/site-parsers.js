@@ -26,7 +26,26 @@ function _firstNameFromAddressList(value) {
   return first;
 }
 
+// Has the extension runtime been invalidated by a reload? Accessing
+// chrome.runtime.id throws synchronously after the host extension is
+// disabled or reloaded; we wrap the access so a stale content script
+// can detect the situation without bringing down the whole expand
+// pipeline.
+function _runtimeAlive() {
+  try {
+    return typeof chrome !== 'undefined'
+        && !!chrome.runtime
+        && !!chrome.runtime.id;
+  } catch (_e) {
+    return false;
+  }
+}
+
 function _gmailRecipient() {
+  // Bail early on a stale content script — the parser cannot read storage
+  // and the resolver in content.js will catch the empty string.
+  if (!_runtimeAlive()) return '';
+
   // Try a series of selector strategies, broadest first. Gmail's class
   // names rotate; the [email] / [name] attributes have been stable for
   // years, which is why most fallbacks key on them rather than on a
@@ -97,9 +116,7 @@ function _gmailRecipient() {
   // outlives the extension context; calls to chrome.storage.* throw
   // "Extension context invalidated". Catching keeps the parser silent
   // until the page reloads and re-injects the new bundle.
-  if (_gmailFailCount >= SITE_PARSER_FAIL_THRESHOLD
-      && typeof chrome !== 'undefined'
-      && chrome.runtime && chrome.runtime.id
+  if (_gmailFailCount >= SITE_PARSER_FAIL_THRESHOLD && _runtimeAlive()
       && chrome.storage && chrome.storage.local) {
     try {
       const setPromise = chrome.storage.local.set({
@@ -110,8 +127,8 @@ function _gmailRecipient() {
         setPromise.catch(() => {});
       }
     } catch (_e) {
-      // Extension context invalidated — nothing to do, page will get the
-      // new content script on next reload.
+      // Storage failed too — content script will be replaced on next page
+      // reload, no further action needed.
     }
   }
   return '';

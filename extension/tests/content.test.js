@@ -513,8 +513,11 @@ describe('content.js — text expansion core', () => {
     const evening = new Date(2026, 3, 24, 20, 0); // 20:00
 
     beforeEach(() => {
-      // Mock chrome.storage.local + navigator.clipboard
+      // Mock chrome.* — runtime.id needed so _runtimeAlive() reports
+      // healthy in jest. Without it, resolvers bail early on the
+      // assumption that the content script is stale.
       global.chrome = global.chrome || {};
+      global.chrome.runtime = { id: 'test-extension-id' };
       global.chrome.storage = {
         local: {
           get: jest.fn().mockResolvedValue({ username: 'cosmin' }),

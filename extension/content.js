@@ -588,7 +588,23 @@ function _randomPick(args) {
   return options[Math.floor(Math.random() * options.length)];
 }
 
+// Detect a stale content script (extension reloaded while this tab was
+// open). chrome.runtime.id throws synchronously after invalidation,
+// so we wrap the access. Anywhere we'd hit chrome.* APIs, check this
+// first and bail with an empty string so resolver pipelines don't
+// log scary errors that the user can't act on.
+function _runtimeAlive() {
+  try {
+    return typeof chrome !== 'undefined'
+        && !!chrome.runtime
+        && !!chrome.runtime.id;
+  } catch (_e) {
+    return false;
+  }
+}
+
 async function _readUsername() {
+  if (!_runtimeAlive()) return '';
   try {
     const stored = await chrome.storage.local.get('username');
     return (stored && stored.username) || '';
@@ -644,6 +660,7 @@ const NESTED_VAR_RE = /\[\[var:([a-zA-Z_][a-zA-Z0-9_]*)\]\]/g;
 
 async function _readUserVariable(name, depth = 0, visited = new Set()) {
   if (!name) return '';
+  if (!_runtimeAlive()) return `[[var:${name}]]`;
   if (depth >= MAX_VAR_DEPTH) {
     console.warn(`AutoText: var depth ${MAX_VAR_DEPTH} exceeded on "${name}"`);
     return `[[var:${name}]]`;
@@ -943,6 +960,15 @@ function isTriggerKey(event, currentSettings) {
 }
 
 async function handleTriggerKey(event) {
+  // Stale content script — extension was reloaded but this page never
+  // refreshed. Any chrome.* call from here will throw "Extension context
+  // invalidated", and the user would see a partially-expanded snippet
+  // with literal [[...]] tokens. Refuse early; the next page reload
+  // pulls in the fresh content script.
+  if (!_runtimeAlive()) {
+    return;
+  }
+
   // Check if AutoText is globally disabled (via keyboard shortcut toggle)
   if (!autotextEnabled) {
     return;
