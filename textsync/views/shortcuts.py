@@ -190,12 +190,31 @@ class ShortcutViewSet(viewsets.ModelViewSet):
     def my(self, request):
         """
         GET /api/shortcuts/my/
-        Returns only shortcuts owned by the current user.
+
+        Lists shortcuts the current user can manage:
+          - superusers: every shortcut (full edit rights across the team)
+          - staff: shortcuts they own + shortcuts in shared sets where
+            they're in visible_to (read access shown but edit gated by
+            owner check in update/destroy)
+
+        Pre-superuser-fix this returned only owner=user, which left
+        non-creator team members with an empty Manage tab even when
+        they had legitimate visibility into the shared sets.
         """
         import logging
+        from django.db.models import Q
         logger = logging.getLogger(__name__)
         try:
-            queryset = Shortcut.objects.filter(owner=request.user).prefetch_related('sets')
+            user = request.user
+            if user.is_superuser:
+                queryset = Shortcut.objects.all()
+            else:
+                queryset = Shortcut.objects.filter(
+                    Q(owner=user) |
+                    Q(sets__visible_to=user) |
+                    Q(sets__set_type='general')
+                ).distinct()
+            queryset = queryset.prefetch_related('sets')
             serializer = self.get_serializer(queryset, many=True)
             return Response(serializer.data)
         except Exception as e:
