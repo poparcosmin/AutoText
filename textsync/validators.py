@@ -7,12 +7,16 @@ import re
 import bleach
 
 
-# Allowed HTML tags for rich text shortcuts
+# Allowed HTML tags for rich text shortcuts.
+# `font` is HTML4-deprecated but kept because the live DB contains legacy
+# snippets like <font color="#1ABC9C">...</font> from the TinyMCE editor.
+# Removing it would silently strip user-visible colour cues — unfriendly
+# for an internal app where "security average" is the bar.
 ALLOWED_TAGS = [
     'p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'strike',
     'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
     'ul', 'ol', 'li',
-    'a', 'span', 'div',
+    'a', 'span', 'div', 'font',
     'table', 'thead', 'tbody', 'tr', 'th', 'td',
     'blockquote', 'pre', 'code',
     'img', 'hr',
@@ -26,6 +30,7 @@ ALLOWED_ATTRIBUTES = {
     'td': ['colspan', 'rowspan'],
     'th': ['colspan', 'rowspan'],
     'span': ['data-placeholder'],  # For TinyMCE placeholders
+    'font': ['color', 'face', 'size'],  # legacy TinyMCE colour cues
 }
 
 # Allowed CSS properties in style attribute

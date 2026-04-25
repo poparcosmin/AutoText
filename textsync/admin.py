@@ -580,12 +580,29 @@ class ShortcutAdmin(admin.ModelAdmin):
         return render(request, 'admin/textsync/shortcut/import_csv.html', context)
 
 
+@admin.action(description='Revoca toate token-urile pentru userii selectati')
+def revoke_all_tokens_for_user(modeladmin, request, queryset):
+    """Bulk-revoke action — for the laptop-lost / device-stolen scenario.
+    Deletes every ExpiringToken owned by the selected users; affected users
+    will be re-prompted for password on the next sync. Action is restricted
+    to superusers via the ModelAdmin permission gates below.
+    """
+    user_ids = set(queryset.values_list('user_id', flat=True))
+    deleted_count, _ = ExpiringToken.objects.filter(user_id__in=user_ids).delete()
+    messages.success(
+        request,
+        f'Revocate: {deleted_count} token(s) pentru {len(user_ids)} user(i). '
+        'Userii vor face re-login la urmatorul sync.'
+    )
+
+
 @admin.register(ExpiringToken)
 class ExpiringTokenAdmin(admin.ModelAdmin):
     list_display = ["user", "key_preview", "created", "expires_at", "is_valid"]
     list_filter = ["created", "expires_at"]
     search_fields = ["user__username", "key"]
     readonly_fields = ["key", "created", "expires_at"]
+    actions = [revoke_all_tokens_for_user]
 
     def key_preview(self, obj):
         """Show first 10 chars of token"""

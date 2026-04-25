@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from .models import Shortcut, ShortcutSet
+from .validators import sanitize_html, validate_shortcut_key
 
 
 class ShortcutSetSerializer(serializers.ModelSerializer):
@@ -58,3 +59,16 @@ class ShortcutSerializer(serializers.ModelSerializer):
     def get_owner_username(self, obj):
         """Return owner username if exists"""
         return obj.owner.username if obj.owner else None
+
+    def validate_html_value(self, value):
+        """Server-side defence-in-depth peste DOMPurify din extension.
+        Strips disallowed tags (script/iframe/etc.), normalizes attribute
+        encoding, and keeps the bleach allowlist from textsync.validators.
+        """
+        return sanitize_html(value) if value else value
+
+    def validate_key(self, value):
+        ok, err = validate_shortcut_key(value)
+        if not ok:
+            raise serializers.ValidationError(err)
+        return value

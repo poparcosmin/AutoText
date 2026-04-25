@@ -45,6 +45,9 @@
     "128": "icon128.png"
   },
   "options_page": "options.html",
+  "content_security_policy": {
+    "extension_pages": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; connect-src 'self' https://autotext.zua.ro https://*.zua.ro"
+  },
   "commands": {
     "sync-shortcuts": {
       "suggested_key": {
