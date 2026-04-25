@@ -371,12 +371,16 @@ function getTextBeforeCursor(element) {
 // once HTML hits the browser, mutation-XSS vectors (SVG foreignObject,
 // noscript tricks) can surface. DOMPurify handles the client-side layer.
 // We bundle lib/dompurify.min.js as a content script loaded before this one.
-function safeHTML(dirty) {
+function safeHTML(dirty, opts = {}) {
   if (typeof DOMPurify !== 'undefined' && DOMPurify.sanitize) {
     return DOMPurify.sanitize(dirty, {
       USE_PROFILES: { html: true },
       FORBID_TAGS: ['style', 'script'],
-      FORBID_ATTR: ['onerror', 'onload', 'onclick']
+      FORBID_ATTR: ['onerror', 'onload', 'onclick'],
+      // Caller can extend the attribute allowlist (e.g. data-at-cursor for
+      // the cursor marker span). Always passed through; never trusted to
+      // override the FORBID_* list above.
+      ADD_ATTR: opts.ADD_ATTR || [],
     });
   }
   // DOMPurify not loaded — refuse HTML entirely rather than risk XSS.
@@ -855,17 +859,39 @@ function replaceInContentEditable(element, shortcutKey, expansion, htmlExpansion
       // Insert plain text — convert newlines to <br> for contenteditable.
       // Escape angle brackets first; DOMPurify re-sanitizes defensively.
       if (expansion.includes('\n')) {
-        const escaped = expansion
+        // Cursor marker handling: replace $|$ with an inline DOM marker
+        // BEFORE escape/split so we can find it post-insert. Without this
+        // the multiline branch dropped the marker as literal text.
+        const cursorIdx = expansion.indexOf(CURSOR_MARKER);
+        const stripped = cursorIdx >= 0
+          ? expansion.replace(CURSOR_MARKER, ' CURSOR ')
+          : expansion;
+        const escaped = stripped
           .split('\n')
           .map(line => line.replace(/</g, '&lt;').replace(/>/g, '&gt;'))
-          .join('<br>');
-        const clean = safeHTML(escaped);
+          .join('<br>')
+          .replace(' CURSOR ', '<span data-at-cursor="1"></span>');
+        const clean = safeHTML(escaped, { ADD_ATTR: ['data-at-cursor'] });
         const fragment = range.createContextualFragment(clean);
 
         range.insertNode(fragment);
-        range.collapse(false);
-        selection.removeAllRanges();
-        selection.addRange(range);
+
+        // If we placed a cursor marker, position selection at it and drop
+        // the marker. Otherwise fall through to the default end-of-insert
+        // collapse so the caret lands after the snippet.
+        const marker = element.querySelector('[data-at-cursor="1"]');
+        if (marker) {
+          const newRange = document.createRange();
+          newRange.setStartBefore(marker);
+          newRange.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(newRange);
+          marker.remove();
+        } else {
+          range.collapse(false);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
       } else {
         // Single line - use text node with cursor marker support
         const { text: plainText, cursorOffset } = extractCursorMarker(expansion);
