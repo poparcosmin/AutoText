@@ -27,49 +27,92 @@ function _firstNameFromAddressList(value) {
 }
 
 function _gmailRecipient() {
-  // Compose dialog: input or textarea with name="to". Gmail uses both
-  // depending on layout (popup vs full screen).
-  const composeTo = document.querySelector('[role="dialog"] input[name="to"]')
-                 || document.querySelector('[role="dialog"] textarea[name="to"]');
-  if (composeTo && composeTo.value) {
-    _gmailFailCount = 0;
-    return _firstNameFromAddressList(composeTo.value);
+  // Try a series of selector strategies, broadest first. Gmail's class
+  // names rotate; the [email] / [name] attributes have been stable for
+  // years, which is why most fallbacks key on them rather than on a
+  // specific class. Each strategy returns the *first* match, so we
+  // walk an ordered list and stop at the first hit.
+  const strategies = [
+    // 1. Compose dialog "To" field (popup layout)
+    () => {
+      const el = document.querySelector('[role="dialog"] input[name="to"]')
+              || document.querySelector('[role="dialog"] textarea[name="to"]');
+      return el && el.value ? _firstNameFromAddressList(el.value) : '';
+    },
+    // 2. Compose dialog without role="dialog" (full-screen compose)
+    () => {
+      const el = document.querySelector('input[name="to"]')
+              || document.querySelector('textarea[name="to"]');
+      return el && el.value ? _firstNameFromAddressList(el.value) : '';
+    },
+    // 3. Compose chip — recipient already added (most common case in
+    //    a real conversation). Gmail wraps the chip in a span with
+    //    `email` and usually `name` attributes; class is unstable.
+    () => {
+      const chip = document.querySelector('[role="dialog"] [email][name]')
+                || document.querySelector('[role="dialog"] [email]');
+      if (!chip) return '';
+      const name = chip.getAttribute('name');
+      if (name) return name;
+      const email = chip.getAttribute('email') || '';
+      return email.split('@')[0];
+    },
+    // 4. Reading a thread (no compose open) — pull the last sender.
+    //    Multiple Gmail variants put [email] on chips inside the open
+    //    message header; the strict ".h7 .gD" selector misses
+    //    redesigns, so try [email] anywhere first.
+    () => {
+      const candidates = document.querySelectorAll('[email]');
+      // Prefer chips with both name and email (real recipient/sender),
+      // skip stray hidden ones with empty values.
+      for (const el of candidates) {
+        const email = el.getAttribute('email');
+        if (!email) continue;
+        const name = el.getAttribute('name');
+        if (name) return name;
+        return email.split('@')[0];
+      }
+      return '';
+    },
+  ];
+
+  for (const strategy of strategies) {
+    try {
+      const value = strategy();
+      if (value) {
+        _gmailFailCount = 0;
+        return value;
+      }
+    } catch (_e) {
+      // strategy threw — keep walking
+    }
   }
 
-  // Reply chip — element with email attribute inside compose dialog
-  const replyChip = document.querySelector(
-    '[role="dialog"] .gD[email], [role="dialog"] .agP[email]'
-  );
-  if (replyChip) {
-    _gmailFailCount = 0;
-    const name = replyChip.getAttribute('name');
-    if (name) return name;
-    const email = replyChip.getAttribute('email') || '';
-    return email.split('@')[0];
-  }
-
-  // Reading thread without an open compose: sender of the most recent message
-  const lastSender = document.querySelector('.h7 .gD[email]');
-  if (lastSender) {
-    _gmailFailCount = 0;
-    const name = lastSender.getAttribute('name');
-    if (name) return name;
-    const email = lastSender.getAttribute('email') || '';
-    return email.split('@')[0];
-  }
-
-  // No selectors matched — increment counter, surface warning when persistent
   _gmailFailCount++;
   if (typeof console !== 'undefined') {
     console.warn('AutoText: Gmail recipient parser empty (count:', _gmailFailCount, ')');
   }
+  // Set the warning flag ONLY if the runtime is still alive. After a
+  // browser-extension reload the previously-injected content script
+  // outlives the extension context; calls to chrome.storage.* throw
+  // "Extension context invalidated". Catching keeps the parser silent
+  // until the page reloads and re-injects the new bundle.
   if (_gmailFailCount >= SITE_PARSER_FAIL_THRESHOLD
       && typeof chrome !== 'undefined'
+      && chrome.runtime && chrome.runtime.id
       && chrome.storage && chrome.storage.local) {
-    chrome.storage.local.set({
-      gmail_parser_warning: 'Gmail layout changed — recipient detection unreliable',
-      gmail_parser_warning_at: new Date().toISOString(),
-    }).catch(() => {});
+    try {
+      const setPromise = chrome.storage.local.set({
+        gmail_parser_warning: 'Gmail layout changed — recipient detection unreliable',
+        gmail_parser_warning_at: new Date().toISOString(),
+      });
+      if (setPromise && typeof setPromise.catch === 'function') {
+        setPromise.catch(() => {});
+      }
+    } catch (_e) {
+      // Extension context invalidated — nothing to do, page will get the
+      // new content script on next reload.
+    }
   }
   return '';
 }

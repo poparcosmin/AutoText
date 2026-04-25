@@ -52,6 +52,7 @@ describe('site-parsers', () => {
     document.body.textContent = '';
     parsers._resetGmailFailCount();
     global.chrome = {
+      runtime: { id: 'test-extension-id' },
       storage: {
         local: {
           set: jest.fn().mockResolvedValue(undefined),
