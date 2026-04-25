@@ -831,7 +831,6 @@ let autocompleteAbortController = null;
 
 async function handleAutocompleteSearch(e) {
   const query = e.target.value.trim();
-  const dropdown = document.getElementById('autocomplete-dropdown');
 
   if (query.length < 1) {
     hideAutocompleteDropdown();
@@ -854,7 +853,7 @@ async function handleAutocompleteSearch(e) {
     if (!response.ok) throw new Error('Search failed');
 
     const results = await response.json();
-    showAutocompleteDropdown(results, query);
+    showAutocompleteDropdown(results);
 
     // Also filter local preview
     const filtered = {};
@@ -874,7 +873,7 @@ async function handleAutocompleteSearch(e) {
   }
 }
 
-function showAutocompleteDropdown(results, query) {
+function showAutocompleteDropdown(results) {
   const dropdown = document.getElementById('autocomplete-dropdown');
   dropdown.textContent = ''; // Safe clear
 
