@@ -40,7 +40,12 @@ class ShortcutSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Shortcut
-        fields = ["id", "key", "content_type", "value", "html_value", "owner_username", "sets", "set_names", "set_types", "updated_at"]
+        fields = [
+            "id", "key", "content_type", "value", "html_value",
+            "owner_username", "sets", "set_names", "set_types",
+            "updated_at", "usage_count", "last_used_at",
+        ]
+        read_only_fields = ["usage_count", "last_used_at"]
 
     def get_set_names(self, obj):
         """Return list of set names this shortcut belongs to"""

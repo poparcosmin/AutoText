@@ -79,25 +79,33 @@ async function loadShortcuts() {
     return;
   }
 
-  // Combine shortcuts with stats and sort by usage
+  // Combine shortcuts with both local + server-side usage stats. Local
+  // stats track this device only; server `usage_count` is cross-device
+  // aggregate. We sort by combined count so a heavily-used shortcut on
+  // another device still surfaces here.
   const shortcutsWithStats = Object.entries(shortcuts).map(([key, data]) => {
-    const stats = shortcutStats && shortcutStats[key] ? shortcutStats[key] : { count: 0, lastUsed: 0 };
+    const localStats = shortcutStats && shortcutStats[key]
+      ? shortcutStats[key] : { count: 0, lastUsed: 0 };
+    const serverCount = data.usage_count || 0;
     return {
       key,
       value: data.value || '',
-      count: stats.count,
-      lastUsed: stats.lastUsed
+      count: localStats.count + serverCount,
+      localCount: localStats.count,
+      serverCount,
+      lastUsed: Math.max(localStats.lastUsed || 0,
+                         data.last_used_at ? Date.parse(data.last_used_at) : 0),
     };
   });
 
-  // Sort by count (most used first), then by last used
+  // Sort by combined count (most used first), then by last used
   shortcutsWithStats.sort((a, b) => {
     if (b.count !== a.count) return b.count - a.count;
     return (b.lastUsed || 0) - (a.lastUsed || 0);
   });
 
-  // Display top 3
-  const topShortcuts = shortcutsWithStats.slice(0, 3);
+  // Display top 10 — was 3, expanded for richer popup overview
+  const topShortcuts = shortcutsWithStats.slice(0, 10);
 
   topShortcuts.forEach(shortcut => {
     const item = createShortcutItem(shortcut);
