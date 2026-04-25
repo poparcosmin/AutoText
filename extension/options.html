@@ -1165,6 +1165,48 @@
     }
     body.dark .vars-list .result-aside { color: #6b7280; }
 
+    /* Inside the modal we collapse the recipes section so variables
+       sit on top — those are the common "insert one token at cursor"
+       use case, recipes are the rarer "wipe and start from template". */
+    .recipes-section--collapsible {
+      border-top: 1px solid #e5e7eb;
+      padding-top: 14px;
+      margin-top: 14px;
+    }
+    body.dark .recipes-section--collapsible {
+      border-top-color: #374151;
+    }
+    .recipes-section--collapsible > summary {
+      cursor: pointer;
+      padding: 6px 4px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #111827;
+      list-style: none;
+      user-select: none;
+    }
+    .recipes-section--collapsible > summary::-webkit-details-marker { display: none; }
+    .recipes-section--collapsible > summary::before {
+      content: '▸ ';
+      color: #6b7280;
+    }
+    .recipes-section--collapsible[open] > summary::before {
+      content: '▾ ';
+    }
+    body.dark .recipes-section--collapsible > summary {
+      color: #f9fafb;
+    }
+    .recipes-section--collapsible > summary:hover {
+      color: #0066cc;
+    }
+    body.dark .recipes-section--collapsible > summary:hover {
+      color: #5eb3ff;
+    }
+    .recipes-section--collapsible > .recipes-grid,
+    .recipes-section--collapsible > .recipes-hint {
+      margin-top: 8px;
+    }
+
     /* Modal-cheatsheet — same chrome but smaller padding so it fits in
        the modal alongside the form. Click anywhere swaps to insert mode. */
     .modal-cheatsheet {
@@ -2130,15 +2172,19 @@
                    placeholder="🔎 Caută..." />
           </div>
 
-          <div class="recipes-section" id="modal-recipes-section">
-            <h4>🍳 Rețete (click pe titlu = înlocuiește valoarea)</h4>
-            <p class="recipes-hint">Click pe titlul unei rețete suprascrie textul Expansion cu snippet-ul respectiv. Apoi editezi.</p>
-            <div class="recipes-grid" id="modal-recipes-grid"></div>
-          </div>
-
+          <!-- Variables first — these are what the user reaches for most
+               often (insert one token at the cursor). Recipes are full
+               templates, useful but secondary, so they sit at the bottom
+               in their own collapsible sub-section. -->
           <div class="cheatsheet-grid" id="modal-cheatsheet-grid">
             <!-- Populated by JS to mirror the Manage-tab scenarios -->
           </div>
+
+          <details class="recipes-section recipes-section--collapsible" id="modal-recipes-section">
+            <summary>🍳 Rețete (click pentru a vedea — click pe titlu = înlocuiește valoarea)</summary>
+            <p class="recipes-hint">Click pe titlul unei rețete suprascrie textul Expansion cu snippet-ul respectiv. Apoi editezi.</p>
+            <div class="recipes-grid" id="modal-recipes-grid"></div>
+          </details>
         </details>
       </div>
       <div class="modal-footer">
