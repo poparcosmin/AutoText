@@ -559,7 +559,7 @@ function processDateMacros(input, now = new Date()) {
 // first (defensive — current grammars don't overlap, but ordering is cheap
 // insurance for future additions).
 // ----------------------------------------------------------------------------
-const SYSTEM_VAR_RE = /\[\[(day|greeting|user|clipboard|random|select|recipient)(?::([^\]]*))?\]\]/g;
+const SYSTEM_VAR_RE = /\[\[(day|greeting|user|clipboard|random|select|recipient|var)(?::([^\]]*))?\]\]/g;
 
 const ROMANIAN_DAY_NAMES = [
   'Duminica', 'Luni', 'Marti', 'Miercuri', 'Joi', 'Vineri', 'Sambata'
@@ -636,6 +636,24 @@ function _readRecipient() {
   return '';
 }
 
+// Resolve [[var:name]] from the user's saved variables (synced via
+// background.js into chrome.storage.local.userVariables). Unknown names
+// fall through as the literal token so users can spot typos at expand
+// time instead of getting silent empty strings.
+async function _readUserVariable(name) {
+  if (!name) return '';
+  try {
+    const stored = await chrome.storage.local.get('userVariables');
+    const vars = (stored && stored.userVariables) || {};
+    if (Object.prototype.hasOwnProperty.call(vars, name)) {
+      return vars[name];
+    }
+  } catch {
+    // storage failure — fall through to literal
+  }
+  return `[[var:${name}]]`;
+}
+
 // Find all matches via matchAll, resolve async ones in parallel, then
 // reassemble via index-based slicing. Avoids reentrancy bug where
 // String.replace would re-scan replacement text — if a future resolver
@@ -663,6 +681,7 @@ async function processSystemVars(input, now = new Date()) {
         case 'clipboard': replacements.push(await _readClipboard()); break;
         case 'select': replacements.push(_promptSelect(args || '')); break;
         case 'recipient': replacements.push(_readRecipient()); break;
+        case 'var': replacements.push(await _readUserVariable((args || '').trim())); break;
         default: replacements.push('');
       }
     } catch (err) {

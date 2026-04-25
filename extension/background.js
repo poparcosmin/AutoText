@@ -136,6 +136,33 @@ async function checkAndRefreshToken() {
   }
 }
 
+// Pull the user's custom variables ([[var:name]]) and cache them locally.
+// Best-effort: on failure we don't abort the whole sync, just leave stale
+// values; users can still expand other shortcuts. Variables are tiny (<1KB
+// per user typically) so a full re-fetch is cheaper than delta tracking.
+async function syncUserVariables(authToken) {
+  if (!authToken) return;
+  try {
+    const res = await fetch(`${CONFIG.API_URL}/user-variables/`, {
+      headers: { 'Authorization': `Token ${authToken}` }
+    });
+    if (!res.ok) {
+      // 401 is handled by the main syncShortcuts flow; quietly skip here.
+      debugLog(`AutoText: user-variables fetch returned ${res.status}, skipping`);
+      return;
+    }
+    const list = await res.json();
+    const map = {};
+    for (const item of list) {
+      if (item && item.name) map[item.name] = item.value || '';
+    }
+    await chrome.storage.local.set({ userVariables: map });
+    debugLog(`AutoText: synced ${list.length} user variable(s)`);
+  } catch (err) {
+    debugLog('AutoText: user-variables sync failed:', err && err.message);
+  }
+}
+
 // Sync shortcuts from Django backend with multi-set support and authentication
 // Uses bulk sync endpoint for better performance (single API call)
 // Supports offline mode - uses cached shortcuts when network unavailable
@@ -263,6 +290,10 @@ async function syncShortcuts() {
     // Update badge with shortcut count (this also clears any red-badge retry state)
     await markSyncSuccess();
     await updateBadgeWithShortcutCount();
+
+    // Pull latest user variables alongside shortcuts so [[var:name]] resolves
+    // against fresh values on the next expansion.
+    await syncUserVariables(auth_token);
 
     debugLog(`AutoText: Sync complete. Total shortcuts: ${Object.keys(shortcutsMap).length}`);
   } catch (error) {

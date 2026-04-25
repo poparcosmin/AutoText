@@ -1,7 +1,32 @@
+import re
+
 from rest_framework import serializers
 
-from .models import Shortcut, ShortcutSet
+from .models import Shortcut, ShortcutSet, UserVariable
 from .validators import sanitize_html, validate_shortcut_key
+
+
+VARIABLE_NAME_RE = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*$')
+
+
+class UserVariableSerializer(serializers.ModelSerializer):
+    """CRUD shape for /api/user-variables/. user_id is set from the request,
+    never accepted from the client, so a token-bearer cannot edit someone
+    else's variables by spoofing the user field.
+    """
+
+    class Meta:
+        model = UserVariable
+        fields = ['id', 'name', 'value', 'updated_at']
+        read_only_fields = ['id', 'updated_at']
+
+    def validate_name(self, value):
+        if not VARIABLE_NAME_RE.match(value):
+            raise serializers.ValidationError(
+                'Name must start with a letter or underscore and contain only '
+                'letters, digits, or underscores.'
+            )
+        return value
 
 
 class ShortcutSetSerializer(serializers.ModelSerializer):

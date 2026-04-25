@@ -10,7 +10,7 @@ from django.utils import timezone
 from django.utils.html import format_html
 from datetime import timedelta
 from tinymce.widgets import TinyMCE
-from .models import Shortcut, ShortcutSet, ExpiringToken, ShortcutUsageLog
+from .models import Shortcut, ShortcutSet, ExpiringToken, ShortcutUsageLog, UserVariable
 
 
 @admin.register(ShortcutSet)
@@ -730,3 +730,16 @@ class ShortcutUsageLogAdmin(admin.ModelAdmin):
         })
 
         return super().changelist_view(request, extra_context=extra_context)
+
+@admin.register(UserVariable)
+class UserVariableAdmin(admin.ModelAdmin):
+    list_display = ['name', 'user', 'value_preview', 'updated_at']
+    list_filter = ['user']
+    search_fields = ['name', 'user__username', 'value']
+    readonly_fields = ['updated_at']
+
+    def value_preview(self, obj):
+        v = obj.value or ''
+        return (v[:50] + '...') if len(v) > 50 else v
+    value_preview.short_description = 'Value'
+

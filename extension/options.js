@@ -513,6 +513,9 @@ async function loadUserSettings() {
     userSettings = { ...userSettings, ...result.settings };
   }
 
+  // Load user variables list (separate API endpoint, async)
+  loadUserVariables();
+
   // Populate UI
   document.getElementById('setting-trigger-key').value = userSettings.triggerKey || 'Tab';
   document.getElementById('setting-trigger-mode').value = userSettings.triggerMode || 'key';
@@ -1478,3 +1481,171 @@ async function deleteShortcut(id) {
     alert('Error: ' + error.message);
   }
 }
+
+// ==========================================
+// USER VARIABLES (Settings tab)
+// ==========================================
+
+let userVariables = [];
+
+async function loadUserVariables() {
+  const list = document.getElementById('user-vars-list');
+  if (!list) return;
+  list.textContent = '';
+
+  try {
+    const res = await fetch(`${CONFIG.API_URL}/user-variables/`, {
+      headers: { 'Authorization': `Token ${authToken}` }
+    });
+    if (!res.ok) {
+      list.innerHTML = '';
+      const empty = document.createElement('div');
+      empty.className = 'user-vars-empty';
+      empty.textContent = 'Could not load variables.';
+      list.appendChild(empty);
+      return;
+    }
+    userVariables = await res.json();
+  } catch (err) {
+    console.error('User variables fetch error:', err);
+    return;
+  }
+
+  if (userVariables.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'user-vars-empty';
+    empty.textContent = 'Nicio variabilă încă. Adaugă una mai jos.';
+    list.appendChild(empty);
+    return;
+  }
+
+  for (const v of userVariables) {
+    list.appendChild(renderUserVarRow(v));
+  }
+}
+
+function renderUserVarRow(variable) {
+  const row = document.createElement('div');
+  row.className = 'user-var-row';
+  row.dataset.id = variable.id;
+
+  const nameInput = document.createElement('input');
+  nameInput.type = 'text';
+  nameInput.value = variable.name;
+  nameInput.maxLength = 50;
+  nameInput.title = 'Variable name';
+
+  const valueInput = document.createElement('input');
+  valueInput.type = 'text';
+  valueInput.value = variable.value || '';
+  valueInput.title = 'Variable value';
+
+  const deleteBtn = makeActionButton('delete', '🗑️', 'Șterge', () =>
+    deleteUserVariable(variable.id)
+  );
+
+  row.appendChild(nameInput);
+  row.appendChild(valueInput);
+  row.appendChild(deleteBtn);
+
+  const syntax = document.createElement('span');
+  syntax.className = 'var-syntax';
+  syntax.textContent = `Folosește: [[var:${variable.name}]]`;
+  row.appendChild(syntax);
+
+  // Save on blur (no save button — feels lighter for short string edits).
+  let saveTimer = null;
+  const scheduleSave = () => {
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(async () => {
+      const newName = nameInput.value.trim();
+      const newValue = valueInput.value;
+      if (!newName) {
+        nameInput.value = variable.name;
+        return;
+      }
+      if (newName === variable.name && newValue === (variable.value || '')) return;
+      try {
+        const res = await fetch(`${CONFIG.API_URL}/user-variables/${variable.id}/`, {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Token ${authToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ name: newName, value: newValue }),
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          alert('Error: ' + (err.name || err.detail || 'save failed'));
+          nameInput.value = variable.name;
+          valueInput.value = variable.value || '';
+          return;
+        }
+        variable.name = newName;
+        variable.value = newValue;
+        syntax.textContent = `Folosește: [[var:${newName}]]`;
+        triggerBackgroundSync();
+      } catch (err) {
+        console.error('User variable save error:', err);
+      }
+    }, 600);
+  };
+  nameInput.addEventListener('blur', scheduleSave);
+  valueInput.addEventListener('blur', scheduleSave);
+
+  return row;
+}
+
+async function deleteUserVariable(id) {
+  if (!confirm('Șterge această variabilă?')) return;
+  try {
+    const res = await fetch(`${CONFIG.API_URL}/user-variables/${id}/`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Token ${authToken}` },
+    });
+    if (!res.ok && res.status !== 204) {
+      throw new Error('Delete failed');
+    }
+    loadUserVariables();
+    triggerBackgroundSync();
+  } catch (err) {
+    alert('Error: ' + err.message);
+  }
+}
+
+async function addUserVariable() {
+  const nameEl = document.getElementById('new-var-name');
+  const valueEl = document.getElementById('new-var-value');
+  const name = nameEl.value.trim();
+  const value = valueEl.value;
+  if (!name) {
+    alert('Numele variabilei nu poate fi gol.');
+    return;
+  }
+  try {
+    const res = await fetch(`${CONFIG.API_URL}/user-variables/`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Token ${authToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ name, value }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      alert('Error: ' + (err.name || err.detail || JSON.stringify(err)));
+      return;
+    }
+    nameEl.value = '';
+    valueEl.value = '';
+    loadUserVariables();
+    triggerBackgroundSync();
+  } catch (err) {
+    alert('Error: ' + err.message);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const addBtn = document.getElementById('btn-add-var');
+  if (addBtn) addBtn.addEventListener('click', addUserVariable);
+});

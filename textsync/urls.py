@@ -6,10 +6,12 @@ from .views.auth import login_view, logout_view, verify_token_view, refresh_toke
 from .views.sync import bulk_sync_view
 from .views.usage import track_usage_view
 from .views.health import health_check_view
+from .views.variables import UserVariableViewSet
 
 router = DefaultRouter()
 router.register(r"sets", ShortcutSetViewSet, basename="shortcutset")
 router.register(r"shortcuts", ShortcutViewSet, basename="shortcut")
+router.register(r"user-variables", UserVariableViewSet, basename="user_variable")
 
 urlpatterns = [
     # Health check (for monitoring/load balancers)

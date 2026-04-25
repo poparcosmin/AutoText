@@ -108,6 +108,38 @@ class Shortcut(models.Model):
         return f"{self.key} → {preview} ({sets_str})"
 
 
+class UserVariable(models.Model):
+    """Per-user custom variable, accessed in shortcuts as [[var:name]].
+
+    A simple key→value store scoped to one user. Values resolve at expand
+    time inside the extension; if a user creates `display_name = "Cosmin"`,
+    the snippet `Salut, sunt [[var:display_name]]` becomes `Salut, sunt Cosmin`.
+
+    Names are case-sensitive and must match `[a-zA-Z_][a-zA-Z0-9_]*` so they
+    fit cleanly inside the [[var:...]] grammar without escaping.
+    """
+    user = models.ForeignKey(User, on_delete=models.CASCADE,
+                             related_name='variables',
+                             help_text='Owner — only this user sees + uses this variable')
+    name = models.CharField(max_length=50,
+                            help_text='Variable name (used as [[var:name]] in shortcuts)')
+    value = models.TextField(blank=True, help_text='What the variable expands to')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['name']
+        unique_together = [('user', 'name')]
+        verbose_name = 'User Variable'
+        verbose_name_plural = 'User Variables'
+        indexes = [
+            models.Index(fields=['user', 'name']),
+        ]
+
+    def __str__(self):
+        preview = self.value[:30] if self.value else '(empty)'
+        return f"[[var:{self.name}]] = {preview} ({self.user.username})"
+
+
 class ShortcutUsageLog(models.Model):
     """
     Detailed usage log for analytics.

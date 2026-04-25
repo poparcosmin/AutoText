@@ -790,6 +790,91 @@
       color: var(--text-secondary-dark);
     }
 
+    /* User variables — settings section.
+       Layout: each row is a 3-column flex (name input | value input | delete),
+       plus an add row at the bottom in the same shape. */
+    .user-vars-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .user-var-row {
+      display: grid;
+      grid-template-columns: 200px 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 8px;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+    }
+    body.dark .user-var-row {
+      background: #1f2937;
+      border-color: #374151;
+    }
+    .user-var-row input {
+      padding: 7px 10px;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      font-size: 13px;
+      background: #fff;
+      color: #111827;
+    }
+    body.dark .user-var-row input {
+      background: #111827;
+      color: #f3f4f6;
+      border-color: #374151;
+    }
+    .user-var-row input:focus {
+      outline: 2px solid #3b82f6;
+      outline-offset: -1px;
+      border-color: #3b82f6;
+    }
+    .user-var-row .var-syntax {
+      font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace;
+      font-size: 11px;
+      color: #6b7280;
+      grid-column: 1 / -1;
+      margin-top: -2px;
+    }
+    body.dark .user-var-row .var-syntax {
+      color: #9ca3af;
+    }
+    .user-var-add {
+      display: grid;
+      grid-template-columns: 200px 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 8px;
+      border: 1px dashed #9ca3af;
+      border-radius: 6px;
+    }
+    body.dark .user-var-add {
+      border-color: #4b5563;
+    }
+    .user-var-add input {
+      padding: 7px 10px;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    body.dark .user-var-add input {
+      background: #111827;
+      color: #f3f4f6;
+      border-color: #374151;
+    }
+    .user-vars-empty {
+      padding: 12px;
+      text-align: center;
+      color: #6b7280;
+      font-size: 13px;
+      font-style: italic;
+    }
+    body.dark .user-vars-empty {
+      color: #9ca3af;
+    }
+
     /* Cheatsheet — contrast first. Solid surfaces (no gradients), code
        blocks with their own light background + dark text instead of the
        previous pink-on-pale-blue. Verified against WCAG AA on both modes. */
@@ -1318,6 +1403,7 @@
                   <li><code>[[user]]</code> — username-ul tău (ex: cosmin)</li>
                   <li><code>[[clipboard]]</code> — text din clipboard</li>
                   <li><code>[[recipient]]</code> — destinatar Gmail (compose / reply)</li>
+                  <li><code>[[var:nume]]</code> — variabilă custom (definește în Settings)</li>
                 </ul>
               </div>
 
@@ -1383,6 +1469,23 @@ $|$</pre>
 
       <!-- Tab: Settings -->
       <div class="tab-content" id="tab-settings">
+        <div class="settings-group">
+          <h3>🔧 Variabile custom</h3>
+          <p class="setting-description" style="margin-bottom: 12px;">
+            Definește valori reutilizabile (ex: <code>display_name = "Cosmin Popa"</code>),
+            apoi folosește-le în orice shortcut cu <code>[[var:nume]]</code>.
+            Variabilele sunt private — doar tu le vezi.
+          </p>
+          <div id="user-vars-list" class="user-vars-list">
+            <!-- Populated by JS -->
+          </div>
+          <div class="user-var-add">
+            <input type="text" id="new-var-name" placeholder="nume (ex: display_name)" maxlength="50" />
+            <input type="text" id="new-var-value" placeholder="valoarea (ex: Cosmin Popa)" />
+            <button id="btn-add-var" class="btn-action btn-action-copy">+ Adaugă variabilă</button>
+          </div>
+        </div>
+
         <div class="settings-group">
           <h3>Trigger Settings</h3>
           <div class="setting-item">
