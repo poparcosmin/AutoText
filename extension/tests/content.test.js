@@ -534,16 +534,16 @@ describe('content.js — text expansion core', () => {
       expect(await content.processSystemVars('Azi e [[day]]', friday)).toBe('Azi e Vineri');
     });
 
-    it('[[greeting]] picks Buna ziua at 14:30', async () => {
-      expect(await content.processSystemVars('[[greeting]]', friday)).toBe('Buna ziua');
+    it('[[greeting]] picks Bună ziua at 14:30', async () => {
+      expect(await content.processSystemVars('[[greeting]]', friday)).toBe('Bună ziua');
     });
 
-    it('[[greeting]] picks Buna dimineata before 11:00', async () => {
-      expect(await content.processSystemVars('[[greeting]]', morning)).toBe('Buna dimineata');
+    it('[[greeting]] picks Bună dimineața before 11:00', async () => {
+      expect(await content.processSystemVars('[[greeting]]', morning)).toBe('Bună dimineața');
     });
 
-    it('[[greeting]] picks Buna seara at 18:00+', async () => {
-      expect(await content.processSystemVars('[[greeting]]', evening)).toBe('Buna seara');
+    it('[[greeting]] picks Bună seara at 18:00+', async () => {
+      expect(await content.processSystemVars('[[greeting]]', evening)).toBe('Bună seara');
     });
 
     it('[[user]] reads from chrome.storage.local', async () => {
@@ -577,7 +577,7 @@ describe('content.js — text expansion core', () => {
 
     it('handles multiple system vars in one string', async () => {
       const result = await content.processSystemVars('[[greeting]] [[user]]!', friday);
-      expect(result).toBe('Buna ziua cosmin!');
+      expect(result).toBe('Bună ziua cosmin!');
     });
 
     it('preserves unknown system vars', async () => {

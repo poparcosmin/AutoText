@@ -566,14 +566,14 @@ function processDateMacros(input, now = new Date()) {
 const SYSTEM_VAR_RE = /\[\[(day|greeting|user|clipboard|random|select|recipient|var)(?::([^\]]*))?\]\]/g;
 
 const ROMANIAN_DAY_NAMES = [
-  'Duminica', 'Luni', 'Marti', 'Miercuri', 'Joi', 'Vineri', 'Sambata'
+  'Duminică', 'Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă'
 ];
 
 function _greeting(date) {
   const h = date.getHours();
-  if (h < 11) return 'Buna dimineata';
-  if (h < 18) return 'Buna ziua';
-  return 'Buna seara';
+  if (h < 11) return 'Bună dimineața';
+  if (h < 18) return 'Bună ziua';
+  return 'Bună seara';
 }
 
 function _randomPick(args) {
