@@ -187,6 +187,11 @@ function playExpansionSound() {
   }
 }
 
+// Cap on per-shortcut timestamp history. 100 entries × 8 bytes ~ 800B per
+// shortcut; with hundreds of shortcuts, total stays under 100KB. Sufficient
+// for time-window filters (last 7d / 30d) without unbounded growth.
+const STATS_TIMESTAMP_CAP = 100;
+
 // Track shortcut usage for statistics
 async function trackShortcutUsage(shortcutKey, shortcutId) {
   try {
@@ -194,12 +199,28 @@ async function trackShortcutUsage(shortcutKey, shortcutId) {
     const result = await chrome.storage.local.get('shortcutStats');
     const stats = result.shortcutStats || {};
 
+    // Backwards-compat: rows from older versions had {count, lastUsed, id}
+    // without timestamps[]. Lift them into the new shape on first touch
+    // without losing the count or the last-used signal.
     if (!stats[shortcutKey]) {
-      stats[shortcutKey] = { count: 0, lastUsed: null, id: shortcutId };
+      stats[shortcutKey] = { count: 0, lastUsed: null, id: shortcutId, timestamps: [] };
+    } else if (!Array.isArray(stats[shortcutKey].timestamps)) {
+      stats[shortcutKey].timestamps = stats[shortcutKey].lastUsed
+        ? [stats[shortcutKey].lastUsed]
+        : [];
     }
 
+    const now = Date.now();
     stats[shortcutKey].count++;
-    stats[shortcutKey].lastUsed = Date.now();
+    stats[shortcutKey].lastUsed = now;
+    stats[shortcutKey].timestamps.push(now);
+    // Drop oldest entries beyond the cap so storage stays bounded.
+    if (stats[shortcutKey].timestamps.length > STATS_TIMESTAMP_CAP) {
+      stats[shortcutKey].timestamps.splice(
+        0,
+        stats[shortcutKey].timestamps.length - STATS_TIMESTAMP_CAP
+      );
+    }
 
     await chrome.storage.local.set({ shortcutStats: stats });
 

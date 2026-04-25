@@ -1,6 +1,6 @@
 {
   "name": "autotext-extension",
-  "version": "1.0.0",
+  "version": "1.5.0",
   "description": "AutoText Chrome Extension - Text expansion shortcuts",
   "private": true,
   "scripts": {

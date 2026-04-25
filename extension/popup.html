@@ -142,10 +142,33 @@
       padding: 10px 8px;
       text-align: center;
       box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: border-color 120ms ease, transform 120ms ease;
+      user-select: none;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-1px);
+    }
+
+    .stat-card:focus-visible {
+      outline: 2px solid #00356D;
+      outline-offset: 2px;
+    }
+
+    .stat-card.active {
+      border-color: #00356D;
+      background: #f0f5ff;
     }
 
     body.dark .stat-card {
       background: #2a2a4a;
+    }
+
+    body.dark .stat-card.active {
+      background: #1c2a4d;
+      border-color: #5e9eff;
     }
 
     .stat-value {
@@ -177,9 +200,126 @@
       color: #999;
     }
 
+    /* View header — flex row cu titlu pe stânga + breadcrumb/filter pe dreapta */
+    .view-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .view-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .breadcrumb {
+      background: none;
+      border: none;
+      color: #00356D;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 4px 6px;
+      border-radius: 4px;
+    }
+    .breadcrumb:hover { background: rgba(0, 53, 109, 0.08); }
+    body.dark .breadcrumb { color: #5e9eff; }
+
+    .time-filter {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 11px;
+      color: #444;
+      cursor: pointer;
+    }
+    body.dark .time-filter {
+      background: #2a2a4a;
+      border-color: #3a3a5a;
+      color: #ccc;
+    }
+
+    /* Set card pentru view "Sets" */
+    .set-card {
+      background: white;
+      border-radius: 6px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      border: 1px solid #e6e6e6;
+      transition: transform 120ms ease, border-color 120ms ease;
+    }
+    .set-card:hover {
+      transform: translateX(2px);
+      border-color: #00356D;
+    }
+    body.dark .set-card {
+      background: #2a2a4a;
+      border-color: #3a3a5a;
+    }
+    body.dark .set-card:hover { border-color: #5e9eff; }
+
+    .set-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .set-name {
+      font-weight: 600;
+      font-size: 14px;
+      color: #222;
+    }
+    body.dark .set-name { color: #eee; }
+
+    .set-type-badge {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    .set-type-badge.general {
+      background: #fff4e6;
+      color: #cc5500;
+    }
+    .set-type-badge.personal {
+      background: #e6f0ff;
+      color: #00356D;
+    }
+    body.dark .set-type-badge.general {
+      background: #4d3a1a;
+      color: #ffb366;
+    }
+    body.dark .set-type-badge.personal {
+      background: #1c2a4d;
+      color: #80b3ff;
+    }
+
+    .set-meta {
+      font-size: 11px;
+      color: #666;
+      margin-top: 6px;
+    }
+    body.dark .set-meta { color: #999; }
+
+    /* Time-ago label pe item de expansion */
+    .shortcut-time-ago {
+      font-size: 11px;
+      color: #888;
+      margin-left: 8px;
+    }
+    body.dark .shortcut-time-ago { color: #999; }
+
     .shortcuts-list {
       max-height: 140px;
       overflow-y: auto;
+      overflow-x: hidden;  /* setting overflow-y promotes overflow-x to auto */
       margin-bottom: 12px;
     }
 
@@ -222,6 +362,7 @@
 
     .shortcut-preview {
       flex: 1;
+      min-width: 0;  /* flex children default to auto = content size; without this, ellipsis breaks */
       font-size: 13px;
       color: #666;
       white-space: nowrap;
@@ -368,7 +509,7 @@
       <span class="logo">⚡</span>
       <div>
         <div class="title">AutoText</div>
-        <div class="version">v1.0.0</div>
+        <div class="version" id="version-label">v—</div>
       </div>
     </div>
     <div class="status-badge" id="status-badge">
@@ -393,24 +534,36 @@
         <input type="text" id="search-input" placeholder="Search shortcuts...">
       </div>
 
-      <div class="stats-grid">
-        <div class="stat-card">
+      <div class="stats-grid" role="tablist" aria-label="Vederi popup">
+        <div class="stat-card active" role="tab" tabindex="0"
+             data-view="shortcuts" aria-selected="true"
+             aria-controls="view-content">
           <div class="stat-value" id="stat-shortcuts">0</div>
           <div class="stat-label">Shortcuts</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card" role="tab" tabindex="0"
+             data-view="expansions" aria-selected="false"
+             aria-controls="view-content">
           <div class="stat-value" id="stat-expansions">0</div>
           <div class="stat-label">Expansions</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card" role="tab" tabindex="0"
+             data-view="sets" aria-selected="false"
+             aria-controls="view-content">
           <div class="stat-value" id="stat-sets">0</div>
           <div class="stat-label">Sets</div>
         </div>
       </div>
 
-      <div class="section-title">Recent & Most Used</div>
-      <div class="shortcuts-list" id="shortcuts-list">
-        <!-- Populated by JS -->
+      <div class="view-header">
+        <div class="section-title" id="view-title">Recent & Most Used</div>
+        <div class="view-controls" id="view-controls">
+          <!-- breadcrumb / time filter populate by JS depending on view -->
+        </div>
+      </div>
+      <div class="shortcuts-list" id="view-content" role="tabpanel"
+           aria-live="polite">
+        <!-- Populated by JS based on activeView -->
       </div>
 
       <div class="actions">

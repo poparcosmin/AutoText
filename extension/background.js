@@ -40,9 +40,10 @@ async function markSyncFailure(errorMessage) {
     chrome.alarms.create('syncRetry', { delayInMinutes: RETRY_DELAY_MINUTES });
     debugLog(`AutoText: Sync failed (attempt ${attempt}/${MAX_SYNC_RETRIES}), retry in ${RETRY_DELAY_MINUTES} min`);
   } else {
-    // Final failure — user-visible red badge, clear retry counter so next success restores green
+    // Final failure — user-visible red badge, clear retry counter so next success restores brand blue
     chrome.action.setBadgeText({ text: '!' });
     chrome.action.setBadgeBackgroundColor({ color: '#F44336' });
+    chrome.action.setBadgeTextColor({ color: '#FFFFFF' });
     chrome.action.setTitle({
       title: `AutoText - Sync failed after ${MAX_SYNC_RETRIES} attempts. Click for options.`
     });
@@ -65,7 +66,8 @@ async function updateOnlineStatus(online) {
   if (!online) {
     // Offline - show indicator
     chrome.action.setBadgeText({ text: '!' });
-    chrome.action.setBadgeBackgroundColor({ color: '#FF9800' });
+    chrome.action.setBadgeBackgroundColor({ color: '#FF7100' });
+    chrome.action.setBadgeTextColor({ color: '#FFFFFF' });
     chrome.action.setTitle({ title: 'AutoText - Offline (using cached shortcuts)' });
     debugLog('AutoText: Now offline, using cached shortcuts');
   } else {
@@ -78,21 +80,17 @@ async function updateOnlineStatus(online) {
 }
 
 /**
- * Update badge with shortcut count
+ * Clear status badge — used when sync succeeds, extension is enabled, or
+ * any other "all good" transition. We intentionally do NOT show a shortcut
+ * count: the number duplicates info already in the popup, adds noise to
+ * the toolbar, and the brand logo is already busy enough as a glanceable
+ * indicator. Status badges (`!` for errors, `OFF` for disabled) remain.
  */
 async function updateBadgeWithShortcutCount() {
   try {
-    const { shortcuts } = await chrome.storage.local.get('shortcuts');
-    const count = shortcuts ? Object.keys(shortcuts).length : 0;
-
-    if (count > 0) {
-      chrome.action.setBadgeText({ text: count.toString() });
-      chrome.action.setBadgeBackgroundColor({ color: '#4CAF50' });
-    } else {
-      chrome.action.setBadgeText({ text: '' });
-    }
+    chrome.action.setBadgeText({ text: '' });
   } catch (error) {
-    console.error('AutoText: Error updating badge:', error);
+    console.error('AutoText: Error clearing badge:', error);
   }
 }
 
@@ -434,7 +432,8 @@ chrome.commands.onCommand.addListener(async (command) => {
         chrome.action.setTitle({ title: 'AutoText - Active' });
       } else {
         chrome.action.setBadgeText({ text: 'OFF' });
-        chrome.action.setBadgeBackgroundColor({ color: '#9E9E9E' });
+        chrome.action.setBadgeBackgroundColor({ color: '#5A6B7E' });
+        chrome.action.setBadgeTextColor({ color: '#FFFFFF' });
         chrome.action.setTitle({ title: 'AutoText - Disabled' });
       }
 
