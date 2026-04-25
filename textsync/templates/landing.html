@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoText — Text Expansion pentru Chrome</title>
+    <meta name="description" content="AutoText — sistem de text expansion pentru Chrome: tipărești o cheie scurtă, apeși Tab, primești textul complet. Sincronizare cu server propriu, biblioteca personală + birou comun.">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #1a1a1a;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e8eef5 100%);
+            min-height: 100vh;
+        }
+        .hero {
+            text-align: center;
+            padding: 80px 20px 40px;
+        }
+        .logo {
+            width: 96px;
+            height: 96px;
+            background: #00356d;
+            border-radius: 50%;
+            margin: 0 auto 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 56px;
+            font-weight: 800;
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            box-shadow: 0 6px 24px rgba(0, 53, 109, 0.25);
+            position: relative;
+        }
+        .logo::after {
+            content: '';
+            position: absolute;
+            right: 18px;
+            top: 22px;
+            width: 18px;
+            height: 52px;
+            background: #ff7100;
+            transform: skew(-15deg);
+            border-radius: 2px;
+        }
+        h1 {
+            color: #00356d;
+            font-size: 44px;
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
+        }
+        .tagline {
+            font-size: 19px;
+            color: #555;
+            max-width: 560px;
+            margin: 0 auto 32px;
+        }
+        .container {
+            max-width: 920px;
+            margin: 0 auto;
+            padding: 0 20px 80px;
+        }
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 18px;
+            margin-top: 32px;
+        }
+        .card {
+            background: white;
+            padding: 28px 24px;
+            border-radius: 10px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            border-top: 3px solid #ff7100;
+        }
+        .card h3 {
+            color: #00356d;
+            font-size: 17px;
+            margin-bottom: 8px;
+        }
+        .card p {
+            color: #555;
+            font-size: 14px;
+        }
+        .links {
+            margin-top: 48px;
+            text-align: center;
+            padding: 28px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+        .links h2 {
+            color: #00356d;
+            font-size: 22px;
+            margin-bottom: 16px;
+        }
+        .links a {
+            display: inline-block;
+            color: #00356d;
+            text-decoration: none;
+            margin: 8px 14px;
+            padding: 8px 16px;
+            border: 1px solid #00356d;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .links a:hover {
+            background: #00356d;
+            color: white;
+        }
+        code {
+            background: #f0f4f8;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: ui-monospace, monospace;
+            font-size: 13px;
+            color: #00356d;
+        }
+        kbd {
+            background: #eee;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            padding: 1px 6px;
+            font-family: ui-monospace, monospace;
+            font-size: 12px;
+        }
+        footer {
+            text-align: center;
+            padding: 24px;
+            color: #888;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <div class="logo">A</div>
+        <h1>AutoText</h1>
+        <p class="tagline">
+            Sistem de text expansion pentru Chrome. Tipărești o cheie scurtă,
+            apeși <kbd>Tab</kbd>, primești textul complet — în Gmail, Docs sau
+            orice câmp text editabil.
+        </p>
+    </div>
+
+    <div class="container">
+        <div class="card-grid">
+            <div class="card">
+                <h3>⚡ Expand instant</h3>
+                <p>
+                    Tastezi <code>buna</code> + <kbd>Tab</kbd> → "Bună ziua,".
+                    Funcționează pe orice site, în orice câmp editabil.
+                </p>
+            </div>
+            <div class="card">
+                <h3>🔄 Sincronizare cu server</h3>
+                <p>
+                    Biblioteca ta de shortcuts e stocată pe serverul tău
+                    (privat). Cache local pentru folosire offline.
+                </p>
+            </div>
+            <div class="card">
+                <h3>📂 Birou + Personal</h3>
+                <p>
+                    Set partajat cu echipa pentru standardizare + set personal
+                    pentru fiecare utilizator.
+                </p>
+            </div>
+            <div class="card">
+                <h3>🎲 Variabile dinamice</h3>
+                <p>
+                    <code>[[date]]</code>, <code>[[greeting]]</code>,
+                    <code>[[var:nume]]</code>, plus aliases și variante random
+                    A/B pentru anti-template feel.
+                </p>
+            </div>
+        </div>
+
+        <div class="links">
+            <h2>Resurse</h2>
+            <a href="/help">Ghid de utilizare</a>
+            <a href="/privacy.html">Politica de confidențialitate</a>
+            <a href="/admin/login/">Admin Login</a>
+        </div>
+    </div>
+
+    <footer>
+        <p>AutoText — sistem intern de text expansion. © 2026</p>
+    </footer>
+</body>
+</html>

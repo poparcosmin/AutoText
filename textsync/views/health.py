@@ -125,3 +125,12 @@ def help_view(request):
     template, no auth: meant for end-users (Romanian-language).
     """
     return render(request, 'help.html')
+
+
+def landing_view(request):
+    """
+    Public landing page at /. Required by Chrome Web Store (the homepage
+    URL must return 200 during review). Marketing-light: hero + features +
+    links to /help, /privacy.html, /admin/login/. No auth.
+    """
+    return render(request, 'landing.html')

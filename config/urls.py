@@ -17,9 +17,10 @@ Including another URLconf
 from django.conf import settings
 from django.contrib import admin
 from django.urls import path, include
-from textsync.views.health import privacy_view, help_view
+from textsync.views.health import privacy_view, help_view, landing_view
 
 urlpatterns = [
+    path('', landing_view, name='landing'),
     path('admin/', admin.site.urls),
     path('api/', include('textsync.urls')),
     path('tinymce/', include('tinymce.urls')),
