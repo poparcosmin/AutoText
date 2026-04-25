@@ -988,6 +988,24 @@ async function handleTriggerKey(event) {
 // ----------------------------------------------------------------------------
 let paletteState = null;  // { host, shadow, input, list, savedTarget, savedRange }
 
+// Subsequence fuzzy scorer — every char of `needle` must appear in order in
+// `haystack`, but not necessarily contiguous. Earlier matches score higher
+// (1/(idx+1)); chars closer together compound. Returns 0 when no match,
+// otherwise a small positive number. Threshold of 0.1 is permissive — when
+// a query already failed substring tests, we'd rather over-include than miss.
+function fuzzyScore(needle, haystack) {
+  if (!needle || !haystack) return 0;
+  let hayIdx = 0;
+  let score = 0;
+  for (const ch of needle) {
+    const found = haystack.indexOf(ch, hayIdx);
+    if (found === -1) return 0;
+    score += 1 / (found - hayIdx + 1);
+    hayIdx = found + 1;
+  }
+  return score;
+}
+
 function filterShortcuts(query, shortcutsMap) {
   const q = (query || '').toLowerCase().trim();
   const entries = Object.entries(shortcutsMap || {});
@@ -1001,6 +1019,13 @@ function filterShortcuts(query, shortcutsMap) {
     else if (keyL.startsWith(q)) score = 80;
     else if (keyL.includes(q)) score = 60;
     else if (valL.includes(q)) score = 30;
+    else {
+      // Fuzzy fallback — give a few low-tier hits instead of nothing.
+      // Multiplier keeps fuzzy hits below substring matches even at the
+      // best possible fuzzy score (~5 for short query in short key).
+      const fz = Math.max(fuzzyScore(q, keyL), fuzzyScore(q, valL) * 0.5);
+      if (fz > 0.1) score = fz;
+    }
     if (score > 0) scored.push({ key, score, ...s });
   }
   scored.sort((a, b) => b.score - a.score);

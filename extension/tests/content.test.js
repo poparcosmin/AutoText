@@ -826,6 +826,30 @@ describe('content.js — text expansion core', () => {
       const result = content.filterShortcuts('zzzzzz', map);
       expect(result).toHaveLength(0);
     });
+
+    it('falls back to fuzzy subsequence when no substring match', () => {
+      // 'pne' is not a substring of 'phone' but chars appear in order
+      const result = content.filterShortcuts('pne', map);
+      expect(result.length).toBeGreaterThan(0);
+      expect(result[0].key).toBe('phone');
+    });
+
+    it('ranks substring above fuzzy fallback', () => {
+      const m = {
+        myphone: { value: 'x' },          // substring "phn" — no, fuzzy
+        phn: { value: 'y' },              // exact substring "phn"? no, equals
+      };
+      // Query 'phn' equals key 'phn' -> exact match wins over fuzzy on 'myphone'
+      const result = content.filterShortcuts('phn', m);
+      expect(result[0].key).toBe('phn');
+    });
+
+    it('does not return fuzzy hits below threshold', () => {
+      const m = { abcdefghij: { value: 'long key' } };
+      // Query "xyz" has no chars in haystack -> 0 score -> excluded
+      const result = content.filterShortcuts('xyz', m);
+      expect(result).toHaveLength(0);
+    });
   });
 
   describe('openCommandPalette() / closeCommandPalette()', () => {
