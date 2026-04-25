@@ -940,6 +940,198 @@ let personalSetsForSelect = [];
 // Make every <code> chip in the cheatsheet click-to-copy + wire the
 // inline filter input. Idempotent — data-* flags prevent stacking
 // listeners if loadManageShortcuts runs again on tab re-focus.
+// =============================================================================
+// CHEATSHEET — recipes, live results, hover tooltips
+// =============================================================================
+
+// Pre-built snippet "recipes" — click the title in the cheatsheet to copy
+// the body. Each body is a working snippet you can paste into a new
+// shortcut's Value field. Order: most generic first, most specific last.
+//
+// Tip when adding new recipes: keep them under ~10 lines, prefer [[var:...]]
+// over hard-coded strings, and end with $|$ where the user will type next.
+const CHEATSHEET_RECIPES = [
+  {
+    title: 'Email simplu',
+    body: '[[greeting]] [[recipient]],\n\n$|$\n\nCu drag,\n[[var:nume_afisat]]',
+  },
+  {
+    title: 'Confirmare comandă',
+    body: '[[greeting]] [[recipient]],\n\nVă confirm comanda din [[date]].\nTermen livrare: [[date+7d:DD.MM.YYYY]].$|$\n\nMulțumesc,\n[[var:nume_afisat]]',
+  },
+  {
+    title: 'Răspuns rapid',
+    body: 'Mulțumesc, [[recipient]]! Revin cu detalii până [[date+1d:DD.MM]].$|$',
+  },
+  {
+    title: 'Cerere ofertă — răspuns',
+    body: '[[greeting]] [[recipient]],\n\nMulțumesc pentru cererea de ofertă. Vă transmit detaliile mai jos:\n\n• Preț: $|$\n• Termen livrare: [[date+{{zile:Cate zile?|7}}d:DD.MM.YYYY]]\n• Valabilitate ofertă: [[date+30d:DD.MM.YYYY]]\n\nCu drag,\n[[var:nume_afisat]]',
+  },
+  {
+    title: 'Întrebare clarificare',
+    body: '[[greeting]] [[recipient]],\n\nAm nevoie de o clarificare legată de $|$. Puteți să-mi confirmați?\n\nMulțumesc,\n[[var:nume_afisat]]',
+  },
+  {
+    title: 'Reminder plată',
+    body: '[[greeting]] [[recipient]],\n\nVă rugăm să verificați factura {{numar:Numărul facturii?}} cu scadența [[date-30d:DD.MM.YYYY]] — încă nu e marcată ca plătită.\n\nDacă plata e deja făcută, vă mulțumim, ignorați acest mesaj.$|$\n\nCu stimă,\n[[var:nume_afisat]]',
+  },
+  {
+    title: 'Notificare expediere (AWB)',
+    body: '[[greeting]] [[recipient]],\n\nComanda dvs. a fost expediată azi, [[date]], prin [[select:FAN Courier|Sameday|DPD]]. AWB-ul este {{awb:Număr AWB?}}.\n\nLivrare estimată: [[date+1d:DD.MM]] – [[date+2d:DD.MM]].$|$\n\nUn weekend frumos,\n[[var:nume_afisat]]',
+  },
+  {
+    title: 'Programare întâlnire',
+    body: '[[greeting]] [[recipient]],\n\nPropun întâlnirea pe [[date+{{zile:Peste cate zile?|3}}d:[[day]] DD.MM.YYYY]] la ora {{ora:La ce ora?|10:00}}, [[select:la sediul nostru|online (Google Meet)|telefonic]].\n\nConfirmati daca va convine?$|$\n\nCu drag,\n[[var:nume_afisat]]',
+  },
+  {
+    title: 'Răspuns la reclamație',
+    body: '[[greeting]] [[recipient]],\n\nÎmi pare rău pentru neplăcerea cauzată. Am preluat sesizarea — $|$\n\nVă voi reveni cu o soluție până [[date+1d:DD.MM]].\n\nCu stimă,\n[[var:nume_afisat]]',
+  },
+  {
+    title: 'Welcome client nou',
+    body: '[[greeting]] [[recipient]],\n\nBine ați venit! Mă bucur că am ocazia să colaborăm.\n\nÎn atașament găsiți $|$. Pentru orice întrebări, sunt la dispoziție.\n\nNumere utile:\n• Telefon: [[var:telefon]]\n• Website: [[var:website_paff]]\n\nCu drag,\n[[var:nume_afisat]]',
+  },
+  {
+    title: 'Follow-up',
+    body: '[[greeting]] [[recipient]],\n\nRevin asupra mesajului meu din [[date-{{zile:Acum cate zile a fost mesajul?|7}}d:DD.MM]] — am vrut să verific dacă $|$.\n\nO zi bună!\n[[var:nume_afisat]]',
+  },
+  {
+    title: 'Cerere documente',
+    body: '[[greeting]] [[recipient]],\n\nPentru a finaliza colaborarea, vă rog să-mi transmiteți următoarele:\n\n• $|$\n• \n• \n\nTermen: [[date+7d:DD.MM.YYYY]].\n\nMulțumesc,\n[[var:nume_afisat]]',
+  },
+  {
+    title: 'Mulțumire formal',
+    body: 'Cu stimă deosebită,\n\nVă mulțumesc pentru [[select:promptitudine|încredere|colaborare|flexibilitate]] — ne-a fost de mare ajutor.\n\nO [[day]] frumoasă!\n[[var:nume_afisat]]',
+  },
+  {
+    title: 'Out-of-office (vacanță)',
+    body: 'Bună ziua,\n\nÎn perioada [[date]] – [[date+{{zile:Cate zile?|7}}d:DD.MM.YYYY]] sunt în concediu și răspund cu întârziere.\n\nPentru urgențe, contactează: $|$\n\nMulțumesc pentru înțelegere,\n[[var:nume_afisat]]',
+  },
+  {
+    title: 'Semnătură email',
+    body: 'Cu stimă,\n[[var:nume_afisat]]\n[[var:companie]]\n📞 [[var:telefon]]\n🌐 [[var:website_paff]]',
+  },
+];
+
+function populateRecipes() {
+  const grid = document.getElementById('recipes-grid');
+  if (!grid || grid.dataset.populated === '1') return;
+  grid.dataset.populated = '1';
+  grid.textContent = '';
+
+  for (const recipe of CHEATSHEET_RECIPES) {
+    const card = document.createElement('div');
+    card.className = 'recipe';
+
+    const title = document.createElement('div');
+    title.className = 'recipe-title';
+    title.textContent = '▸ ' + recipe.title;
+    title.title = 'Click pentru a copia snippet-ul în clipboard';
+
+    const body = document.createElement('pre');
+    body.className = 'recipe-body';
+    body.textContent = recipe.body;
+
+    title.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(recipe.body);
+        const original = title.textContent;
+        title.classList.add('copied');
+        title.textContent = '✓ Copiat — paste în câmpul Value al unui shortcut nou';
+        setTimeout(() => {
+          title.classList.remove('copied');
+          title.textContent = original;
+        }, 1800);
+      } catch (err) {
+        console.warn('Recipe copy failed:', err);
+      }
+    });
+
+    card.appendChild(title);
+    card.appendChild(body);
+    grid.appendChild(card);
+  }
+}
+
+// Compute the runtime value for inline "syntax → result" chips and the
+// hover tooltips on every <code> in the cheatsheet. Re-run on every
+// <details> open so dates stay current (no minute-by-minute polling).
+function refreshCheatsheetResults() {
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  const dayNames = ['Duminică', 'Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă'];
+
+  function formatDate(date, fmt) {
+    if (!fmt) return `${pad(date.getDate())}.${pad(date.getMonth() + 1)}.${date.getFullYear()}`;
+    return fmt
+      .replace(/YYYY/g, date.getFullYear())
+      .replace(/MM/g, pad(date.getMonth() + 1))
+      .replace(/DD/g, pad(date.getDate()))
+      .replace(/HH/g, pad(date.getHours()))
+      .replace(/mm/g, pad(date.getMinutes()));
+  }
+
+  function applyOffset(date, sign, n, unit) {
+    const factor = sign === '-' ? -1 : 1;
+    const d = new Date(date);
+    if (unit === 'd') d.setDate(d.getDate() + factor * n);
+    if (unit === 'w') d.setDate(d.getDate() + factor * 7 * n);
+    if (unit === 'm') d.setMonth(d.getMonth() + factor * n);
+    if (unit === 'y') d.setFullYear(d.getFullYear() + factor * n);
+    return d;
+  }
+
+  function greeting(date) {
+    const h = date.getHours();
+    if (h < 11) return 'Bună dimineața';
+    if (h < 18) return 'Bună ziua';
+    return 'Bună seara';
+  }
+
+  function evaluateToken(token) {
+    // token like "[[date]]" / "[[date+7d:DD.MM.YYYY]]" / "[[time:HH:mm]]"
+    const inner = token.replace(/^\[\[/, '').replace(/\]\]$/, '');
+    const m = inner.match(/^(date|time)(?:([+-])(\d+)([dwmy]))?(?::(.+))?$/);
+    if (m) {
+      const [, kind, sign, amount, unit, fmt] = m;
+      let target = now;
+      if (sign && amount && unit) {
+        target = applyOffset(now, sign, parseInt(amount, 10), unit);
+      }
+      if (kind === 'time') {
+        return formatDate(target, fmt || 'HH:mm');
+      }
+      return formatDate(target, fmt);
+    }
+    if (inner === 'day') return dayNames[now.getDay()];
+    if (inner === 'greeting') return greeting(now);
+    if (inner === 'user') {
+      // currentUser may be null until login completes; fall back to placeholder
+      return currentUser || 'cosmin';
+    }
+    return '';
+  }
+
+  // Inline arrows in vars-list: <span class="result" data-result-for="[[date]]">
+  document.querySelectorAll('.cheatsheet [data-result-for]').forEach(span => {
+    const token = span.dataset.resultFor;
+    if (!token) return;
+    const value = evaluateToken(token);
+    if (value) span.textContent = value;
+  });
+
+  // Hover tooltips on every <code> chip — show what it would expand to
+  // right now without forcing the user to scan the inline result column.
+  document.querySelectorAll('.cheatsheet-section code, .cheatsheet-example code').forEach(code => {
+    const text = code.textContent.trim();
+    if (!text.startsWith('[[') || !text.endsWith(']]')) return;
+    const value = evaluateToken(text);
+    if (value) {
+      code.title = `Acum: ${value}  ·  Click pentru copy`;
+    }
+  });
+}
+
 function attachCheatsheetCopy() {
   document.querySelectorAll('.cheatsheet-section code, .cheatsheet-example code')
     .forEach(code => {
@@ -990,6 +1182,18 @@ function attachCheatsheetCopy() {
 
         section.classList.toggle('hidden', !sectionMatchedAny);
       });
+    });
+  }
+
+  // Populate recipes once + recompute live results / tooltips. Hook the
+  // <details> open event so dates stay current next time the user opens it.
+  populateRecipes();
+  refreshCheatsheetResults();
+  const cheatsheet = document.querySelector('details.cheatsheet:not(.user-vars-panel)');
+  if (cheatsheet && cheatsheet.dataset.refreshBound !== '1') {
+    cheatsheet.dataset.refreshBound = '1';
+    cheatsheet.addEventListener('toggle', () => {
+      if (cheatsheet.open) refreshCheatsheetResults();
     });
   }
 }

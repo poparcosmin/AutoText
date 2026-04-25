@@ -1030,6 +1030,156 @@
     body.dark .cheatsheet-user-vars-empty {
       color: #9ca3af;
     }
+
+    /* Recipes — pre-built snippets, click title to copy. */
+    .recipes-section {
+      padding: 16px 20px 4px 20px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    body.dark .recipes-section {
+      border-bottom-color: #374151;
+    }
+    .recipes-section h4 {
+      margin: 0 0 6px 0;
+      font-size: 14px;
+      color: #111827;
+      font-weight: 700;
+    }
+    body.dark .recipes-section h4 { color: #f9fafb; }
+    .recipes-hint {
+      margin: 0 0 12px 0;
+      font-size: 12px;
+      color: #6b7280;
+      line-height: 1.5;
+    }
+    body.dark .recipes-hint { color: #9ca3af; }
+    .recipes-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    .recipe {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      overflow: hidden;
+      transition: border-color 0.15s, transform 0.1s;
+    }
+    body.dark .recipe {
+      background: #1f2937;
+      border-color: #374151;
+    }
+    .recipe:hover {
+      border-color: #3b82f6;
+    }
+    .recipe-title {
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #1e3a8a;
+      background: #eff6ff;
+      border-bottom: 1px solid #dbeafe;
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    body.dark .recipe-title {
+      background: #1e3a5c;
+      border-bottom-color: #2d4a6f;
+      color: #bfdbfe;
+    }
+    .recipe-title:hover {
+      background: #dbeafe;
+    }
+    body.dark .recipe-title:hover {
+      background: #2d4a6f;
+    }
+    .recipe-title.copied {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    body.dark .recipe-title.copied {
+      background: #064e3b;
+      color: #a7f3d0;
+    }
+    .recipe-body {
+      padding: 10px 12px;
+      font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.5;
+      color: #1f2937;
+      white-space: pre-wrap;
+      margin: 0;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+    body.dark .recipe-body { color: #e2e8f0; }
+
+    /* Inline "syntax → result" formatting in vars-list */
+    .vars-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .vars-list li {
+      padding: 4px 0;
+      font-size: 13px;
+      color: #374151;
+      line-height: 1.55;
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    body.dark .vars-list li { color: #d1d5db; }
+    .vars-list .arrow {
+      color: #9ca3af;
+      font-weight: 400;
+      flex-shrink: 0;
+    }
+    .vars-list .result {
+      font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace;
+      background: #d1fae5;
+      color: #065f46;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    body.dark .vars-list .result {
+      background: #064e3b;
+      color: #a7f3d0;
+    }
+    .vars-list .result-placeholder {
+      color: #6b7280;
+      font-style: italic;
+      font-size: 12px;
+    }
+    body.dark .vars-list .result-placeholder { color: #9ca3af; }
+    .vars-list .result-aside {
+      color: #9ca3af;
+      font-size: 11px;
+      font-style: normal;
+    }
+    body.dark .vars-list .result-aside { color: #6b7280; }
+    .section-hint {
+      margin: 0 0 8px 0;
+      font-size: 12px;
+      color: #6b7280;
+      line-height: 1.5;
+    }
+    body.dark .section-hint { color: #9ca3af; }
+    .section-hint code {
+      background: #f3f4f6;
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-size: 11px;
+    }
+    body.dark .section-hint code {
+      background: #0f172a;
+    }
     .cheatsheet-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -1500,90 +1650,94 @@
 
           <!-- Cheatsheet pentru variabile dinamice -->
           <details class="cheatsheet">
-            <summary>📚 Cheatsheet — variabile și sintaxă (click)</summary>
+            <summary>📚 Cheatsheet — variabile și rețete (click)</summary>
             <div class="cheatsheet-filter">
               <input type="text" id="cheatsheet-filter-input"
-                     placeholder="🔎 Caută în cheatsheet... (ex: date, gmail, cursor)" />
+                     placeholder="🔎 Caută în cheatsheet... (ex: date, comandă, cursor)" />
             </div>
+
+            <!-- Rețete: snippet-uri gata-de-folosit. Click pe titlu = copy întregul body. -->
+            <div class="recipes-section" id="recipes-section">
+              <h4>🍳 Rețete (click pe titlu = copy)</h4>
+              <p class="recipes-hint">Template-uri gata de pus într-un shortcut nou. Click pe titlul rețetei copiază snippet-ul în clipboard, apoi paste-uiești în câmpul Value al unui shortcut.</p>
+              <div class="recipes-grid" id="recipes-grid">
+                <!-- Populated by JS so each title can be a click-to-copy button -->
+              </div>
+            </div>
+
             <div class="cheatsheet-grid">
-              <div class="cheatsheet-section">
-                <h4>📅 Date & timp</h4>
-                <ul>
-                  <li><code>[[date]]</code> — data curentă (DD.MM.YYYY)</li>
-                  <li><code>[[date:DD.MM.YYYY]]</code> — format custom</li>
-                  <li><code>[[date+7d:DD.MM.YYYY]]</code> — peste 7 zile</li>
-                  <li><code>[[date-30d]]</code> — acum 30 zile</li>
-                  <li><code>[[date+1m]]</code> / <code>[[date+1y]]</code> — peste 1 lună / 1 an</li>
-                  <li><code>[[time]]</code> — ora curentă (HH:mm)</li>
-                  <li><code>[[time:HH:mm]]</code> — format custom oră</li>
-                  <li><code>[[day]]</code> — numele zilei (Luni, Marți...)</li>
-                  <li><code>[[greeting]]</code> — Bună dimineața / ziua / seara</li>
+              <!-- 1. Folosite zilnic — top of mind, scan-able under 3 seconds -->
+              <div class="cheatsheet-section" data-priority="1">
+                <h4>🎯 Folosite zilnic</h4>
+                <p class="section-hint">Variabilele care apar în 80% din shortcuts.</p>
+                <ul class="vars-list">
+                  <li><code data-var="greeting">[[greeting]]</code><span class="arrow">→</span><span class="result" data-result-for="[[greeting]]"></span></li>
+                  <li><code data-var="date">[[date]]</code><span class="arrow">→</span><span class="result" data-result-for="[[date]]"></span></li>
+                  <li><code data-var="day">[[day]]</code><span class="arrow">→</span><span class="result" data-result-for="[[day]]"></span></li>
+                  <li><code data-var="user">[[user]]</code><span class="arrow">→</span><span class="result" data-result-for="[[user]]">cosmin</span></li>
+                  <li><code data-var="recipient">[[recipient]]</code><span class="arrow">→</span><span class="result-placeholder">Cosmin Popa <span class="result-aside">(când scrii email în Gmail)</span></span></li>
+                  <li><code data-var="var:nume_afisat">[[var:nume_afisat]]</code><span class="arrow">→</span><span class="result-placeholder">valoarea ta custom <span class="result-aside">(definită mai jos)</span></span></li>
                 </ul>
               </div>
 
-              <div class="cheatsheet-section">
-                <h4>🎯 Context user</h4>
-                <ul>
-                  <li><code>[[user]]</code> — username-ul tău (ex: cosmin)</li>
-                  <li><code>[[recipient]]</code> — destinatar Gmail (compose / reply)</li>
-                  <li><code>[[var:nume]]</code> — variabilă custom (panou-ul de mai jos)</li>
+              <!-- 2. Date & time avansate -->
+              <div class="cheatsheet-section" data-priority="2">
+                <h4>📅 Date & timp avansate</h4>
+                <p class="section-hint">Format custom + offset (zile, săptămâni, luni, ani).</p>
+                <ul class="vars-list">
+                  <li><code data-var="date:DD.MM.YYYY">[[date:DD.MM.YYYY]]</code><span class="arrow">→</span><span class="result" data-result-for="[[date:DD.MM.YYYY]]"></span></li>
+                  <li><code data-var="date+7d:DD.MM.YYYY">[[date+7d:DD.MM.YYYY]]</code><span class="arrow">→</span><span class="result" data-result-for="[[date+7d:DD.MM.YYYY]]"></span></li>
+                  <li><code data-var="date-30d">[[date-30d]]</code><span class="arrow">→</span><span class="result" data-result-for="[[date-30d]]"></span></li>
+                  <li><code data-var="date+1m:DD.MM.YYYY">[[date+1m:DD.MM.YYYY]]</code><span class="arrow">→</span><span class="result" data-result-for="[[date+1m:DD.MM.YYYY]]"></span></li>
+                  <li><code data-var="date+1y:DD.MM.YYYY">[[date+1y:DD.MM.YYYY]]</code><span class="arrow">→</span><span class="result" data-result-for="[[date+1y:DD.MM.YYYY]]"></span></li>
+                  <li><code data-var="time">[[time]]</code><span class="arrow">→</span><span class="result" data-result-for="[[time]]"></span></li>
+                  <li><code data-var="time:HH:mm">[[time:HH:mm]]</code><span class="arrow">→</span><span class="result" data-result-for="[[time:HH:mm]]"></span></li>
                 </ul>
               </div>
 
-              <div class="cheatsheet-section">
-                <h4>🎲 Aleator & alegeri</h4>
-                <ul>
-                  <li><code>[[random:Mersi|Mulțumesc|Cu drag]]</code> — pick aleator</li>
-                  <li><code>[[select:Opțiunea A|Opțiunea B|Opțiunea C]]</code> — te întreabă la expand</li>
+              <!-- 3. Prompts interactive -->
+              <div class="cheatsheet-section" data-priority="3">
+                <h4>📝 Prompts (te întreabă la expand)</h4>
+                <p class="section-hint">Pentru valori care se schimbă de la un email la altul.</p>
+                <ul class="vars-list">
+                  <li><code>{{nume}}</code><span class="arrow">→</span><span class="result-placeholder">prompt simplu, fără label</span></li>
+                  <li><code>{{nume:Numele tău}}</code><span class="arrow">→</span><span class="result-placeholder">prompt cu label vizibil</span></li>
+                  <li><code>{{nume:Numele tău|cosmin}}</code><span class="arrow">→</span><span class="result-placeholder">prompt cu valoare default</span></li>
+                  <li><code>[[select:A|B|C]]</code><span class="arrow">→</span><span class="result-placeholder">alegi din listă</span></li>
+                  <li><code>[[random:A|B|C]]</code><span class="arrow">→</span><span class="result-placeholder">pick aleator <span class="result-aside">(închideri varia­te)</span></span></li>
                 </ul>
+                <p class="section-hint" style="margin-top: 8px;">💡 Aceeași variabilă (<code>{{nume}}</code>) folosită de mai multe ori = un singur prompt.</p>
               </div>
 
-              <div class="cheatsheet-section">
-                <h4>📝 Form prompts (manual)</h4>
-                <ul>
-                  <li><code>{{nume}}</code> — întreabă "nume"</li>
-                  <li><code>{{nume:Numele tău}}</code> — cu label</li>
-                  <li><code>{{nume:Numele tău|cosmin}}</code> — label + default</li>
-                  <li>Aceeași variabilă folosită de mai multe ori = un prompt singur</li>
-                </ul>
-              </div>
-
-              <div class="cheatsheet-section">
-                <h4>🔗 Compoziție</h4>
-                <ul>
-                  <li><code>[[%s(altShortcut)]]</code> — include alt shortcut inline</li>
-                  <li>Ex: <code>email-footer</code> reutilizat în 20 template-uri</li>
-                  <li>Adâncime maximă: 5 niveluri (anti-loop)</li>
-                </ul>
-              </div>
-
-              <div class="cheatsheet-section">
+              <!-- 4. Cursor -->
+              <div class="cheatsheet-section" data-priority="4">
                 <h4>⌨️ Cursor</h4>
-                <ul>
-                  <li><code>$|$</code> — pune cursorul aici după expand</li>
-                  <li>Ex: <code>Salut $|$,</code> — cursor după "Salut "</li>
+                <p class="section-hint">Unde sare cursorul după expand.</p>
+                <ul class="vars-list">
+                  <li><code>$|$</code><span class="arrow">→</span><span class="result-placeholder">poziția cursorului</span></li>
                 </ul>
+                <p class="section-hint" style="margin-top: 8px;">Ex: <code>Salut $|$,</code> → cursorul ajunge după "Salut ", gata să tastezi numele.</p>
               </div>
 
-              <div class="cheatsheet-section" id="cheatsheet-user-vars-section">
+              <!-- 5. Avansat: composition -->
+              <div class="cheatsheet-section" data-priority="5">
+                <h4>🔗 Avansat — compoziție</h4>
+                <p class="section-hint">Reutilizează snippets în alte snippets.</p>
+                <ul class="vars-list">
+                  <li><code>[[%s(altShortcut)]]</code><span class="arrow">→</span><span class="result-placeholder">include alt shortcut inline</span></li>
+                </ul>
+                <p class="section-hint" style="margin-top: 8px;">Ex: ai <code>email-footer</code> definit o dată, îl folosești în 20 template-uri. Adâncime maximă: 5 niveluri (anti-loop).</p>
+              </div>
+
+              <!-- 6. Variabilele user-ului -->
+              <div class="cheatsheet-section" id="cheatsheet-user-vars-section" data-priority="6">
                 <h4>🔧 Variabilele tale</h4>
-                <ul id="cheatsheet-user-vars-list">
+                <p class="section-hint">Definite în panoul de mai jos. Click = copy sintaxa.</p>
+                <ul id="cheatsheet-user-vars-list" class="vars-list">
                   <li class="cheatsheet-user-vars-empty">
                     Adaugă variabile mai jos — vor apărea aici ca chip-uri click-to-copy.
                   </li>
                 </ul>
-              </div>
-
-              <div class="cheatsheet-section cheatsheet-example">
-                <h4>💡 Exemplu complex</h4>
-                <pre>[[greeting]] [[recipient]],
-
-Vă confirm comanda din [[date]].
-Termen livrare: [[date+7d:DD.MM.YYYY]].
-
-Cu [[random:respect|stimă|drag]],
-[[user]]
-$|$</pre>
               </div>
             </div>
           </details>
