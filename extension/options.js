@@ -1015,6 +1015,15 @@ function renderManageShortcuts(shortcuts) {
     return true;
   });
 
+  // Sort: personal first, then Birou. Within each group, alphabetic by key.
+  // A shortcut is considered "personal" if any of its sets is not 'Birou'.
+  filteredShortcuts.sort((a, b) => {
+    const aPersonal = (a.set_names || []).some(name => name !== 'Birou') ? 0 : 1;
+    const bPersonal = (b.set_names || []).some(name => name !== 'Birou') ? 0 : 1;
+    if (aPersonal !== bPersonal) return aPersonal - bPersonal;
+    return (a.key || '').localeCompare(b.key || '');
+  });
+
   if (filteredShortcuts.length === 0) {
     const emptyDiv = document.createElement('div');
     emptyDiv.style.cssText = 'text-align: center; padding: 30px; color: var(--text-secondary-light);';
