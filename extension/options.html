@@ -1165,6 +1165,109 @@
     }
     body.dark .vars-list .result-aside { color: #6b7280; }
 
+    /* Test-expand result panel — sits at the bottom of the modal. */
+    .modal-test-panel {
+      flex-shrink: 0;
+      padding: 14px 20px;
+      background: #f0f9ff;
+      border-top: 2px solid #3b82f6;
+    }
+    body.dark .modal-test-panel {
+      background: #0f1e3d;
+      border-top-color: #2563eb;
+    }
+    .modal-test-panel.hidden { display: none; }
+    .modal-test-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 13px;
+      color: #1e3a8a;
+    }
+    body.dark .modal-test-header { color: #bfdbfe; }
+    .modal-test-close {
+      background: none;
+      border: none;
+      font-size: 18px;
+      cursor: pointer;
+      color: #6b7280;
+      line-height: 1;
+    }
+    .modal-test-output {
+      background: #fff;
+      border: 1px solid #cbd5e1;
+      padding: 10px 12px;
+      border-radius: 4px;
+      font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.5;
+      color: #111827;
+      max-height: 200px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      margin: 0;
+    }
+    body.dark .modal-test-output {
+      background: #0f172a;
+      border-color: #334155;
+      color: #e2e8f0;
+    }
+    .modal-test-disclaimer {
+      margin: 8px 0 0 0;
+      font-size: 11px;
+      color: #6b7280;
+      line-height: 1.4;
+    }
+    body.dark .modal-test-disclaimer { color: #9ca3af; }
+    .modal-test-disclaimer code {
+      background: rgba(0, 0, 0, 0.06);
+      padding: 1px 3px;
+      border-radius: 3px;
+      font-size: 10px;
+    }
+    body.dark .modal-test-disclaimer code {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    /* Conflict warning under the shortcut-key input. Soft yellow,
+       not blocking — the user can still hit Save and override. */
+    .shortcut-key-warning {
+      margin: 6px 0 0 0;
+      padding: 8px 10px;
+      background: #fef3c7;
+      border: 1px solid #fde68a;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #78350f;
+      line-height: 1.4;
+    }
+    body.dark .shortcut-key-warning {
+      background: #422006;
+      border-color: #b45309;
+      color: #fde68a;
+    }
+    .shortcut-key-warning.error {
+      background: #fee2e2;
+      border-color: #fca5a5;
+      color: #7f1d1d;
+    }
+    body.dark .shortcut-key-warning.error {
+      background: #450a0a;
+      border-color: #b91c1c;
+      color: #fecaca;
+    }
+    .shortcut-key-warning.hidden { display: none; }
+    .shortcut-key-warning code {
+      background: rgba(0, 0, 0, 0.08);
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace;
+    }
+    body.dark .shortcut-key-warning code {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
     /* Inside the modal we collapse the recipes section so variables
        sit on top — those are the common "insert one token at cursor"
        use case, recipes are the rarer "wipe and start from template". */
@@ -2133,6 +2236,7 @@
           <div class="form-group">
             <label for="shortcut-key">Shortcut Key</label>
             <input type="text" id="shortcut-key" placeholder="e.g., /email, #signature" required>
+            <p id="shortcut-key-warning" class="shortcut-key-warning hidden"></p>
           </div>
           <div class="form-group">
             <label>Content Type</label>
@@ -2189,8 +2293,20 @@
       </div>
       <div class="modal-footer">
         <button class="btn-outline hidden" id="modal-download-original" title="Restore original content from Birou">⬇️ Descarcă original</button>
+        <button class="btn-outline" id="modal-test-expand" title="Vezi rezultatul cu valori demo, fără să salvezi">🧪 Test</button>
         <button class="btn-outline" id="modal-cancel">Cancel</button>
         <button class="btn-add" id="modal-save">Save Shortcut</button>
+      </div>
+      <!-- Test result panel — hidden until "🧪 Test" is clicked. -->
+      <div class="modal-test-panel hidden" id="modal-test-panel">
+        <div class="modal-test-header">
+          <strong>🧪 Rezultat test (cu valori demo)</strong>
+          <button class="modal-test-close" id="modal-test-close" aria-label="Închide">&times;</button>
+        </div>
+        <pre class="modal-test-output" id="modal-test-output"></pre>
+        <p class="modal-test-disclaimer">
+          ⓘ Test cu valori demo: <code>[[recipient]]</code> → "Cosmin Popa", placeholders pre-completate cu label, <code>$|$</code> marcat cu <code>|</code>. Real-time variabilele sunt expandate cu valori curente.
+        </p>
       </div>
     </div>
   </div>

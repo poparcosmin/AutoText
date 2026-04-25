@@ -383,6 +383,10 @@ function attachEventListeners() {
   document.getElementById('modal-close').addEventListener('click', closeShortcutModal);
   document.getElementById('modal-cancel').addEventListener('click', closeShortcutModal);
   document.getElementById('modal-save').addEventListener('click', saveShortcut);
+  document.getElementById('modal-test-expand')?.addEventListener('click', runTestExpand);
+  document.getElementById('modal-test-close')?.addEventListener('click', () => {
+    document.getElementById('modal-test-panel').classList.add('hidden');
+  });
 
   // Content type toggle in modal
   document.querySelectorAll('.content-type-btn').forEach(btn => {
@@ -1677,6 +1681,191 @@ function populateModalCheatsheet() {
   }
 }
 
+// Test-expand: takes whatever is in the active expansion field, runs it
+// through a synchronous demo evaluator (mirrors content.js but with
+// hardcoded demo values for runtime-dependent vars), and prints the
+// result in the test panel. Useful as a "did I typo?" check before save.
+async function runTestExpand() {
+  const isHtml = document.querySelector('.content-type-btn.active')?.dataset?.type === 'html';
+  let raw;
+  if (isHtml && tinyMCEEditor) {
+    // Strip HTML to plain text for the test (browsing the rendered HTML
+    // in the test panel adds no value — we want to see what the snippet
+    // resolves to as text).
+    const tmp = document.createElement('div');
+    tmp.textContent = tinyMCEEditor.getContent({ format: 'text' });
+    raw = tmp.textContent;
+  } else {
+    raw = document.getElementById('shortcut-value')?.value || '';
+  }
+
+  if (!raw.trim()) {
+    document.getElementById('modal-test-output').textContent = '(câmpul Expansion e gol)';
+    document.getElementById('modal-test-panel').classList.remove('hidden');
+    return;
+  }
+
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  const dayNames = ['Duminică', 'Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă'];
+
+  function formatDate(date, fmt) {
+    if (!fmt) return `${pad(date.getDate())}.${pad(date.getMonth() + 1)}.${date.getFullYear()}`;
+    return fmt
+      .replace(/YYYY/g, date.getFullYear())
+      .replace(/MM/g, pad(date.getMonth() + 1))
+      .replace(/DD/g, pad(date.getDate()))
+      .replace(/HH/g, pad(date.getHours()))
+      .replace(/mm/g, pad(date.getMinutes()));
+  }
+  function applyOffset(date, sign, n, unit) {
+    const f = sign === '-' ? -1 : 1;
+    const d = new Date(date);
+    if (unit === 'd') d.setDate(d.getDate() + f * n);
+    if (unit === 'w') d.setDate(d.getDate() + f * 7 * n);
+    if (unit === 'm') d.setMonth(d.getMonth() + f * n);
+    if (unit === 'y') d.setFullYear(d.getFullYear() + f * n);
+    return d;
+  }
+  function greeting(date) {
+    const h = date.getHours();
+    if (h < 11) return 'Bună dimineața';
+    if (h < 18) return 'Bună ziua';
+    return 'Bună seara';
+  }
+
+  // Pull user variables from chrome storage so [[var:...]] resolves to
+  // real values where possible.
+  let userVars = {};
+  try {
+    const stored = await chrome.storage.local.get('userVariables');
+    userVars = (stored && stored.userVariables) || {};
+  } catch (_) {}
+
+  let out = raw;
+
+  // Date / time / day / greeting
+  out = out.replace(/\[\[(date|time)(?:([+-])(\d+)([dwmy]))?(?::([^\]]+))?\]\]/g,
+    (_, kind, sign, amount, unit, fmt) => {
+      let target = now;
+      if (sign && amount && unit) target = applyOffset(now, sign, parseInt(amount, 10), unit);
+      if (kind === 'time') return formatDate(target, fmt || 'HH:mm');
+      return formatDate(target, fmt);
+    });
+  out = out.replace(/\[\[day\]\]/g, dayNames[now.getDay()]);
+  out = out.replace(/\[\[greeting\]\]/g, greeting(now));
+
+  // User context
+  out = out.replace(/\[\[user\]\]/g, currentUser || 'cosmin');
+  out = out.replace(/\[\[recipient\]\]/g, '«Cosmin Popa»');
+
+  // Custom variables
+  out = out.replace(/\[\[var:([a-zA-Z_][a-zA-Z0-9_]*)\]\]/g, (_m, name) => {
+    if (Object.prototype.hasOwnProperty.call(userVars, name)) return userVars[name];
+    return `«[[var:${name}]] (nedefinit)»`;
+  });
+
+  // Random — just pick one option for demo
+  out = out.replace(/\[\[random:([^\]]+)\]\]/g, (_, args) => {
+    const opts = args.split('|').map(s => s.trim()).filter(Boolean);
+    return opts.length ? `«${opts[0]}»` : '';
+  });
+
+  // Select — show first option as demo
+  out = out.replace(/\[\[select:([^\]]+)\]\]/g, (_, args) => {
+    const opts = args.split('|').map(s => s.trim()).filter(Boolean);
+    return opts.length ? `«${opts[0]}»` : '';
+  });
+
+  // Form placeholders {{name}} / {{name:Label}} / {{name:Label|default}}
+  out = out.replace(/\{\{([a-zA-Z_][a-zA-Z0-9_]*)(?::([^|}]*))?(?:\|([^}]*))?\}\}/g,
+    (_, name, label, def) => `«${(def || '').trim() || (label || '').trim() || name} (test)»`);
+
+  // Snippet nesting [[%s(other)]] — show as inline tag
+  out = out.replace(/\[\[%s\(([^)]+)\)\]\]/g, (_, name) => `«inserează shortcut: ${name.trim()}»`);
+
+  // Cursor marker
+  out = out.replace(/\$\|\$/g, '|');
+
+  document.getElementById('modal-test-output').textContent = out;
+  document.getElementById('modal-test-panel').classList.remove('hidden');
+}
+
+// Live conflict check on the shortcut-key field. Two cases:
+//   1. Exact match  → another shortcut already uses this key
+//   2. Prefix overlap → typing one will leave the other unreachable
+//      (e.g. shortcut "ab" makes "abc" trigger first, never "ab")
+// Warning is non-blocking — user can still Save and resolve later.
+function checkShortcutKeyConflict(currentKey, currentId) {
+  const warning = document.getElementById('shortcut-key-warning');
+  if (!warning) return;
+
+  const key = (currentKey || '').trim();
+  if (!key || !manageShortcuts || manageShortcuts.length === 0) {
+    warning.classList.add('hidden');
+    return;
+  }
+
+  // Exact match (excluding the shortcut we're currently editing)
+  const exact = manageShortcuts.find(s =>
+    s.key === key && String(s.id) !== String(currentId || '')
+  );
+  if (exact) {
+    warning.classList.remove('hidden');
+    warning.classList.add('error');
+    warning.innerHTML = '';
+    const text = document.createElement('span');
+    text.textContent = '⚠️ Există deja shortcut cu cheia ';
+    const code = document.createElement('code');
+    code.textContent = key;
+    const after = document.createElement('span');
+    after.textContent = ' (în setul ' + (exact.set_names || []).join(', ') + ')';
+    warning.appendChild(text);
+    warning.appendChild(code);
+    warning.appendChild(after);
+    return;
+  }
+
+  // Prefix overlap — find shortcuts whose key starts with our key, OR whose
+  // key is a prefix of ours. Both directions cause "shorter wins" expand
+  // race condition. Skip 1-char keys to avoid noise (everything starts with
+  // 'a' if you have one shortcut starting with 'a').
+  if (key.length < 2) {
+    warning.classList.add('hidden');
+    return;
+  }
+  const conflicts = manageShortcuts.filter(s => {
+    if (String(s.id) === String(currentId || '')) return false;
+    if (!s.key || s.key.length < 2) return false;
+    return s.key.startsWith(key) || key.startsWith(s.key);
+  });
+
+  if (conflicts.length === 0) {
+    warning.classList.add('hidden');
+    return;
+  }
+
+  warning.classList.remove('hidden');
+  warning.classList.remove('error');
+  warning.innerHTML = '';
+  const intro = document.createElement('span');
+  intro.textContent = '⚠️ Atenție: ';
+  warning.appendChild(intro);
+
+  // Pick the most relevant conflict (shortest prefix wins on Tab)
+  const c = conflicts[0];
+  const shorter = c.key.length < key.length ? c : { key };
+  const longer = c.key.length < key.length ? { key } : c;
+  const fragMsg = document.createElement('span');
+  fragMsg.textContent = ' e prefix pentru ';
+  warning.appendChild(document.createElement('code')).textContent = shorter.key;
+  warning.appendChild(fragMsg);
+  warning.appendChild(document.createElement('code')).textContent = longer.key;
+  const tail = document.createElement('span');
+  tail.textContent = ' — Tab va declanșa primul, al doilea poate rămâne inaccesibil.';
+  warning.appendChild(tail);
+}
+
 function openShortcutModal(shortcut = null) {
   const modal = document.getElementById('shortcut-modal');
   const title = document.getElementById('modal-title');
@@ -1690,6 +1879,16 @@ function openShortcutModal(shortcut = null) {
   document.querySelector('.content-type-btn[data-type="text"]').classList.add('active');
   document.getElementById('text-content-group').style.display = 'block';
   document.getElementById('html-content-group').style.display = 'none';
+
+  // Wire conflict-check on every keystroke. Reset warning on open.
+  const warning = document.getElementById('shortcut-key-warning');
+  if (warning) warning.classList.add('hidden');
+  if (keyField.dataset.conflictBound !== '1') {
+    keyField.dataset.conflictBound = '1';
+    keyField.addEventListener('input', () => {
+      checkShortcutKeyConflict(keyField.value, idField.value);
+    });
+  }
 
   // Populate sets dropdown safely
   setSelect.textContent = '';
@@ -1818,10 +2017,17 @@ function openShortcutModal(shortcut = null) {
   // and chip handlers are wired here so user can immediately click any
   // [[var]] / recipe to insert it into the active expansion field.
   populateModalCheatsheet();
+
+  // Run conflict check once for the prefilled key (edit mode), so the
+  // warning is correct without waiting for the user to type.
+  checkShortcutKeyConflict(keyField.value, idField.value);
 }
 
 function closeShortcutModal() {
   document.getElementById('shortcut-modal').classList.add('hidden');
+  // Reset transient panels so the next open is clean.
+  document.getElementById('modal-test-panel')?.classList.add('hidden');
+  document.getElementById('shortcut-key-warning')?.classList.add('hidden');
 }
 
 async function saveShortcut() {
