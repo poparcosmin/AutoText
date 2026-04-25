@@ -983,7 +983,18 @@ async function loadPersonalSetsForSelect() {
     });
     if (response.ok) {
       const sets = await response.json();
-      personalSetsForSelect = sets.filter(s => s.set_type === 'personal');
+      // Include general sets (Birou — team-shared, anyone can place into)
+      // and personal sets the user owns. Backend gates with the same rule.
+      personalSetsForSelect = sets.filter(s =>
+        s.set_type === 'general' || s.set_type === 'personal'
+      );
+      // Sort: general (Birou) first, then personal alphabetically.
+      personalSetsForSelect.sort((a, b) => {
+        if (a.set_type !== b.set_type) {
+          return a.set_type === 'general' ? -1 : 1;
+        }
+        return (a.name || '').localeCompare(b.name || '');
+      });
     }
   } catch (error) {
     console.error('Failed to load personal sets:', error);
@@ -1063,34 +1074,36 @@ function renderManageShortcuts(shortcuts) {
     const actions = document.createElement('div');
     actions.className = 'shortcut-actions';
 
-    // Check if shortcut belongs to "Birou" set (read-only)
+    // Birou (general) is now team-shared edit per server-side change —
+    // every staff user can edit/delete shortcuts there. Personal sets
+    // remain strict-owner; the API gates writes regardless.
     const isFromBirou = setNames.includes('Birou');
 
+    const editBtn = document.createElement('button');
+    editBtn.className = 'btn-edit';
+    editBtn.textContent = '✏️';
+    editBtn.title = isFromBirou ? 'Edit (shared with team)' : 'Edit';
+    editBtn.addEventListener('click', () => openShortcutModal(shortcut));
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'btn-delete';
+    deleteBtn.textContent = '🗑️';
+    deleteBtn.title = isFromBirou ? 'Delete (affects whole team)' : 'Delete';
+    deleteBtn.addEventListener('click', () => deleteShortcut(shortcut.id));
+
+    actions.appendChild(editBtn);
+    actions.appendChild(deleteBtn);
+
     if (isFromBirou) {
-      // Add "Copy to Personal" button for Birou shortcuts
+      // Keep "Copy to Personal" as a third option — useful when you want
+      // a personal variant without touching the team's shared snippet.
       const copyBtn = document.createElement('button');
       copyBtn.className = 'btn-copy';
       copyBtn.textContent = '📋';
       copyBtn.title = 'Copy to Personal Set';
-      copyBtn.style.cssText = 'background: var(--primary); color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;';
+      copyBtn.style.cssText = 'background: var(--primary); color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; margin-left: 4px;';
       copyBtn.addEventListener('click', () => copyToPersonalSet(shortcut));
       actions.appendChild(copyBtn);
-    } else {
-      // Normal edit/delete for personal shortcuts
-      const editBtn = document.createElement('button');
-      editBtn.className = 'btn-edit';
-      editBtn.textContent = '✏️';
-      editBtn.title = 'Edit';
-      editBtn.addEventListener('click', () => openShortcutModal(shortcut));
-
-      const deleteBtn = document.createElement('button');
-      deleteBtn.className = 'btn-delete';
-      deleteBtn.textContent = '🗑️';
-      deleteBtn.title = 'Delete';
-      deleteBtn.addEventListener('click', () => deleteShortcut(shortcut.id));
-
-      actions.appendChild(editBtn);
-      actions.appendChild(deleteBtn);
     }
 
     row.appendChild(keyBadge);
@@ -1273,9 +1286,10 @@ function openShortcutModal(shortcut = null) {
       }, 100);
     }
 
-    // Select set if shortcut belongs to one (set_names contains string names from API)
+    // Select set if shortcut belongs to one. Prefer the first set whose
+    // name is in the shortcut's set_names — covers both Birou (general)
+    // and personal sets uniformly now that the dropdown lists both.
     if (shortcut.set_names && shortcut.set_names.length > 0) {
-      // Find the personal set that matches one of the shortcut's set names
       const matchingSet = personalSetsForSelect.find(s =>
         shortcut.set_names.includes(s.name)
       );
