@@ -230,16 +230,18 @@ class ShortcutViewSet(viewsets.ModelViewSet):
         user = request.user
         data = request.data.copy()
 
-        # Validate sets - user can only add to their own personal sets
+        # Validate sets — must be a personal set the user owns OR a general set.
+        # Birou (general) is team-shared so anyone can add to it.
         set_ids = data.get('sets', [])
         if set_ids:
-            allowed_sets = ShortcutSet.objects.filter(
-                id__in=set_ids,
-                set_type='personal',
-                owner=user
+            allowed_sets = ShortcutSet.objects.filter(id__in=set_ids).filter(
+                Q(set_type='general') |
+                Q(set_type='personal', owner=user)
             )
             if allowed_sets.count() != len(set_ids):
-                raise PermissionDenied("You can only add shortcuts to your own personal sets.")
+                raise PermissionDenied(
+                    "You can only add shortcuts to general sets or your own personal sets."
+                )
 
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
@@ -251,26 +253,39 @@ class ShortcutViewSet(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         """
         PUT /api/shortcuts/{id}/
-        Update a shortcut. Only the owner can update their shortcuts.
+
+        Edit rules for an internal team:
+          - Owner can always edit their own shortcut.
+          - Superuser can edit any shortcut.
+          - Any staff user can edit a shortcut that lives in a `general`
+            set (Birou) — these are shared team knowledge, not personal.
+          - Personal shortcuts (only in personal sets) stay strict-owner.
         """
         instance = self.get_object()
         user = request.user
 
-        if instance.owner != user and not user.is_superuser:
-            raise PermissionDenied("You can only edit your own shortcuts.")
+        is_owner = instance.owner == user
+        is_in_general_set = instance.sets.filter(set_type='general').exists()
+        if not (user.is_superuser or is_owner or is_in_general_set):
+            raise PermissionDenied(
+                "Only the owner can edit personal shortcuts."
+            )
 
         data = request.data.copy()
 
-        # Validate sets - user can only use their own personal sets
+        # Validate sets — must be a personal set the user owns OR a general set.
+        # General sets are shared, so anyone in the team can move shortcuts
+        # in/out of them; personal sets stay strict-owner.
         set_ids = data.get('sets', [])
         if set_ids:
-            allowed_sets = ShortcutSet.objects.filter(
-                id__in=set_ids,
-                set_type='personal',
-                owner=user
+            allowed_sets = ShortcutSet.objects.filter(id__in=set_ids).filter(
+                Q(set_type='general') |
+                Q(set_type='personal', owner=user)
             )
             if allowed_sets.count() != len(set_ids):
-                raise PermissionDenied("You can only add shortcuts to your own personal sets.")
+                raise PermissionDenied(
+                    "You can only place shortcuts in general sets or your own personal sets."
+                )
 
         serializer = self.get_serializer(instance, data=data, partial=False)
         serializer.is_valid(raise_exception=True)
@@ -282,13 +297,21 @@ class ShortcutViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         """
         DELETE /api/shortcuts/{id}/
-        Delete a shortcut. Only the owner can delete their shortcuts.
+
+        Same rules as update — owner / superuser / anyone-on-general.
+        Delete is destructive but `general` sets are team-shared and a
+        2-10 person team is small enough that anyone with team trust
+        can clean up the shared list.
         """
         instance = self.get_object()
         user = request.user
 
-        if instance.owner != user and not user.is_superuser:
-            raise PermissionDenied("You can only delete your own shortcuts.")
+        is_owner = instance.owner == user
+        is_in_general_set = instance.sets.filter(set_type='general').exists()
+        if not (user.is_superuser or is_owner or is_in_general_set):
+            raise PermissionDenied(
+                "Only the owner can delete personal shortcuts."
+            )
 
         instance.delete()
         # Cache invalidation handled by textsync.signals.post_delete on Shortcut
