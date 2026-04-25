@@ -831,6 +831,51 @@
       outline-offset: -1px;
       border-color: #3b82f6;
     }
+
+    /* Notion-style editable cell: static text by default, click to edit.
+       Hover hint shows it's interactive without screaming for attention. */
+    .editable-cell {
+      padding: 7px 10px;
+      border-radius: 4px;
+      cursor: text;
+      min-height: 18px;
+      font-size: 13px;
+      color: #111827;
+      transition: background 0.12s;
+      border: 1px solid transparent;
+    }
+    body.dark .editable-cell { color: #f3f4f6; }
+    .editable-cell:hover {
+      background: #eef2ff;
+      border-color: #c7d2fe;
+    }
+    body.dark .editable-cell:hover {
+      background: #1e293b;
+      border-color: #334155;
+    }
+    .editable-cell.editing {
+      padding: 0;
+    }
+    .editable-cell.editing input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 7px 10px;
+      border: 1px solid #3b82f6;
+      border-radius: 4px;
+      font-size: 13px;
+      background: #fff;
+      color: #111827;
+      outline: 2px solid #3b82f6;
+      outline-offset: -1px;
+    }
+    body.dark .editable-cell.editing input {
+      background: #111827;
+      color: #f3f4f6;
+    }
+    .editable-cell-placeholder {
+      color: #9ca3af;
+      font-style: italic;
+    }
     .user-var-row .var-syntax {
       font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace;
       font-size: 11px;
@@ -875,6 +920,47 @@
       color: #9ca3af;
     }
 
+    /* Onboarding empty state for variables — first-run only.
+       Headline + CTA buttons + small hint. PAFF starter values. */
+    .user-vars-empty-cta {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 18px;
+      background: #f9fafb;
+      border: 1px dashed #d1d5db;
+      border-radius: 8px;
+    }
+    body.dark .user-vars-empty-cta {
+      background: #1f2937;
+      border-color: #374151;
+    }
+    .user-vars-empty-headline {
+      font-weight: 600;
+      font-size: 14px;
+      color: #111827;
+    }
+    body.dark .user-vars-empty-headline {
+      color: #f9fafb;
+    }
+    .user-vars-empty-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .user-vars-starter-btn {
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .user-vars-empty-hint {
+      font-size: 12px;
+      color: #6b7280;
+      font-style: italic;
+    }
+    body.dark .user-vars-empty-hint {
+      color: #9ca3af;
+    }
+
     /* Cheatsheet — contrast first. Solid surfaces (no gradients), code
        blocks with their own light background + dark text instead of the
        previous pink-on-pale-blue. Verified against WCAG AA on both modes. */
@@ -909,6 +995,40 @@
     }
     body.dark .cheatsheet[open] > summary {
       border-bottom-color: #374151;
+    }
+    .cheatsheet-filter {
+      padding: 14px 20px 0 20px;
+    }
+    .cheatsheet-filter input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 8px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 13px;
+      background: #fff;
+      color: #111827;
+    }
+    body.dark .cheatsheet-filter input {
+      background: #111827;
+      color: #f3f4f6;
+      border-color: #374151;
+    }
+    .cheatsheet-filter input:focus {
+      outline: 2px solid #3b82f6;
+      outline-offset: -1px;
+      border-color: #3b82f6;
+    }
+    .cheatsheet-section.hidden,
+    .cheatsheet-section li.hidden {
+      display: none;
+    }
+    .cheatsheet-user-vars-empty {
+      font-style: italic;
+      color: #6b7280;
+    }
+    body.dark .cheatsheet-user-vars-empty {
+      color: #9ca3af;
     }
     .cheatsheet-grid {
       display: grid;
@@ -1381,6 +1501,10 @@
           <!-- Cheatsheet pentru variabile dinamice -->
           <details class="cheatsheet">
             <summary>📚 Cheatsheet — variabile și sintaxă (click)</summary>
+            <div class="cheatsheet-filter">
+              <input type="text" id="cheatsheet-filter-input"
+                     placeholder="🔎 Caută în cheatsheet... (ex: date, gmail, cursor)" />
+            </div>
             <div class="cheatsheet-grid">
               <div class="cheatsheet-section">
                 <h4>📅 Date & timp</h4>
@@ -1439,6 +1563,15 @@
                 <ul>
                   <li><code>$|$</code> — pune cursorul aici după expand</li>
                   <li>Ex: <code>Salut $|$,</code> — cursor după "Salut "</li>
+                </ul>
+              </div>
+
+              <div class="cheatsheet-section" id="cheatsheet-user-vars-section">
+                <h4>🔧 Variabilele tale</h4>
+                <ul id="cheatsheet-user-vars-list">
+                  <li class="cheatsheet-user-vars-empty">
+                    Adaugă variabile mai jos — vor apărea aici ca chip-uri click-to-copy.
+                  </li>
                 </ul>
               </div>
 

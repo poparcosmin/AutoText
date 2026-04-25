@@ -637,21 +637,62 @@ function _readRecipient() {
 }
 
 // Resolve [[var:name]] from the user's saved variables (synced via
-// background.js into chrome.storage.local.userVariables). Unknown names
-// fall through as the literal token so users can spot typos at expand
-// time instead of getting silent empty strings.
-async function _readUserVariable(name) {
+// background.js into chrome.storage.local.userVariables). Supports
+// referencing other [[var:...]] inside the value — Espanso pattern —
+// with a depth cap of 3 + visited-set cycle detection so a user who
+// accidentally points var A → var A doesn't hang the resolver.
+//
+// Unknown names fall through as the literal token so users spot typos
+// at expand time instead of getting silent empty strings.
+const MAX_VAR_DEPTH = 3;
+const NESTED_VAR_RE = /\[\[var:([a-zA-Z_][a-zA-Z0-9_]*)\]\]/g;
+
+async function _readUserVariable(name, depth = 0, visited = new Set()) {
   if (!name) return '';
+  if (depth >= MAX_VAR_DEPTH) {
+    console.warn(`AutoText: var depth ${MAX_VAR_DEPTH} exceeded on "${name}"`);
+    return `[[var:${name}]]`;
+  }
+  if (visited.has(name)) {
+    console.warn(`AutoText: var cycle detected on "${name}"`);
+    return `[cycle:${name}]`;
+  }
+
+  let raw;
   try {
     const stored = await chrome.storage.local.get('userVariables');
     const vars = (stored && stored.userVariables) || {};
-    if (Object.prototype.hasOwnProperty.call(vars, name)) {
-      return vars[name];
+    if (!Object.prototype.hasOwnProperty.call(vars, name)) {
+      return `[[var:${name}]]`;
     }
+    raw = vars[name];
   } catch {
-    // storage failure — fall through to literal
+    return `[[var:${name}]]`;
   }
-  return `[[var:${name}]]`;
+
+  if (!raw || typeof raw !== 'string' || !raw.includes('[[var:')) {
+    return raw || '';
+  }
+
+  // Recursive expand of nested [[var:...]] tokens, with the current
+  // name added to visited so a self-reference catches.
+  const nextVisited = new Set(visited);
+  nextVisited.add(name);
+  const matches = [...raw.matchAll(NESTED_VAR_RE)];
+  if (matches.length === 0) return raw;
+
+  const replacements = await Promise.all(matches.map(m =>
+    _readUserVariable(m[1], depth + 1, nextVisited)
+  ));
+  const out = [];
+  let lastIdx = 0;
+  matches.forEach((m, i) => {
+    out.push(raw.slice(lastIdx, m.index));
+    out.push(replacements[i]);
+    lastIdx = m.index + m[0].length;
+  });
+  out.push(raw.slice(lastIdx));
+  return out.join('');
 }
 
 // Find all matches via matchAll, resolve async ones in parallel, then

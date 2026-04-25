@@ -937,6 +937,63 @@ function hideAutocompleteDropdown() {
 let manageShortcuts = [];
 let personalSetsForSelect = [];
 
+// Make every <code> chip in the cheatsheet click-to-copy + wire the
+// inline filter input. Idempotent — data-* flags prevent stacking
+// listeners if loadManageShortcuts runs again on tab re-focus.
+function attachCheatsheetCopy() {
+  document.querySelectorAll('.cheatsheet-section code, .cheatsheet-example code')
+    .forEach(code => {
+      if (code.dataset.copyBound === '1') return;
+      code.dataset.copyBound = '1';
+      code.style.cursor = 'pointer';
+      code.title = 'Click pentru a copia';
+      code.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(code.textContent);
+          const originalBg = code.style.background;
+          const originalColor = code.style.color;
+          code.style.background = '#10b981';
+          code.style.color = '#ffffff';
+          setTimeout(() => {
+            code.style.background = originalBg;
+            code.style.color = originalColor;
+          }, 800);
+        } catch (err) {
+          console.warn('Clipboard write failed:', err);
+        }
+      });
+    });
+
+  const filterInput = document.getElementById('cheatsheet-filter-input');
+  if (filterInput && filterInput.dataset.filterBound !== '1') {
+    filterInput.dataset.filterBound = '1';
+    filterInput.addEventListener('input', () => {
+      const q = filterInput.value.trim().toLowerCase();
+      document.querySelectorAll('.cheatsheet-section').forEach(section => {
+        let sectionMatchedAny = false;
+        const sectionTitle = (section.querySelector('h4')?.textContent || '').toLowerCase();
+        const titleMatches = q && sectionTitle.includes(q);
+
+        section.querySelectorAll('li').forEach(li => {
+          const liText = li.textContent.toLowerCase();
+          const matches = !q || titleMatches || liText.includes(q);
+          li.classList.toggle('hidden', !matches);
+          if (matches) sectionMatchedAny = true;
+        });
+
+        // Example block (no <li>): hide whole section if it has no <ul>
+        // and the query doesn't match its full text.
+        if (!section.querySelector('li')) {
+          const fullText = section.textContent.toLowerCase();
+          sectionMatchedAny = !q || fullText.includes(q);
+        }
+
+        section.classList.toggle('hidden', !sectionMatchedAny);
+      });
+    });
+  }
+}
+
 async function loadManageShortcuts() {
   const container = document.getElementById('manage-shortcuts-list');
   container.textContent = '';
@@ -975,6 +1032,10 @@ async function loadManageShortcuts() {
     if (typeof loadUserVariables === 'function') {
       loadUserVariables();
     }
+
+    // Wire click-to-copy on cheatsheet chips. Cheatsheet is static HTML
+    // so we only need to attach once per Manage tab activation.
+    attachCheatsheetCopy();
 
     // Apply current search filter if any, otherwise show all
     const searchInput = document.getElementById('manage-search');
@@ -1529,40 +1590,157 @@ async function loadUserVariables() {
   }
 
   if (userVariables.length === 0) {
-    const empty = document.createElement('div');
-    empty.className = 'user-vars-empty';
-    empty.textContent = 'Nicio variabilă încă. Adaugă una mai jos.';
-    list.appendChild(empty);
+    list.appendChild(renderEmptyVarsCTA());
+    renderCheatsheetUserVars();
     return;
   }
 
   for (const v of userVariables) {
     list.appendChild(renderUserVarRow(v));
   }
+
+  renderCheatsheetUserVars();
 }
 
+// PAFF-flavoured starter pack — first-run users see concrete one-click
+// CTAs instead of a generic "no variables yet" line. Each suggestion is
+// a real workflow value the team uses (company name, signature email,
+// IBAN). Picking one creates the variable + reloads the panel.
+const STARTER_VARIABLES = [
+  { name: 'companie', value: 'PAFF SRL & BOXPACK SRL', label: 'companie' },
+  { name: 'adresa_paff', value: 'Ion Ghica 129 · Răcari · Dâmbovița · România', label: 'adresa_paff' },
+  { name: 'telefon', value: '+40 0756.119.876', label: 'telefon' },
+  { name: 'website_paff', value: 'www.paff.ro', label: 'website_paff' },
+  { name: 'semnatura_email', value: 'Cu stimă,\nEchipa PAFF', label: 'semnatura_email' },
+];
+
+function renderEmptyVarsCTA() {
+  const wrap = document.createElement('div');
+  wrap.className = 'user-vars-empty-cta';
+
+  const headline = document.createElement('div');
+  headline.className = 'user-vars-empty-headline';
+  headline.textContent = '🎨 Începe cu una din valorile uzuale PAFF:';
+  wrap.appendChild(headline);
+
+  const buttons = document.createElement('div');
+  buttons.className = 'user-vars-empty-buttons';
+  for (const starter of STARTER_VARIABLES) {
+    const btn = document.createElement('button');
+    btn.className = 'btn-action btn-action-copy user-vars-starter-btn';
+    btn.textContent = `+ ${starter.label}`;
+    btn.title = `Va crea: ${starter.name} = ${starter.value.slice(0, 50)}…`;
+    btn.addEventListener('click', () => createStarterVariable(starter));
+    buttons.appendChild(btn);
+  }
+  wrap.appendChild(buttons);
+
+  const hint = document.createElement('div');
+  hint.className = 'user-vars-empty-hint';
+  hint.textContent = 'Sau scrie-ți propriile variabile mai jos.';
+  wrap.appendChild(hint);
+
+  return wrap;
+}
+
+async function createStarterVariable(starter) {
+  try {
+    const res = await fetch(`${CONFIG.API_URL}/user-variables/`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Token ${authToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ name: starter.name, value: starter.value }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      alert('Error: ' + (err.name || err.detail || JSON.stringify(err)));
+      return;
+    }
+    loadUserVariables();
+    triggerBackgroundSync();
+  } catch (err) {
+    alert('Error: ' + err.message);
+  }
+}
+
+// Mirror the user's variables into the cheatsheet's "Variabilele tale"
+// section as click-to-copy chips. Keeps the discoverability tight: user
+// scans the cheatsheet, sees their own var inline, copies the [[var:x]]
+// token without scrolling away to the editor below.
+function renderCheatsheetUserVars() {
+  const ul = document.getElementById('cheatsheet-user-vars-list');
+  if (!ul) return;
+  ul.textContent = '';
+
+  if (!userVariables || userVariables.length === 0) {
+    const li = document.createElement('li');
+    li.className = 'cheatsheet-user-vars-empty';
+    li.textContent = 'Adaugă variabile mai jos — vor apărea aici ca chip-uri click-to-copy.';
+    ul.appendChild(li);
+    return;
+  }
+
+  for (const v of userVariables) {
+    const li = document.createElement('li');
+    const code = document.createElement('code');
+    code.textContent = `[[var:${v.name}]]`;
+    li.appendChild(code);
+    const desc = document.createTextNode(` — ${v.value || '(gol)'}`);
+    li.appendChild(desc);
+    ul.appendChild(li);
+  }
+
+  // Wire click-to-copy on the new chips (idempotent via data-copy-bound).
+  attachCheatsheetCopy();
+}
+
+// Notion-style inline edit: each cell renders as static text by default;
+// click swaps to <input>; Enter or blur saves; Esc reverts. Keeps the
+// list scannable when you have 10+ variables and reduces noise from
+// always-visible inputs.
 function renderUserVarRow(variable) {
   const row = document.createElement('div');
   row.className = 'user-var-row';
   row.dataset.id = variable.id;
 
-  const nameInput = document.createElement('input');
-  nameInput.type = 'text';
-  nameInput.value = variable.name;
-  nameInput.maxLength = 50;
-  nameInput.title = 'Variable name';
+  const nameCell = makeEditableCell({
+    initial: variable.name,
+    placeholder: 'nume',
+    title: 'Click pentru a edita numele',
+    onSave: async (newName) => {
+      if (!newName) return false;
+      if (newName === variable.name) return true;
+      const ok = await patchVariable(variable.id, { name: newName });
+      if (ok) {
+        variable.name = newName;
+        syntax.textContent = `Folosește: [[var:${newName}]]`;
+      }
+      return ok;
+    },
+  });
+  nameCell.classList.add('user-var-cell-name');
 
-  const valueInput = document.createElement('input');
-  valueInput.type = 'text';
-  valueInput.value = variable.value || '';
-  valueInput.title = 'Variable value';
+  const valueCell = makeEditableCell({
+    initial: variable.value || '',
+    placeholder: '(gol)',
+    title: 'Click pentru a edita valoarea',
+    onSave: async (newValue) => {
+      if (newValue === (variable.value || '')) return true;
+      const ok = await patchVariable(variable.id, { value: newValue });
+      if (ok) variable.value = newValue;
+      return ok;
+    },
+  });
+  valueCell.classList.add('user-var-cell-value');
 
   const deleteBtn = makeActionButton('delete', '🗑️', 'Șterge', () =>
     deleteUserVariable(variable.id)
   );
 
-  row.appendChild(nameInput);
-  row.appendChild(valueInput);
+  row.appendChild(nameCell);
+  row.appendChild(valueCell);
   row.appendChild(deleteBtn);
 
   const syntax = document.createElement('span');
@@ -1570,47 +1748,101 @@ function renderUserVarRow(variable) {
   syntax.textContent = `Folosește: [[var:${variable.name}]]`;
   row.appendChild(syntax);
 
-  // Save on blur (no save button — feels lighter for short string edits).
-  let saveTimer = null;
-  const scheduleSave = () => {
-    if (saveTimer) clearTimeout(saveTimer);
-    saveTimer = setTimeout(async () => {
-      const newName = nameInput.value.trim();
-      const newValue = valueInput.value;
-      if (!newName) {
-        nameInput.value = variable.name;
-        return;
-      }
-      if (newName === variable.name && newValue === (variable.value || '')) return;
-      try {
-        const res = await fetch(`${CONFIG.API_URL}/user-variables/${variable.id}/`, {
-          method: 'PATCH',
-          headers: {
-            'Authorization': `Token ${authToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ name: newName, value: newValue }),
-        });
-        if (!res.ok) {
-          const err = await res.json();
-          alert('Error: ' + (err.name || err.detail || 'save failed'));
-          nameInput.value = variable.name;
-          valueInput.value = variable.value || '';
-          return;
-        }
-        variable.name = newName;
-        variable.value = newValue;
-        syntax.textContent = `Folosește: [[var:${newName}]]`;
-        triggerBackgroundSync();
-      } catch (err) {
-        console.error('User variable save error:', err);
-      }
-    }, 600);
-  };
-  nameInput.addEventListener('blur', scheduleSave);
-  valueInput.addEventListener('blur', scheduleSave);
-
   return row;
+}
+
+// Build a cell that toggles between static text and an editable <input>.
+// onSave returns true on success, false to revert. Saving happens on
+// Enter or blur; Esc cancels and restores the previous text.
+function makeEditableCell({ initial, placeholder, title, onSave }) {
+  const cell = document.createElement('div');
+  cell.className = 'editable-cell';
+  cell.title = title;
+  cell.tabIndex = 0;
+
+  const text = document.createElement('span');
+  text.className = 'editable-cell-text';
+  text.textContent = initial || '';
+  if (!initial) {
+    text.classList.add('editable-cell-placeholder');
+    text.textContent = placeholder;
+  }
+  cell.appendChild(text);
+
+  let editing = false;
+  let currentValue = initial || '';
+
+  const enterEdit = () => {
+    if (editing) return;
+    editing = true;
+    cell.classList.add('editing');
+    cell.textContent = '';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = currentValue;
+    input.placeholder = placeholder;
+    cell.appendChild(input);
+    input.focus();
+    input.select();
+
+    let cancelled = false;
+    const exit = async (commit) => {
+      if (!editing) return;
+      editing = false;
+      cell.classList.remove('editing');
+      const newVal = input.value;
+      if (commit && !cancelled) {
+        const ok = await onSave(newVal);
+        currentValue = ok ? newVal : currentValue;
+      }
+      cell.textContent = '';
+      const span = document.createElement('span');
+      span.className = 'editable-cell-text';
+      if (currentValue) {
+        span.textContent = currentValue;
+      } else {
+        span.classList.add('editable-cell-placeholder');
+        span.textContent = placeholder;
+      }
+      cell.appendChild(span);
+    };
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); exit(true); }
+      else if (e.key === 'Escape') { cancelled = true; exit(false); }
+    });
+    input.addEventListener('blur', () => exit(true));
+  };
+
+  cell.addEventListener('click', enterEdit);
+  cell.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !editing) { e.preventDefault(); enterEdit(); }
+  });
+
+  return cell;
+}
+
+async function patchVariable(id, payload) {
+  try {
+    const res = await fetch(`${CONFIG.API_URL}/user-variables/${id}/`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Token ${authToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      alert('Error: ' + (err.name || err.detail || 'save failed'));
+      return false;
+    }
+    triggerBackgroundSync();
+    return true;
+  } catch (err) {
+    console.error('User variable save error:', err);
+    return false;
+  }
 }
 
 async function deleteUserVariable(id) {
