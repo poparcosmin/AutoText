@@ -1403,7 +1403,7 @@
                   <li><code>[[user]]</code> — username-ul tău (ex: cosmin)</li>
                   <li><code>[[clipboard]]</code> — text din clipboard</li>
                   <li><code>[[recipient]]</code> — destinatar Gmail (compose / reply)</li>
-                  <li><code>[[var:nume]]</code> — variabilă custom (definește în Settings)</li>
+                  <li><code>[[var:nume]]</code> — variabilă custom (panou-ul de mai jos)</li>
                 </ul>
               </div>
 
@@ -1456,6 +1456,26 @@ $|$</pre>
             </div>
           </details>
 
+          <!-- Variabile custom — folosite în shortcuts ca [[var:nume]] -->
+          <details class="cheatsheet user-vars-panel">
+            <summary>🔧 Variabilele tale custom (click pentru a edita)</summary>
+            <div style="padding: 16px 20px;">
+              <p class="setting-description" style="margin: 0 0 14px 0;">
+                Definește valori reutilizabile (ex: <code>display_name = Cosmin Popa</code>),
+                apoi folosește-le în orice shortcut cu <code>[[var:nume]]</code>.
+                Variabilele sunt private — doar tu le vezi.
+              </p>
+              <div id="user-vars-list" class="user-vars-list">
+                <!-- Populated by JS -->
+              </div>
+              <div class="user-var-add">
+                <input type="text" id="new-var-name" placeholder="nume (ex: display_name)" maxlength="50" />
+                <input type="text" id="new-var-value" placeholder="valoarea (ex: Cosmin Popa)" />
+                <button id="btn-add-var" class="btn-action btn-action-copy">+ Adaugă variabilă</button>
+              </div>
+            </div>
+          </details>
+
           <div class="search-container">
             <div class="search-box">
               <input type="text" id="manage-search" placeholder="Filter your shortcuts...">
@@ -1469,23 +1489,6 @@ $|$</pre>
 
       <!-- Tab: Settings -->
       <div class="tab-content" id="tab-settings">
-        <div class="settings-group">
-          <h3>🔧 Variabile custom</h3>
-          <p class="setting-description" style="margin-bottom: 12px;">
-            Definește valori reutilizabile (ex: <code>display_name = "Cosmin Popa"</code>),
-            apoi folosește-le în orice shortcut cu <code>[[var:nume]]</code>.
-            Variabilele sunt private — doar tu le vezi.
-          </p>
-          <div id="user-vars-list" class="user-vars-list">
-            <!-- Populated by JS -->
-          </div>
-          <div class="user-var-add">
-            <input type="text" id="new-var-name" placeholder="nume (ex: display_name)" maxlength="50" />
-            <input type="text" id="new-var-value" placeholder="valoarea (ex: Cosmin Popa)" />
-            <button id="btn-add-var" class="btn-action btn-action-copy">+ Adaugă variabilă</button>
-          </div>
-        </div>
-
         <div class="settings-group">
           <h3>Trigger Settings</h3>
           <div class="setting-item">

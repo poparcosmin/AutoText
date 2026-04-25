@@ -513,9 +513,6 @@ async function loadUserSettings() {
     userSettings = { ...userSettings, ...result.settings };
   }
 
-  // Load user variables list (separate API endpoint, async)
-  loadUserVariables();
-
   // Populate UI
   document.getElementById('setting-trigger-key').value = userSettings.triggerKey || 'Tab';
   document.getElementById('setting-trigger-mode').value = userSettings.triggerMode || 'key';
@@ -971,6 +968,13 @@ async function loadManageShortcuts() {
 
     // Also fetch personal sets for the dropdown
     await loadPersonalSetsForSelect();
+
+    // Load custom variables — they live in the same Manage tab now
+    // (used inside shortcuts as [[var:name]], so colocating editing
+    // with the shortcuts list is the natural place).
+    if (typeof loadUserVariables === 'function') {
+      loadUserVariables();
+    }
 
     // Apply current search filter if any, otherwise show all
     const searchInput = document.getElementById('manage-search');
