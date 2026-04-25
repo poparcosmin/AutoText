@@ -57,10 +57,7 @@
       "description": "Toggle AutoText on/off"
     },
     "open-options": {
-      "suggested_key": {
-        "default": "Alt+Shift+O"
-      },
-      "description": "Open AutoText options"
+      "description": "Open AutoText options (set shortcut at chrome://extensions/shortcuts)"
     },
     "_execute_action": {
       "suggested_key": {
