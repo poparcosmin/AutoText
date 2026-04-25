@@ -114,3 +114,14 @@ def privacy_view(request):
     Privacy Policy page for Chrome Web Store compliance.
     """
     return render(request, 'privacy.html')
+
+
+def help_view(request):
+    """
+    User-facing help & documentation page.
+
+    Linked from the Chrome Web Store listing as the support URL — Chrome
+    requires that link to resolve to a 200 page during review. Static
+    template, no auth: meant for end-users (Romanian-language).
+    """
+    return render(request, 'help.html')

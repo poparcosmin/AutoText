@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoText — Ajutor & Documentație</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #1a1a1a;
+            background: #f5f7fa;
+            padding: 20px;
+        }
+        .container {
+            max-width: 860px;
+            margin: 0 auto;
+            background: white;
+            padding: 48px 56px;
+            border-radius: 10px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+        h1 {
+            color: #00356d;
+            font-size: 32px;
+            margin-bottom: 8px;
+            border-bottom: 3px solid #ff7100;
+            padding-bottom: 12px;
+        }
+        h2 {
+            color: #00356d;
+            font-size: 22px;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+        h3 {
+            color: #333;
+            font-size: 17px;
+            margin-top: 20px;
+            margin-bottom: 8px;
+        }
+        p, li { margin-bottom: 10px; }
+        ul, ol { margin-left: 24px; margin-bottom: 16px; }
+        code {
+            background: #f0f4f8;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: ui-monospace, 'SF Mono', Monaco, monospace;
+            font-size: 13px;
+            color: #00356d;
+        }
+        kbd {
+            background: #eee;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            padding: 1px 6px;
+            font-family: ui-monospace, monospace;
+            font-size: 12px;
+        }
+        .lead {
+            font-size: 17px;
+            color: #555;
+            margin-bottom: 24px;
+        }
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+            color: #888;
+            font-size: 13px;
+        }
+        a { color: #00356d; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>AutoText — Ajutor</h1>
+        <p class="lead">
+            AutoText e o extensie Chrome care extinde shortcut-uri de text în
+            propoziții complete. Tipărești o cheie scurtă, apeși <kbd>Tab</kbd>,
+            iar extensia înlocuiește cheia cu textul complet — în Gmail, Docs,
+            dashboard-uri admin sau orice câmp text editabil.
+        </p>
+
+        <h2>Folosire de bază</h2>
+        <ol>
+            <li>După instalare, deschide pop-up-ul AutoText (icon-ul din toolbar) și
+                conectează-te cu credențialele primite de administrator.</li>
+            <li>Deschide tab-ul <strong>Manage</strong> și creează shortcut-uri
+                în setul tău personal.</li>
+            <li>În orice câmp de text, tipărește cheia (ex: <code>buna</code>) și
+                apeși <kbd>Tab</kbd> — textul se expandă instant.</li>
+        </ol>
+
+        <h2>Variabile dinamice</h2>
+        <p>În textul shortcut-ului poți folosi placeholder-uri care se înlocuiesc la expandare:</p>
+        {% verbatim %}
+        <ul>
+            <li><code>[[date]]</code> — data curentă (cu opțiuni: <code>[[date+7d]]</code>, <code>[[date:DD.MM.YYYY]]</code>)</li>
+            <li><code>[[time]]</code> — ora curentă</li>
+            <li><code>[[day]]</code> — ziua săptămânii (Luni, Marți, ...)</li>
+            <li><code>[[greeting]]</code> — Bună dimineața / Bună ziua / Bună seara, în funcție de oră</li>
+            <li><code>[[user]]</code> — username-ul tău</li>
+            <li><code>[[recipient]]</code> — în Gmail, prima persoană din câmpul "To"</li>
+            <li><code>[[var:nume]]</code> — variabilă proprie (configurată în Settings)</li>
+            <li><code>[[random:A|B|C]]</code> — alege random una din variantele date</li>
+            <li><code>[[select:A|B|C]]</code> — dropdown la momentul expandării</li>
+            <li><code>{{nume:Label|default}}</code> — placeholder de formular completat la expand</li>
+            <li><code>$|$</code> — poziție cursor după expand</li>
+        </ul>
+        {% endverbatim %}
+
+        <h2>Aliases (mai multe chei → același text)</h2>
+        <p>
+            Pe orice shortcut poți adăuga aliases — chei alternative care declanșează
+            aceeași expansiune. Exemplu: shortcut-ul cu cheia primară <code>buna</code>
+            poate avea alias <code>b</code> și <code>bun</code>, toate trei expandând
+            la "Bună ziua,".
+        </p>
+
+        <h2>Variante random (A/B/C)</h2>
+        <p>
+            Pentru shortcut-uri din setul Birou poți defini până la 3 variante
+            alternative ale textului. La fiecare expand, extensia alege random între
+            textul principal și variante — util pentru a evita aspectul template
+            la saluturi.
+        </p>
+
+        <h2>Command palette</h2>
+        <p>
+            Apasă <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> oriunde pentru a
+            deschide căutarea inline a shortcut-urilor. Selectează unul cu săgeți +
+            <kbd>Enter</kbd> și se inserează la cursor.
+        </p>
+
+        <h2>Sincronizare</h2>
+        <p>
+            Extensia sincronizează automat la fiecare 5 minute cu serverul. Poți
+            forța o sincronizare manuală apăsând <strong>Sync Now</strong> din
+            popup. Toate shortcut-urile sunt cache-uite local pentru folosire offline.
+        </p>
+
+        <h2>Popup — cele 3 vederi</h2>
+        <ul>
+            <li><strong>Shortcuts</strong> — top 10 sortate după folosire</li>
+            <li><strong>Expansions</strong> — activitate (filtru 7 zile / 30 zile / tot timpul)</li>
+            <li><strong>Sets</strong> — listă seturi cu nr. shortcuts și expansions per set</li>
+        </ul>
+
+        <h2>Probleme frecvente</h2>
+        <h3>Shortcut-ul nu se expandă</h3>
+        <ul>
+            <li>Verifică în popup că extensia e <strong>Synced</strong> (nu offline)</li>
+            <li>Reîncarcă pagina — content script-ul poate fi vechi după update</li>
+            <li>Verifică în Manage că shortcut-ul există și are conținut</li>
+        </ul>
+        <h3>Eroare "Authentication failed"</h3>
+        <p>Token-ul a expirat (180 zile). Re-autentifică-te din Options.</p>
+
+        <h2>Contact</h2>
+        <p>
+            Pentru bug-uri sau sugestii, contactează administratorul intern al
+            instanței de AutoText sau email la
+            <a href="mailto:poparcosmin@gmail.com">poparcosmin@gmail.com</a>.
+        </p>
+
+        <div class="footer">
+            <p>AutoText — sistem intern de text expansion. Sursa: privată.</p>
+            <p><a href="/privacy.html">Politica de confidențialitate</a></p>
+        </div>
+    </div>
+</body>
+</html>

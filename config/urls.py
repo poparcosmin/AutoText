@@ -17,13 +17,15 @@ Including another URLconf
 from django.conf import settings
 from django.contrib import admin
 from django.urls import path, include
-from textsync.views.health import privacy_view
+from textsync.views.health import privacy_view, help_view
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('textsync.urls')),
     path('tinymce/', include('tinymce.urls')),
     path('privacy.html', privacy_view, name='privacy'),
+    path('help', help_view, name='help'),
+    path('help/', help_view),  # tolerate trailing slash
 ]
 
 # django-silk profiling dashboard — enabled via ENABLE_SILK env var
