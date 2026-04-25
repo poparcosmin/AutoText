@@ -192,14 +192,32 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-# CORS Configuration - Restrict to specific origins for security
+# CORS Configuration
+#
+# Browser-extension content scripts run with the *host page* as the request
+# origin (mail.google.com, outlook.live.com, etc.), not the extension's
+# chrome-extension:// origin. So while we keep CORS_ALLOWED_ORIGINS for
+# direct calls (admin, dashboard), we also accept any origin that hits the
+# `/api/*` namespace via CORS_URLS_REGEX + CORS_ALLOWED_ORIGIN_REGEXES.
+#
+# Auth still gates everything (DRF Token in Authorization header, no
+# session cookies on /api/), so opening up the CORS preflight surface here
+# does not weaken access control — a request without a valid token still
+# returns 401, regardless of origin.
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGINS = [
     "https://autotext.zua.ro",
-    "http://localhost:8000",  # For local development
-    "http://127.0.0.1:8000",  # For local development
+    "http://localhost:8000",  # local development
+    "http://127.0.0.1:8000",  # local development
 ]
-# Allow Chrome extension requests (they come without Origin header or with chrome-extension://)
+# Apply CORS only to /api/ — admin pages stay strict-origin.
+CORS_URLS_REGEX = r"^/api/.*$"
+# Match any HTTPS or chrome-extension origin for /api/ calls. Token auth
+# is the real gate.
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://.+$",
+    r"^chrome-extension://.+$",
+]
 CORS_ALLOW_HEADERS = [
     "accept",
     "accept-encoding",

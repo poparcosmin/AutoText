@@ -556,14 +556,11 @@ describe('content.js — text expansion core', () => {
       expect(await content.processSystemVars('[[user]]', friday)).toBe('');
     });
 
-    it('[[clipboard]] reads from navigator.clipboard', async () => {
+    it('[[clipboard]] is no longer recognized — preserved as literal', async () => {
+      // We deliberately removed clipboard expansion to avoid pasting
+      // sensitive text (passwords, tokens) by accident on every Tab.
       const result = await content.processSystemVars('Pasted: [[clipboard]]', friday);
-      expect(result).toBe('Pasted: clipped text');
-    });
-
-    it('[[clipboard]] returns empty string on permission denial', async () => {
-      global.navigator.clipboard.readText.mockRejectedValueOnce(new Error('NotAllowedError'));
-      expect(await content.processSystemVars('[[clipboard]]', friday)).toBe('');
+      expect(result).toBe('Pasted: [[clipboard]]');
     });
 
     it('[[random:A|B|C]] picks one of the options', async () => {
@@ -585,10 +582,10 @@ describe('content.js — text expansion core', () => {
     });
 
     it('does not re-process replacement text containing [[...]]', async () => {
-      // _readClipboard returns text that LOOKS LIKE a system var
-      global.navigator.clipboard.readText.mockResolvedValueOnce('[[day]]');
-      const result = await content.processSystemVars('Got: [[clipboard]]', friday);
-      // Should NOT recurse and replace [[day]] inside the clipboard content
+      // Username comes back from chrome.storage and could in theory contain
+      // a [[...]] token. We must NOT re-resolve it.
+      global.chrome.storage.local.get.mockResolvedValueOnce({ username: '[[day]]' });
+      const result = await content.processSystemVars('Got: [[user]]', friday);
       expect(result).toBe('Got: [[day]]');
     });
 

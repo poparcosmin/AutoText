@@ -563,7 +563,12 @@ function processDateMacros(input, now = new Date()) {
 // first (defensive — current grammars don't overlap, but ordering is cheap
 // insurance for future additions).
 // ----------------------------------------------------------------------------
-const SYSTEM_VAR_RE = /\[\[(day|greeting|user|clipboard|random|select|recipient|var)(?::([^\]]*))?\]\]/g;
+// `clipboard` was deliberately removed: any keystroke that hits a
+// shortcut would paste whatever the user had previously copied (often
+// passwords, tokens, private text). The risk is too high for an
+// always-on auto-expansion. Bring it back only with explicit consent
+// — e.g. a confirm dialog or a separate `[[clipboard:confirm]]` flavour.
+const SYSTEM_VAR_RE = /\[\[(day|greeting|user|random|select|recipient|var)(?::([^\]]*))?\]\]/g;
 
 const ROMANIAN_DAY_NAMES = [
   'Duminică', 'Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă'
@@ -588,20 +593,6 @@ async function _readUsername() {
     const stored = await chrome.storage.local.get('username');
     return (stored && stored.username) || '';
   } catch {
-    return '';
-  }
-}
-
-async function _readClipboard() {
-  try {
-    const text = await navigator.clipboard.readText();
-    return text || '';
-  } catch (err) {
-    // Permission denied or not in user-gesture context.
-    // showToast is defined later in the file; guard at call site.
-    if (typeof showToast === 'function') {
-      showToast('clipboard', 'Permite acces la clipboard din chrome://settings');
-    }
     return '';
   }
 }
@@ -723,7 +714,6 @@ async function processSystemVars(input, now = new Date()) {
         case 'greeting': replacements.push(_greeting(now)); break;
         case 'random': replacements.push(_randomPick(args || '')); break;
         case 'user': replacements.push(await _readUsername()); break;
-        case 'clipboard': replacements.push(await _readClipboard()); break;
         case 'select': replacements.push(_promptSelect(args || '')); break;
         case 'recipient': replacements.push(_readRecipient()); break;
         case 'var': replacements.push(await _readUserVariable((args || '').trim())); break;
