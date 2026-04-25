@@ -1119,23 +1119,21 @@ function renderManageShortcuts(shortcuts) {
 
     const isFromBirou = setNames.includes('Birou');
     // Birou edit is gated to superusers + birou-curators (matches API).
-    // Birou delete is admin-only (API blocks even curators).
+    // Birou delete is intentionally NOT exposed in the UI — even for
+    // superusers — because the rule is "Birou shortcuts are deleted only
+    // from Django admin." This keeps the destructive action behind one
+    // extra deliberate step (open admin → confirm) and prevents a
+    // misclick on a long row from removing a team-shared snippet.
     const canEditBirou = userPerms.is_superuser || userPerms.is_birou_curator;
-    const canDeleteBirou = userPerms.is_superuser;
 
     if (isFromBirou) {
-      // Edit, hidden if user can't edit Birou
       if (canEditBirou) {
         const editBtn = makeActionButton('edit', '✏️', 'Editează', () => openShortcutModal(shortcut));
         actions.appendChild(editBtn);
       }
-      // Delete, hidden unless superuser
-      if (canDeleteBirou) {
-        const deleteBtn = makeActionButton('delete', '🗑️', 'Șterge', () => deleteShortcut(shortcut.id));
-        actions.appendChild(deleteBtn);
-      }
       // Copy to Personal — always available for everyone (workflow when
-      // they want a personal variant of a Birou shortcut)
+      // they want a personal variant of a Birou shortcut without
+      // touching the team's shared one).
       const copyBtn = makeActionButton('copy', '📋', 'Copiază personal', () => copyToPersonalSet(shortcut));
       actions.appendChild(copyBtn);
     } else {
