@@ -15,13 +15,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function initializePopup() {
   try {
-    // Always load and display what we have locally — never block UI behind login.
-    // If no token, user still sees their cached shortcuts and stats.
     await loadStats();
     await loadShortcuts();
     await updateSyncStatus();
+    await showGmailParserWarningIfAny();
 
-    // Subtle hint in status bar if not authenticated; no blocking prompt.
     const { auth_token } = await chrome.storage.local.get(['auth_token']);
     if (!auth_token) {
       updateStatus('offline', 'Not synced · open Options to login');
@@ -30,6 +28,34 @@ async function initializePopup() {
     console.error('Popup initialization error:', error);
     updateStatus('error', 'Error');
   }
+}
+
+// Surface the warning written by lib/site-parsers.js when the Gmail
+// recipient selectors stop matching. Manual dismiss (X button) clears
+// the storage flag — re-appears on the next failed parse.
+async function showGmailParserWarningIfAny() {
+  const { gmail_parser_warning } = await chrome.storage.local.get('gmail_parser_warning');
+  if (!gmail_parser_warning) return;
+
+  const banner = document.createElement('div');
+  banner.className = 'parser-warning';
+  banner.style.cssText =
+    'background:#fff3cd;color:#664d03;border:1px solid #ffe69c;' +
+    'padding:6px 10px;border-radius:4px;margin:6px 8px;font-size:12px;' +
+    'display:flex;align-items:center;gap:8px;';
+  const text = document.createElement('span');
+  text.style.flex = '1';
+  text.textContent = gmail_parser_warning;
+  const close = document.createElement('button');
+  close.textContent = '×';
+  close.style.cssText = 'background:none;border:none;font-size:18px;cursor:pointer;color:#664d03;line-height:1;';
+  close.addEventListener('click', async () => {
+    await chrome.storage.local.remove('gmail_parser_warning');
+    banner.remove();
+  });
+  banner.appendChild(text);
+  banner.appendChild(close);
+  document.body.insertBefore(banner, document.body.firstChild);
 }
 
 async function loadStats() {
