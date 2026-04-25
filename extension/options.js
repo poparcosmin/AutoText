@@ -1915,12 +1915,20 @@ function openShortcutModal(shortcut = null) {
     }
   }
 
+  // Aliases field is reset on every open so reopening on a different
+  // shortcut never leaks the previous row's values.
+  const aliasesField = document.getElementById('shortcut-aliases');
+  if (aliasesField) aliasesField.value = '';
+
   if (shortcut) {
     // Edit mode
     title.textContent = 'Edit Shortcut';
     idField.value = shortcut.id;
     keyField.value = shortcut.key;
     valueField.value = shortcut.value || '';
+    if (aliasesField && Array.isArray(shortcut.aliases)) {
+      aliasesField.value = shortcut.aliases.join(', ');
+    }
 
     // Set TinyMCE content
     if (tinyMCEEditor) {
@@ -2050,12 +2058,20 @@ async function saveShortcut() {
     return;
   }
 
+  // Parse comma-separated aliases. Empty input → empty list (server
+  // treats that as "remove all aliases").
+  const aliasesRaw = (document.getElementById('shortcut-aliases')?.value || '').trim();
+  const aliasesList = aliasesRaw
+    ? aliasesRaw.split(',').map(s => s.trim()).filter(Boolean)
+    : [];
+
   const payload = {
     key,
     content_type: isHtml ? 'html' : 'text',
     value: isHtml ? '' : value,
     html_value: isHtml ? htmlValue : '',
-    sets: [parseInt(setId)]
+    sets: [parseInt(setId)],
+    aliases_input: aliasesList,
   };
 
   try {

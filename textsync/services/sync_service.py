@@ -62,7 +62,7 @@ def _serialize_shortcuts(
 ) -> list[dict[str, Any]]:
     shortcuts_qs = Shortcut.objects.filter(sets__in=accessible_sets).distinct()
     shortcuts_qs = shortcuts_qs.select_related('owner', 'updated_by')
-    shortcuts_qs = shortcuts_qs.prefetch_related('sets')
+    shortcuts_qs = shortcuts_qs.prefetch_related('sets', 'aliases')
     shortcuts_qs = shortcuts_qs.order_by("key")
 
     if updated_after:

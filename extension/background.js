@@ -331,38 +331,37 @@ function mergeShortcutsWithPriority(shortcuts) {
   const map = {};
 
   shortcuts.forEach(shortcut => {
-    const key = shortcut.key;
-
-    // Check if this shortcut belongs to a personal set
     const hasPersonal = shortcut.set_types && shortcut.set_types.includes('personal');
+    const entry = {
+      value: shortcut.value,
+      html_value: shortcut.html_value,
+      id: shortcut.id,
+      sets: shortcut.set_names || [],
+      is_personal: hasPersonal,
+      // Primary key recorded so the alias entries know which row they
+      // mirror; useful when restoring or counting.
+      primary_key: shortcut.key,
+    };
 
-    // If key doesn't exist yet, add it
-    if (!map[key]) {
-      map[key] = {
-        value: shortcut.value,
-        html_value: shortcut.html_value,
-        id: shortcut.id,
-        sets: shortcut.set_names || [],
-        is_personal: hasPersonal
-      };
-    } else {
-      // Key already exists - check priority
+    // Build the trigger list = primary key + each alias. Aliases inherit
+    // the same priority as the primary, so personal beats general for
+    // either form.
+    const triggers = [shortcut.key, ...(shortcut.aliases || [])].filter(Boolean);
+
+    triggers.forEach(key => {
+      if (!map[key]) {
+        map[key] = entry;
+        return;
+      }
+      // Key collision — apply personal-wins priority. If both are at the
+      // same priority, the first arrival keeps the slot (API ordering
+      // controls the tiebreaker).
       const existingIsPersonal = map[key].is_personal;
-
-      // If current shortcut is personal and existing isn't, replace it
       if (hasPersonal && !existingIsPersonal) {
         debugLog(`AutoText: Replacing '${key}' with personal version`);
-        map[key] = {
-          value: shortcut.value,
-          html_value: shortcut.html_value,
-          id: shortcut.id,
-          sets: shortcut.set_names || [],
-          is_personal: hasPersonal
-        };
+        map[key] = entry;
       }
-      // If both are personal or both are general, keep the first one
-      // (API should not return duplicates at same priority level, but just in case)
-    }
+    });
   });
 
   return map;

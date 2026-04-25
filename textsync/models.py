@@ -140,6 +140,35 @@ class UserVariable(models.Model):
         return f"[[var:{self.name}]] = {preview} ({self.user.username})"
 
 
+class ShortcutAlias(models.Model):
+    """Additional trigger keys that resolve to the same shortcut body.
+
+    Use case: a shortcut whose primary `key` is "buna" can also be triggered
+    by "b" or "bun" so the user picks the form that flows in the moment.
+    Each alias is a distinct row with a unique key, so the extension's
+    sync payload can deliver the full set in one shape.
+
+    Uniqueness is global across all aliases (one alias_key per shortcut
+    table). It does NOT enforce uniqueness against primary `Shortcut.key`,
+    because primary keys themselves are not globally unique (the same key
+    can live in two sets). Cross-shortcut conflicts (alias matches another
+    shortcut's primary key) surface in the extension's conflict-detection
+    UI; they are not blocked at the database layer.
+    """
+    shortcut = models.ForeignKey(Shortcut, on_delete=models.CASCADE,
+                                 related_name='aliases')
+    alias_key = models.CharField(max_length=50, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['alias_key']
+        verbose_name = 'Shortcut Alias'
+        verbose_name_plural = 'Shortcut Aliases'
+
+    def __str__(self):
+        return f"{self.alias_key} → {self.shortcut.key}"
+
+
 class ShortcutVersion(models.Model):
     """Snapshot history for general (Birou) shortcuts.
 

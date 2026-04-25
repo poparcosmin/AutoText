@@ -10,7 +10,7 @@ from django.utils import timezone
 from django.utils.html import format_html
 from datetime import timedelta
 from tinymce.widgets import TinyMCE
-from .models import Shortcut, ShortcutSet, ExpiringToken, ShortcutUsageLog, UserVariable, ShortcutVersion
+from .models import Shortcut, ShortcutSet, ExpiringToken, ShortcutUsageLog, UserVariable, ShortcutVersion, ShortcutAlias
 
 
 @admin.register(ShortcutSet)
@@ -183,6 +183,18 @@ class ShortcutSetFilter(admin.SimpleListFilter):
         return queryset
 
 
+class ShortcutAliasInline(admin.TabularInline):
+    """Inline editor for additional trigger keys.
+
+    Uniqueness is enforced at DB level (alias_key is unique) so the admin
+    can let users add freely; collisions surface as IntegrityError-mapped
+    form errors when saving.
+    """
+    model = ShortcutAlias
+    extra = 1
+    fields = ('alias_key',)
+
+
 class ShortcutVersionInline(admin.TabularInline):
     """Read-only history viewer attached to the parent Shortcut.
 
@@ -262,7 +274,7 @@ class ShortcutAdmin(admin.ModelAdmin):
     readonly_fields = ["updated_at", "usage_count", "last_used_at"]
     filter_horizontal = ["sets"]  # Nice UI for ManyToMany selection
     ordering = ["-usage_count", "key"]  # Most used shortcuts first
-    inlines = [ShortcutVersionInline]
+    inlines = [ShortcutAliasInline, ShortcutVersionInline]
 
     fieldsets = (
         ('Content Type', {
