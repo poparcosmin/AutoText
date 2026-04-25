@@ -857,36 +857,42 @@ function replaceInContentEditable(element, shortcutKey, expansion, htmlExpansion
       selection.addRange(range);
     } else {
       // Insert plain text — convert newlines to <br> for contenteditable.
-      // Escape angle brackets first; DOMPurify re-sanitizes defensively.
       if (expansion.includes('\n')) {
-        // Cursor marker handling: replace $|$ with an inline DOM marker
-        // BEFORE escape/split so we can find it post-insert. Without this
-        // the multiline branch dropped the marker as literal text.
-        const cursorIdx = expansion.indexOf(CURSOR_MARKER);
-        const stripped = cursorIdx >= 0
-          ? expansion.replace(CURSOR_MARKER, ' CURSOR ')
-          : expansion;
-        const escaped = stripped
-          .split('\n')
-          .map(line => line.replace(/</g, '&lt;').replace(/>/g, '&gt;'))
-          .join('<br>')
-          .replace(' CURSOR ', '<span data-at-cursor="1"></span>');
-        const clean = safeHTML(escaped, { ADD_ATTR: ['data-at-cursor'] });
-        const fragment = range.createContextualFragment(clean);
+        // Build DocumentFragment from text nodes + <br> directly. No HTML
+        // serialization, no DOMPurify dependency for this branch — text
+        // nodes are inherently safe. We walk the lines tracking where the
+        // $|$ cursor token would land char by char, then position the
+        // selection on the right text node.
+        const { text: stripped, cursorOffset } = extractCursorMarker(expansion);
+        const lines = stripped.split('\n');
+        const fragment = document.createDocumentFragment();
+        let cursorTarget = null;
+        let cursorTargetOffset = 0;
+        let charPos = 0;
+
+        lines.forEach((line, i) => {
+          const textNode = document.createTextNode(line);
+          fragment.appendChild(textNode);
+          if (cursorOffset !== null && cursorTarget === null
+              && cursorOffset >= charPos && cursorOffset <= charPos + line.length) {
+            cursorTarget = textNode;
+            cursorTargetOffset = cursorOffset - charPos;
+          }
+          charPos += line.length;
+          if (i < lines.length - 1) {
+            fragment.appendChild(document.createElement('br'));
+            charPos += 1;  // each '\n' in input becomes a <br> in DOM
+          }
+        });
 
         range.insertNode(fragment);
 
-        // If we placed a cursor marker, position selection at it and drop
-        // the marker. Otherwise fall through to the default end-of-insert
-        // collapse so the caret lands after the snippet.
-        const marker = element.querySelector('[data-at-cursor="1"]');
-        if (marker) {
+        if (cursorTarget) {
           const newRange = document.createRange();
-          newRange.setStartBefore(marker);
+          newRange.setStart(cursorTarget, cursorTargetOffset);
           newRange.collapse(true);
           selection.removeAllRanges();
           selection.addRange(newRange);
-          marker.remove();
         } else {
           range.collapse(false);
           selection.removeAllRanges();
