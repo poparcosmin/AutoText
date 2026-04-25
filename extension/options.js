@@ -1130,6 +1130,13 @@ function refreshCheatsheetResults() {
       code.title = `Acum: ${value}  ·  Click pentru copy`;
     }
   });
+
+  // Highlight the current weekday in the [[day]] row so the user sees
+  // at a glance which of the seven scenarios fires today.
+  const todayName = dayNames[now.getDay()];
+  document.querySelectorAll('#day-scenarios .result-scenario').forEach(scenario => {
+    scenario.classList.toggle('is-current', scenario.dataset.dayName === todayName);
+  });
 }
 
 function attachCheatsheetCopy() {
