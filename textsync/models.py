@@ -140,6 +140,47 @@ class UserVariable(models.Model):
         return f"[[var:{self.name}]] = {preview} ({self.user.username})"
 
 
+class ShortcutVersion(models.Model):
+    """Snapshot history for general (Birou) shortcuts.
+
+    Each save of a general-set shortcut snapshots the PREVIOUS state (key,
+    value, html_value, content_type) before it is overwritten. The latest
+    five snapshots per shortcut are retained; older snapshots are pruned.
+    Personal shortcuts skip versioning — they are user-owned and the user
+    can simply edit-undo from the manage UI.
+
+    Restore: in Django admin, the "Restore this version" action on a
+    `ShortcutVersion` writes its snapshot back into the parent `Shortcut`,
+    which itself produces a new snapshot of the rolled-back state. Nothing
+    is destroyed.
+    """
+    shortcut = models.ForeignKey(Shortcut, on_delete=models.CASCADE,
+                                 related_name='versions')
+    # Per-shortcut increment so the admin can list "v1, v2, v3" without
+    # parsing timestamps. Computed at insert time inside the signal.
+    version_number = models.PositiveIntegerField()
+    key = models.CharField(max_length=50)
+    content_type = models.CharField(max_length=10)
+    value = models.TextField(blank=True)
+    html_value = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
+                                   related_name='shortcut_versions',
+                                   help_text='User whose save triggered this snapshot.')
+
+    class Meta:
+        ordering = ['-version_number']
+        unique_together = [('shortcut', 'version_number')]
+        verbose_name = 'Shortcut Version'
+        verbose_name_plural = 'Shortcut Versions'
+        indexes = [
+            models.Index(fields=['shortcut', '-version_number']),
+        ]
+
+    def __str__(self):
+        return f"{self.shortcut.key} v{self.version_number} ({self.created_at:%Y-%m-%d %H:%M})"
+
+
 class ShortcutUsageLog(models.Model):
     """
     Detailed usage log for analytics.

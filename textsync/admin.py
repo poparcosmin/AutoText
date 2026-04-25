@@ -10,7 +10,7 @@ from django.utils import timezone
 from django.utils.html import format_html
 from datetime import timedelta
 from tinymce.widgets import TinyMCE
-from .models import Shortcut, ShortcutSet, ExpiringToken, ShortcutUsageLog, UserVariable
+from .models import Shortcut, ShortcutSet, ExpiringToken, ShortcutUsageLog, UserVariable, ShortcutVersion
 
 
 @admin.register(ShortcutSet)
@@ -183,6 +183,73 @@ class ShortcutSetFilter(admin.SimpleListFilter):
         return queryset
 
 
+class ShortcutVersionInline(admin.TabularInline):
+    """Read-only history viewer attached to the parent Shortcut.
+
+    Edits are intentionally disabled — versions are an audit log; mutating
+    them would defeat the rollback contract. To restore a snapshot, open
+    the standalone ShortcutVersion admin and run the "Restore" action.
+    """
+    model = ShortcutVersion
+    extra = 0
+    fields = ('version_number', 'key', 'content_type', 'value_preview',
+              'created_at', 'created_by')
+    readonly_fields = fields
+    can_delete = False
+    show_change_link = True
+    ordering = ('-version_number',)
+
+    def value_preview(self, obj):
+        body = obj.value or obj.html_value or ''
+        return (body[:60] + '…') if len(body) > 60 else body
+    value_preview.short_description = 'Preview'
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(ShortcutVersion)
+class ShortcutVersionAdmin(admin.ModelAdmin):
+    list_display = ('shortcut', 'version_number', 'key', 'content_type',
+                    'created_at', 'created_by')
+    list_filter = ('content_type', 'created_at')
+    search_fields = ('shortcut__key', 'key', 'value')
+    readonly_fields = ('shortcut', 'version_number', 'key', 'content_type',
+                       'value', 'html_value', 'created_at', 'created_by')
+    ordering = ('-created_at',)
+    actions = ['restore_to_shortcut']
+
+    def has_add_permission(self, request):
+        return False
+
+    @admin.action(description='Restore selected version into its parent shortcut')
+    def restore_to_shortcut(self, request, queryset):
+        # Bulk restore is tempting but ambiguous — if two versions of the
+        # same shortcut are selected, which wins? Force the user to pick
+        # one row at a time so the result is unambiguous.
+        if queryset.count() != 1:
+            self.message_user(
+                request,
+                'Select exactly one version to restore.',
+                level=messages.ERROR,
+            )
+            return
+
+        version = queryset.first()
+        shortcut = version.shortcut
+        shortcut.key = version.key
+        shortcut.content_type = version.content_type
+        shortcut.value = version.value
+        shortcut.html_value = version.html_value
+        shortcut.updated_by = request.user
+        shortcut.save()  # Triggers pre_save → snapshots the rolled-back state
+        self.message_user(
+            request,
+            f"Restored {shortcut.key} to v{version.version_number}.",
+            level=messages.SUCCESS,
+        )
+
+
 @admin.register(Shortcut)
 class ShortcutAdmin(admin.ModelAdmin):
     form = ShortcutAdminForm
@@ -195,6 +262,7 @@ class ShortcutAdmin(admin.ModelAdmin):
     readonly_fields = ["updated_at", "usage_count", "last_used_at"]
     filter_horizontal = ["sets"]  # Nice UI for ManyToMany selection
     ordering = ["-usage_count", "key"]  # Most used shortcuts first
+    inlines = [ShortcutVersionInline]
 
     fieldsets = (
         ('Content Type', {
