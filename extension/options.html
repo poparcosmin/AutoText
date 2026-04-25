@@ -1165,6 +1165,38 @@
     }
     body.dark .vars-list .result-aside { color: #6b7280; }
 
+    /* Modal-cheatsheet — same chrome but smaller padding so it fits in
+       the modal alongside the form. Click anywhere swaps to insert mode. */
+    .modal-cheatsheet {
+      margin-top: 16px;
+    }
+    .modal-cheatsheet > summary {
+      padding: 10px 14px;
+      font-size: 13px;
+    }
+    .modal-cheatsheet .recipes-grid {
+      grid-template-columns: 1fr;  /* single column inside the narrow modal */
+    }
+    .modal-cheatsheet .cheatsheet-grid {
+      grid-template-columns: 1fr;
+      gap: 16px;
+      padding: 14px;
+    }
+    .modal-cheatsheet .recipe-body {
+      max-height: 120px;
+    }
+    .modal-cheatsheet code {
+      transition: background 0.12s;
+    }
+    .modal-cheatsheet code.inserted {
+      background: #10b981 !important;
+      color: #fff !important;
+    }
+    body.dark .modal-cheatsheet code.inserted {
+      background: #059669 !important;
+      color: #fff !important;
+    }
+
     /* Multi-scenario rows: each variable can have several outputs
        depending on context (greeting by hour, day-of-week, recipient
        location...). Lay them out as stacked sub-rows so the user can
@@ -2050,6 +2082,30 @@
             </select>
           </div>
         </form>
+
+        <!-- In-modal cheatsheet: same content as the Manage-tab cheatsheet
+             but every clickable chip / recipe inserts into the active
+             input field at the caret instead of copying to clipboard.
+             Markup is intentionally cloned (not extracted to a template)
+             so the static layout stays trivially editable side-by-side
+             with the rest of the form. Behaviour swap is JS-driven. -->
+        <details class="cheatsheet modal-cheatsheet" id="modal-cheatsheet">
+          <summary>📚 Cheatsheet — click pe orice = inserează în text</summary>
+          <div class="cheatsheet-filter">
+            <input type="text" id="modal-cheatsheet-filter-input"
+                   placeholder="🔎 Caută..." />
+          </div>
+
+          <div class="recipes-section" id="modal-recipes-section">
+            <h4>🍳 Rețete (click pe titlu = înlocuiește valoarea)</h4>
+            <p class="recipes-hint">Click pe titlul unei rețete suprascrie textul Expansion cu snippet-ul respectiv. Apoi editezi.</p>
+            <div class="recipes-grid" id="modal-recipes-grid"></div>
+          </div>
+
+          <div class="cheatsheet-grid" id="modal-cheatsheet-grid">
+            <!-- Populated by JS to mirror the Manage-tab scenarios -->
+          </div>
+        </details>
       </div>
       <div class="modal-footer">
         <button class="btn-outline hidden" id="modal-download-original" title="Restore original content from Birou">⬇️ Descarcă original</button>

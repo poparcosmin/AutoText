@@ -1544,6 +1544,139 @@ function initTinyMCE() {
   });
 }
 
+// Insert text at the current caret position of whatever expansion field
+// is active in the modal. Plain-text mode → manipulate the textarea
+// directly; HTML mode → ask TinyMCE to insert content into its iframe.
+function insertAtModalCursor(text) {
+  const isHtml = document.querySelector('.content-type-btn.active')?.dataset?.type === 'html';
+  if (isHtml && tinyMCEEditor) {
+    tinyMCEEditor.focus();
+    tinyMCEEditor.insertContent(text);
+    return true;
+  }
+  const textarea = document.getElementById('shortcut-value');
+  if (!textarea) return false;
+  const before = textarea.value.slice(0, textarea.selectionStart);
+  const after = textarea.value.slice(textarea.selectionEnd);
+  textarea.value = before + text + after;
+  const newPos = before.length + text.length;
+  textarea.selectionStart = textarea.selectionEnd = newPos;
+  textarea.focus();
+  textarea.dispatchEvent(new Event('input', { bubbles: true }));
+  return true;
+}
+
+// Replace the whole expansion field with `text`. Used by recipe titles —
+// recipes are full template bodies, not snippets to splice in.
+function replaceModalValue(text) {
+  const isHtml = document.querySelector('.content-type-btn.active')?.dataset?.type === 'html';
+  if (isHtml && tinyMCEEditor) {
+    tinyMCEEditor.setContent(text);
+    tinyMCEEditor.focus();
+    return;
+  }
+  const textarea = document.getElementById('shortcut-value');
+  if (!textarea) return;
+  textarea.value = text;
+  textarea.selectionStart = textarea.selectionEnd = text.length;
+  textarea.focus();
+  textarea.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+// Build the in-modal cheatsheet by cloning the Manage-tab grid (deep
+// cloneNode keeps the static markup safe — no innerHTML) and rebinding
+// every click handler to insertAtModalCursor instead of clipboard copy.
+// Idempotent via dataset flags.
+function populateModalCheatsheet() {
+  const sourceGrid = document.querySelector('#tab-manage .cheatsheet-grid');
+  const targetGrid = document.getElementById('modal-cheatsheet-grid');
+  if (!sourceGrid || !targetGrid) return;
+  if (targetGrid.dataset.populated !== '1') {
+    targetGrid.dataset.populated = '1';
+    targetGrid.textContent = '';
+    for (const child of sourceGrid.children) {
+      targetGrid.appendChild(child.cloneNode(true));
+    }
+  }
+
+  // Refresh live results inside the cloned grid the same way the
+  // Manage-tab cheatsheet does (separate DOM tree, separate query).
+  refreshCheatsheetResults();
+
+  // Wire every <code> chip to insert-at-cursor instead of copy. We rebind
+  // each render so chips picked up via cloneNode keep working after
+  // user edits. data-modal-bound prevents stacking.
+  targetGrid.querySelectorAll('code').forEach(code => {
+    if (code.dataset.modalBound === '1') return;
+    code.dataset.modalBound = '1';
+    code.style.cursor = 'pointer';
+    code.title = 'Click pentru a insera în text';
+    code.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const ok = insertAtModalCursor(code.textContent);
+      if (ok) {
+        code.classList.add('inserted');
+        setTimeout(() => code.classList.remove('inserted'), 600);
+      }
+    });
+  });
+
+  // Recipes: render with replace-value handler.
+  const recipesGrid = document.getElementById('modal-recipes-grid');
+  if (recipesGrid && recipesGrid.dataset.populated !== '1') {
+    recipesGrid.dataset.populated = '1';
+    for (const recipe of CHEATSHEET_RECIPES) {
+      const card = document.createElement('div');
+      card.className = 'recipe';
+
+      const title = document.createElement('div');
+      title.className = 'recipe-title';
+      title.textContent = '▸ ' + recipe.title;
+      title.title = 'Click pentru a înlocui textul cu această rețetă';
+
+      const body = document.createElement('pre');
+      body.className = 'recipe-body';
+      body.textContent = recipe.body;
+
+      title.addEventListener('click', () => {
+        replaceModalValue(recipe.body);
+        const original = title.textContent;
+        title.classList.add('copied');
+        title.textContent = '✓ Inserat în câmpul Expansion';
+        setTimeout(() => {
+          title.classList.remove('copied');
+          title.textContent = original;
+        }, 1600);
+      });
+
+      card.appendChild(title);
+      card.appendChild(body);
+      recipesGrid.appendChild(card);
+    }
+  }
+
+  // Filter input
+  const filterInput = document.getElementById('modal-cheatsheet-filter-input');
+  if (filterInput && filterInput.dataset.filterBound !== '1') {
+    filterInput.dataset.filterBound = '1';
+    filterInput.addEventListener('input', () => {
+      const q = filterInput.value.trim().toLowerCase();
+      targetGrid.querySelectorAll('.cheatsheet-section').forEach(section => {
+        let any = false;
+        const titleText = (section.querySelector('h4')?.textContent || '').toLowerCase();
+        const titleMatch = q && titleText.includes(q);
+        section.querySelectorAll('li').forEach(li => {
+          const matched = !q || titleMatch || li.textContent.toLowerCase().includes(q);
+          li.classList.toggle('hidden', !matched);
+          if (matched) any = true;
+        });
+        if (!section.querySelector('li')) any = !q || section.textContent.toLowerCase().includes(q);
+        section.classList.toggle('hidden', !any);
+      });
+    });
+  }
+}
+
 function openShortcutModal(shortcut = null) {
   const modal = document.getElementById('shortcut-modal');
   const title = document.getElementById('modal-title');
@@ -1680,6 +1813,11 @@ function openShortcutModal(shortcut = null) {
   }
 
   modal.classList.remove('hidden');
+
+  // Build the in-modal cheatsheet on first open (idempotent). Recipes
+  // and chip handlers are wired here so user can immediately click any
+  // [[var]] / recipe to insert it into the active expansion field.
+  populateModalCheatsheet();
 }
 
 function closeShortcutModal() {
