@@ -559,7 +559,7 @@ function processDateMacros(input, now = new Date()) {
 // first (defensive — current grammars don't overlap, but ordering is cheap
 // insurance for future additions).
 // ----------------------------------------------------------------------------
-const SYSTEM_VAR_RE = /\[\[(day|greeting|user|clipboard|random)(?::([^\]]*))?\]\]/g;
+const SYSTEM_VAR_RE = /\[\[(day|greeting|user|clipboard|random|select|recipient)(?::([^\]]*))?\]\]/g;
 
 const ROMANIAN_DAY_NAMES = [
   'Duminica', 'Luni', 'Marti', 'Miercuri', 'Joi', 'Vineri', 'Sambata'
@@ -602,6 +602,40 @@ async function _readClipboard() {
   }
 }
 
+// Native prompt-based selector. Consistent with promptForPlaceholders which
+// also uses window.prompt() — a Shadow-DOM popup is tracked as a follow-up
+// (would need keyboard nav, focus management, blur cancellation).
+// Accepts either a 1-based index or the literal option text. Cancel returns
+// empty string (so the snippet expands minus the placeholder rather than
+// aborting the whole expansion — different from {{name:Label}} which aborts
+// on cancel; selects feel more "optional" semantically).
+function _promptSelect(args) {
+  if (!args) return '';
+  const options = args.split('|').map(s => s.trim()).filter(Boolean);
+  if (options.length === 0) return '';
+  if (options.length === 1) return options[0];
+  const message = 'Alege:\n' +
+    options.map((o, i) => `${i + 1}. ${o}`).join('\n');
+  const answer = window.prompt(message, '1');
+  if (answer === null) return '';
+  const trimmed = answer.trim();
+  const idx = parseInt(trimmed, 10) - 1;
+  if (Number.isInteger(idx) && idx >= 0 && idx < options.length) {
+    return options[idx];
+  }
+  return options.includes(trimmed) ? trimmed : '';
+}
+
+function _readRecipient() {
+  // Delegates to siteParsers, loaded via lib/site-parsers.js (content_script
+  // injected before content.js per manifest order). Falls back gracefully
+  // when the host page isn't a known site or selectors don't match.
+  if (typeof getSiteValue === 'function') {
+    return getSiteValue('recipient');
+  }
+  return '';
+}
+
 // Find all matches via matchAll, resolve async ones in parallel, then
 // reassemble via index-based slicing. Avoids reentrancy bug where
 // String.replace would re-scan replacement text — if a future resolver
@@ -611,23 +645,31 @@ async function processSystemVars(input, now = new Date()) {
   const matches = [...input.matchAll(SYSTEM_VAR_RE)];
   if (matches.length === 0) return input;
 
-  const replacements = await Promise.all(matches.map(async (m) => {
+  // [[select:...]] is run sequentially because each one opens a blocking
+  // window.prompt — Promise.all would queue them roughly serially anyway
+  // (window.prompt blocks the main thread), but explicit sequencing keeps
+  // ordering deterministic and avoids surprising the user with reverse-order
+  // dialogs when several selects share a snippet.
+  const replacements = [];
+  for (const m of matches) {
     const kind = m[1];
     const args = m[2];
     try {
       switch (kind) {
-        case 'day': return ROMANIAN_DAY_NAMES[now.getDay()];
-        case 'greeting': return _greeting(now);
-        case 'random': return _randomPick(args || '');
-        case 'user': return await _readUsername();
-        case 'clipboard': return await _readClipboard();
-        default: return '';
+        case 'day': replacements.push(ROMANIAN_DAY_NAMES[now.getDay()]); break;
+        case 'greeting': replacements.push(_greeting(now)); break;
+        case 'random': replacements.push(_randomPick(args || '')); break;
+        case 'user': replacements.push(await _readUsername()); break;
+        case 'clipboard': replacements.push(await _readClipboard()); break;
+        case 'select': replacements.push(_promptSelect(args || '')); break;
+        case 'recipient': replacements.push(_readRecipient()); break;
+        default: replacements.push('');
       }
     } catch (err) {
       console.warn('AutoText: system var', kind, 'failed:', err);
-      return '';
+      replacements.push('');
     }
-  }));
+  }
 
   const out = [];
   let lastIdx = 0;

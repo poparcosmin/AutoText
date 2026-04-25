@@ -23,6 +23,7 @@
       ],
       "js": [
         "lib/dompurify.min.js",
+        "lib/site-parsers.js",
         "content.js"
       ],
       "run_at": "document_end",

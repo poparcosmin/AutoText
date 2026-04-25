@@ -591,6 +591,57 @@ describe('content.js — text expansion core', () => {
       // Should NOT recurse and replace [[day]] inside the clipboard content
       expect(result).toBe('Got: [[day]]');
     });
+
+    it('[[select:A|B|C]] returns option matching numeric prompt answer', async () => {
+      const promptSpy = jest.spyOn(global, 'prompt').mockReturnValueOnce('2');
+      const result = await content.processSystemVars('[[select:Mersi|Multumesc|Cu drag]]', friday);
+      expect(result).toBe('Multumesc');
+      promptSpy.mockRestore();
+    });
+
+    it('[[select:A|B|C]] accepts literal option text', async () => {
+      const promptSpy = jest.spyOn(global, 'prompt').mockReturnValueOnce('Cu drag');
+      const result = await content.processSystemVars('[[select:Mersi|Multumesc|Cu drag]]', friday);
+      expect(result).toBe('Cu drag');
+      promptSpy.mockRestore();
+    });
+
+    it('[[select:A|B|C]] returns empty on cancel', async () => {
+      const promptSpy = jest.spyOn(global, 'prompt').mockReturnValueOnce(null);
+      const result = await content.processSystemVars('[[select:A|B]]', friday);
+      expect(result).toBe('');
+      promptSpy.mockRestore();
+    });
+
+    it('[[select]] with single option auto-selects without prompting', async () => {
+      const promptSpy = jest.spyOn(global, 'prompt');
+      const result = await content.processSystemVars('[[select:Only one]]', friday);
+      expect(result).toBe('Only one');
+      expect(promptSpy).not.toHaveBeenCalled();
+      promptSpy.mockRestore();
+    });
+
+    it('multiple [[select]] prompts run sequentially in order', async () => {
+      const calls = [];
+      const promptSpy = jest.spyOn(global, 'prompt').mockImplementation((msg) => {
+        calls.push(msg);
+        return '1';  // always pick first option
+      });
+      const result = await content.processSystemVars('[[select:A|B]] then [[select:C|D]]', friday);
+      expect(result).toBe('A then C');
+      expect(calls).toHaveLength(2);
+      // First prompt mentions A|B, second mentions C|D
+      expect(calls[0]).toContain('A');
+      expect(calls[1]).toContain('C');
+      promptSpy.mockRestore();
+    });
+
+    it('[[recipient]] returns empty when no site parser matches', async () => {
+      // Default jsdom location is "localhost", no parser registered
+      // — should gracefully return empty string
+      const result = await content.processSystemVars('Hi [[recipient]]', friday);
+      expect(result).toBe('Hi ');
+    });
   });
 
   // ---------------------------------------------------------------------------
