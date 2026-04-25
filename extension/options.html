@@ -1382,8 +1382,41 @@
       width: 95%;
       max-width: 975px;
       max-height: 90vh;
-      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;  /* inner panes own their own scroll */
       box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    }
+    /* Header + footer stay pinned; only the middle scrolls. */
+    .modal-header,
+    .modal-footer { flex-shrink: 0; }
+    /* The body becomes a 2-row stack: form above (auto height, fits the
+       expansion textarea), cheatsheet below with its OWN scroll. The form
+       stays visible while you scan the cheatsheet — no more losing your
+       place when the chip you wanted is 600px down. */
+    .modal-body {
+      display: flex;
+      flex-direction: column;
+      flex: 1 1 auto;
+      min-height: 0;  /* let children shrink instead of forcing scroll on body */
+      overflow: hidden;
+    }
+    .modal-body > form {
+      flex-shrink: 0;
+      overflow-y: auto;
+      max-height: 50vh;  /* form takes at most half the viewport */
+      padding-bottom: 6px;
+    }
+    .modal-body > .modal-cheatsheet {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      margin-top: 12px;
+      border-top: 1px solid var(--border-light);
+      padding-top: 8px;
+    }
+    body.dark .modal-body > .modal-cheatsheet {
+      border-top-color: var(--border-dark);
     }
 
     body.dark .modal {
@@ -1423,6 +1456,7 @@
 
     .modal-body {
       padding: 20px;
+      padding-bottom: 8px;
     }
 
     .modal-footer {
