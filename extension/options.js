@@ -1152,27 +1152,31 @@ function renderManageShortcuts(shortcuts) {
   });
 }
 
-// Copy a shortcut to a personal set
+// Copy a shortcut to a personal set. The set list now includes general
+// (Birou) for the modal dropdown — but for "copy to personal" we must
+// pick from personal-only, otherwise we'd silently copy back into Birou.
 async function copyToPersonalSet(shortcut) {
-  // Check if we have personal sets available
-  if (personalSetsForSelect.length === 0) {
-    alert('No personal sets available. Create a personal set first.');
+  const personalOnly = personalSetsForSelect.filter(s => s.set_type === 'personal');
+
+  if (personalOnly.length === 0) {
+    alert('Nu ai niciun set personal. Creează unul mai întâi (din Django admin).');
     return;
   }
 
-  // If only one personal set, use it directly
   let targetSetId;
-  if (personalSetsForSelect.length === 1) {
-    targetSetId = personalSetsForSelect[0].id;
+  if (personalOnly.length === 1) {
+    targetSetId = personalOnly[0].id;
   } else {
-    // Show selection if multiple personal sets
-    const setNames = personalSetsForSelect.map(s => s.name).join(', ');
-    const selectedName = prompt(`Enter the name of the personal set to copy to:\nAvailable: ${setNames}`);
+    const setNames = personalOnly.map(s => s.name).join(', ');
+    const selectedName = prompt(
+      `În ce set personal copiezi?\nDisponibile: ${setNames}`,
+      personalOnly[0].name
+    );
     if (!selectedName) return;
 
-    const targetSet = personalSetsForSelect.find(s => s.name.toLowerCase() === selectedName.toLowerCase());
+    const targetSet = personalOnly.find(s => s.name.toLowerCase() === selectedName.toLowerCase());
     if (!targetSet) {
-      alert('Set not found. Please enter an exact name.');
+      alert('Set inexistent. Introdu numele exact.');
       return;
     }
     targetSetId = targetSet.id;
@@ -1295,6 +1299,17 @@ function openShortcutModal(shortcut = null) {
     option.textContent = set.name;
     setSelect.appendChild(option);
   });
+
+  // Add-new mode: pre-select the user's first personal set so they
+  // don't accidentally save to Birou (which is at the top of the list
+  // because of the dropdown's general-first sort). Edit mode handles
+  // pre-selection further down based on the existing shortcut's sets.
+  if (!shortcut) {
+    const firstPersonal = personalSetsForSelect.find(s => s.set_type === 'personal');
+    if (firstPersonal) {
+      setSelect.value = firstPersonal.id;
+    }
+  }
 
   if (shortcut) {
     // Edit mode
