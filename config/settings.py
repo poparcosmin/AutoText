@@ -134,6 +134,11 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "db.sqlite3",
+        "OPTIONS": {
+            # Connection-level lock-wait — complements PRAGMA busy_timeout (engine-level)
+            # to absorb short contention from concurrent writes under WAL mode.
+            "timeout": 20,
+        },
     }
 }
 

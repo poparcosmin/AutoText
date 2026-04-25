@@ -97,6 +97,9 @@ class Shortcut(models.Model):
             models.Index(fields=['key']),
             models.Index(fields=['updated_at']),
             models.Index(fields=['usage_count']),
+            # Composite index for delta sync cursor pagination: WHERE updated_at > X
+            # ORDER BY updated_at, id. Verify usage with EXPLAIN QUERY PLAN.
+            models.Index(fields=['updated_at', 'id']),
         ]
 
     def __str__(self):

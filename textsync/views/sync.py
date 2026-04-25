@@ -1,4 +1,9 @@
-"""Bulk sync endpoint — delegates to sync_service."""
+"""Bulk sync endpoint — delegates to sync_service.
+
+Caching and cache invalidation live in textsync.services.sync_service and
+textsync.cache.invalidate_user_cache (driven by signals). This view is a
+thin HTTP adapter on top of that service.
+"""
 from rest_framework import permissions
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.response import Response
