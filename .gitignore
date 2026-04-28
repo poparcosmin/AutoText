@@ -228,12 +228,11 @@ textsync/migrations/0004_alter_shortcut_value.py
 textsync/migrations/*
 db.sqlite3
 
-# Research — PII protection (vezi research/docs/03-privacy-model.md)
-# corpus/ contains email data with PII; created by ingest scripts at runtime.
+# Research — data + credentials
 research/corpus/
 research/audit.log
 research/.env
+research/.credentials/
 research/eval/results/
 research/notebooks/.ipynb_checkpoints/
 research/.cache/
-**/pii_mapping/

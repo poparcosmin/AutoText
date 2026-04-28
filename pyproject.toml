@@ -26,6 +26,16 @@ dev = [
     "mypy>=1.11",
     "django-silk>=5.5.0",
 ]
+research = [
+    "google-auth-oauthlib>=1.2.0",
+    "google-api-python-client>=2.150.0",
+    "google-auth-httplib2>=0.2.0",
+    "pydantic>=2.9.0",
+    "tenacity>=9.0.0",
+    "rich>=13.9.0",
+    "pandas>=2.2.0",
+    "structlog>=24.4.0",
+]
 
 [tool.mypy]
 python_version = "3.13"
