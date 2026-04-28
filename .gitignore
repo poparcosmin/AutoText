@@ -236,3 +236,7 @@ research/.credentials/
 research/eval/results/
 research/notebooks/.ipynb_checkpoints/
 research/.cache/
+
+# Research corpus spam quarantine (large + reversible move)
+research/corpus/spam/
+research/corpus/_quarantine.log

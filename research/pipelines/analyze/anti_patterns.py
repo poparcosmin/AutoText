@@ -25,6 +25,7 @@ import structlog
 REPO_ROOT = Path(__file__).resolve().parents[3]
 RAW_DIR = REPO_ROOT / "research" / "corpus" / "raw"
 ENRICHED_DIR = REPO_ROOT / "research" / "corpus" / "enriched"
+SPAM_DIR = REPO_ROOT / "research" / "corpus" / "spam"
 SUMMARY_PATH = ENRICHED_DIR / "_anti_patterns_summary.json"
 AUDIT_LOG = REPO_ROOT / "research" / "audit.log"
 
@@ -158,12 +159,24 @@ def detect_anti_patterns(body: str) -> list[str]:
 # Main
 # ============================================================
 def list_threads_for_processing() -> list[Path]:
-    """Bootstrap enriched/ din raw/ daca lipseste, returneaza enriched paths."""
+    """Bootstrap enriched/ din raw/ daca lipseste, returneaza enriched paths.
+
+    Skip threads care sunt in corpus/spam/ (mutate de quarantine_spam.py).
+    """
     if not RAW_DIR.exists():
         return []
+    # Build set of quarantined relative paths
+    quarantined: set[str] = set()
+    if SPAM_DIR.exists():
+        for sp in SPAM_DIR.glob("*/thread-*.json"):
+            rel = sp.relative_to(SPAM_DIR).as_posix()
+            quarantined.add(rel)
+
     out = []
     for raw in sorted(RAW_DIR.glob("*/thread-*.json")):
         rel = raw.relative_to(RAW_DIR)
+        if rel.as_posix() in quarantined:
+            continue
         target = ENRICHED_DIR / rel
         if not target.exists():
             target.parent.mkdir(parents=True, exist_ok=True)

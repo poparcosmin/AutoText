@@ -2,8 +2,10 @@
 created: 2026-04-29
 status: actionable
 window: 2024-04 → 2026-04 (25 luni)
-total_threads: 23069
+total_threads_clean: 19900 (3169 spam mutate in corpus/spam/)
+total_threads_raw: 23069
 focus: cresterea ratei de conversie comenzi
+updated: 2026-04-29 (cifre după curățare spam newsletter+automated+cold outreach)
 ---
 
 # Recomandări creștere comenzi — analiza pattern conversie pe 23k threads
@@ -22,28 +24,28 @@ focus: cresterea ratei de conversie comenzi
 
 ---
 
-## 1. Volumetrie clean
+## 1. Volumetrie clean (după filtrare spam)
 
 ```
-23.069 threads pe 25 luni:
+19.900 threads pe 25 luni (3.169 spam mutate în corpus/spam/):
 
-Drop-off (după primul răspuns PAFF):  14.738  (63.9%)
-Multi-round conversation (≥3 msgs):   13.518  (58.6%)
-Singura cerere inbound, fără reply:    6.457  (28.0%)
-  - din care newsletter/spam:           1.795
-  - din care mesaje business reale:     4.662
+Drop-off (client tace după răspuns PAFF):  14.738  (74.1%)
+Multi-round conversation (≥3 msgs):        13.452  (67.6%)
+Singura cerere inbound, fără reply PAFF:    6.462  (32.5%)
 ```
 
-### 1.1 Distribuție intent (cerere inițială)
+> **Categorii spam mutate** (3.169 total): newsletters (1.484), facturi automate (1.348), cold outreach B2B (217), survey-uri/auto-replies (126), goale (15). Reversibil: `mv corpus/spam/<window>/<thread>.json corpus/enriched/<window>/`.
+
+### 1.1 Distribuție intent (cerere inițială, post-curățare)
 
 | Intent | Threads | % | Drop-off rate |
 |---|---:|---:|---:|
-| `delivery_question` | 9.234 | 40% | _high_ |
-| `payment` | 9.220 | 40% | _low (already converted)_ |
-| `price_quote` | 8.007 | 35% | **77% potențial conversie când răspuns optim** |
-| `custom_request` | 518 | 2.2% | _high (cere clarificări)_ |
-| `stock_check` | 469 | 2.0% | _medium_ |
-| `complaint` | 216 | 0.9% | _high (recovery)_ |
+| `payment` | 8.550 | 43% | _low (already converted)_ |
+| `delivery_question` | 8.112 | 41% | _high_ |
+| `price_quote` | 7.224 | 36% | **77% potențial conversie când răspuns optim** |
+| `stock_check` | 391 | 2.0% | _medium_ |
+| `custom_request` | 269 | 1.4% | _high (cere clarificări)_ |
+| `complaint` | 200 | 1.0% | _high (recovery)_ |
 
 > Threads pot avea multiple intent-uri (price + delivery întrebate împreună). Numerele se suprapun.
 
@@ -133,10 +135,10 @@ Produsele vor fi pregătite pentru expediere imediat după confirmarea plății.
 
 ### P0-B — Triage zilnic inbound-only
 
-**Diagnostic:** 4.662 threads cu un singur mesaj inbound, fără răspuns PAFF. ~187/lună. Pe sample manual:
-- ~70% sunt newsletter / spam B2B / facturi automate (ignore)
-- ~15-20% sunt cereri legitime fără răspuns (lead-uri pierdute)
-- ~10% sunt notificări sistem (curieri, bănci, ANAF — review separat)
+**Diagnostic (post-curățare spam):** 6.462 threads cu un singur mesaj inbound, fără răspuns PAFF (~258/lună). Spam-ul automat a fost deja filtrat în pasul de curățare; cele rămase sunt în mare parte:
+- B2B prospecting subtil (cold pitches care n-au matchat detector)
+- Cereri reale de clienți (estimat 15-25%)
+- Notificări sistem care au scăpat filtrului
 
 **Acțiune:**
 1. Setup filtru Gmail: `from:* -from:noreply -from:newsletter` cu label `to-triage`
