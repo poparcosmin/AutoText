@@ -114,6 +114,10 @@ def gmail_to_message(raw: dict, user_email: str) -> Message:
     try:
         if date_raw:
             timestamp = parsedate_to_datetime(date_raw)
+            # parsedate_to_datetime returneaza naive cand TZ lipseste din header.
+            # Forteaza timezone-aware (UTC) pentru a evita conflict la sort.
+            if timestamp.tzinfo is None:
+                timestamp = timestamp.replace(tzinfo=timezone.utc)
         else:
             timestamp = datetime.fromtimestamp(
                 int(raw["internalDate"]) / 1000, tz=timezone.utc
