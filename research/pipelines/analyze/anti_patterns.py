@@ -102,18 +102,24 @@ def detect_anti_patterns(body: str) -> list[str]:
     if re.search(r"\b4[\s-]+7\s+zile\s+lucr", body_lower):
         detected.append("eta_47_zile_template")
 
-    # 5. brand_string_inconsistent — anything but "Producător de Ambalaje"
-    has_paff_brand = bool(re.search(r"PAFF\s*[:·-]+", body_clean, re.IGNORECASE))
-    has_correct = bool(re.search(r"Producător\s+de\s+Ambalaje", body_clean))
+    # 5. brand_signature_drift — detector REVIZUIT 2026-04-29
+    # Cauza reala identificata: variatii in signature Gmail (37 variante distincte
+    # pe corpus de 25 luni). Forma "Producător de Ambalaje" (cu "de") e fictiva —
+    # 0/66052 mesaje. Forma reala dominantă e "Producător ambalaje" (24k ocurențe).
+    #
+    # Anti-pattern util de detectat = signature WITHOUT diacritică pe "Producător":
+    # - "Producator ambalaje" (lipseste diacritica)
+    # - "Producator de ambalaje"
+    # - "Fabrica de ambalaje" (descriptor diferit, semnal de signature legacy)
+    # NU mai detectam "Producător Ambalaje" cu A mare ca wrong — e variantă normală.
+    has_paff_brand = bool(re.search(r"PAFF\s*[:·\-]+", body_clean, re.IGNORECASE))
     if has_paff_brand:
         if (
-            re.search(r"Fabric[ăa]\s+(de\s+)?Ambalaje", body_clean, re.IGNORECASE)
-            or re.search(r"Producator\s+ambalaje", body_clean, re.IGNORECASE)
-            or re.search(r"Producător\s+Ambalaje\b", body_clean)
-            or re.search(r"Producator\s+de\s+Ambalaje", body_clean, re.IGNORECASE)
+            re.search(r"Fabric[a]\s+(de\s+)?[Aa]mbalaje", body_clean)
+            or re.search(r"Producator\s+[Aa]mbalaje", body_clean)
+            or re.search(r"Producator\s+de\s+[Aa]mbalaje", body_clean)
         ):
-            if not has_correct:
-                detected.append("brand_string_inconsistent")
+            detected.append("brand_signature_drift")
 
     # 6. mode_telegrafic — <30 cuvinte fara salut + fara semnatura
     word_count = len(body_clean.split())

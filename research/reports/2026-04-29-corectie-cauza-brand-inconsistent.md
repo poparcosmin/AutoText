@@ -171,12 +171,50 @@ Aceste cifre **nu sunt afectate** de corecție:
 
 ---
 
-## 6. Status
+## 6. Cauză root EXACTĂ — Gmail Account Display Name
+
+Refactor detector `brand_signature_drift` (commit ulterior) detectează doar 3.728 cazuri (vs 14.548 false-pozitive vechi) și revelează un **discontinuity exact**:
+
+```
+brand_signature_drift rate per fereastră:
+2024-04 → 2025-06: 0.0% (stabil 15 luni!)
+2025-07: 11.3% (răsărit brusc — 175 mesaje)
+2025-08: 30.2% (plateau atins)
+2025-09 → 2026-04: 27-30% (stabil)
+```
+
+**Inspecția signature blocks afectate** arată un singur pattern dominant:
+
+```
+*From:* PAFF :: Producator ambalaje <contact@paff.ro>
+În X iul. 2025 la HH:MM, PAFF :: Producator ambalaje <contact@paff.ro> a scris:
+On Mon, Jul 21, 2025 at HH:MM PAFF :: Producator ambalaje <contact@paff.ro> wrote:
+```
+
+**Sursa:** Header `From:` propagat în quoted reply chains. NU e signature din body — e **Display Name al contului Gmail `contact@paff.ro`**.
+
+**Fix exact:**
+
+1. Login `contact@paff.ro` în Gmail
+2. Settings → See all settings → **Accounts and Import**
+3. Section "Send mail as", la `contact@paff.ro` → click **Edit info**
+4. Change "Name" field din `PAFF :: Producator ambalaje` în `PAFF :: Producător ambalaje`
+   (sau în forma decisă de business — A, B sau C din §3.1)
+5. Save
+
+**Timp execuție:** 30 secunde. **Impact:** 0% drift pe mesajele noi. Cele istorice rămân așa — apar în quoted chains când clienții răspund la thread-uri vechi (atenuat în timp).
+
+**Verificare retroactivă:** între 2025-06 și 2025-07 cineva a editat conștient sau accidental câmpul Name. Probabil când a apărut un nou laptop/Gmail relogin, au tastat fără diacritică și nu și-au dat seama.
+
+---
+
+## 7. Status
 
 - [x] Verificare empirică shortcut-uri (0/23 trigger pattern)
 - [x] Fingerprint signature blocks (37 variante distincte)
 - [x] Confirmare cifre per fereastră (re-run anti_patterns pe TOATE 25 windows)
-- [ ] Decision business: forma canonică A/B/C (necesită owner)
-- [ ] Update Gmail signatures (action item după decizie)
-- [ ] Refactor `anti_patterns.py::brand_string_inconsistent` sau replace cu `signature_drift`
+- [x] Refactor `anti_patterns.py` — pattern nou `brand_signature_drift`
+- [x] **Cauză root identificată: Gmail Display Name al `contact@paff.ro`, schimbat iulie 2025**
+- [ ] Fix Display Name în Gmail Settings (30 sec)
+- [ ] Decision business: forma canonică Display Name (A=`Producător ambalaje`, B=`Producător de Ambalaje`, C=`PAFF`)
 - [ ] Re-run + comparație peste 2-4 săptămâni post-fix
