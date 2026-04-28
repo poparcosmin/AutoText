@@ -83,6 +83,21 @@ La prima rulare:
 
 ## Usage
 
+### ⚠️ ATENȚIE: NU folosi `--extra-filter "in:inbox OR in:sent"`
+
+Pe conturi Gmail cu filtre auto care arhivează inbound (cazul `contact@paff.ro`),
+acest filter pierde **toate mesajele de la clienți**. Operatorul `OR` în Gmail
+search nu se comportă cum ai aștepta — clauza `in:sent` poate domina și returna
+doar SENT folder.
+
+**Verificat empiric (aprilie 2026):**
+- Niciun filter: 2.619 mesaje
+- `--exclude-system` doar: **2.097** (cu inbound + outbound) ✅
+- `--exclude-system --extra-filter "in:inbox OR in:sent"`: 1.122 (lipsesc inbound!) ❌
+
+**Recomandare:** folosește **doar `--exclude-system`**. Daca vrei să excluzi
+trash/spam/drafts, foloseste `--extra-filter "-in:trash -in:spam -in:drafts"`.
+
 ### Stratified sample (recomandat primul)
 
 1 săptămână per lună × 24 luni ≈ 24 batch-uri × ~50 mesaje = ~1.200 mesaje. Bun pentru prima analiză cu diversitate temporală.
@@ -91,19 +106,22 @@ La prima rulare:
 uv run --group research python research/pipelines/ingest/fetch_gmail.py \
     --user contact@paff.ro \
     --start 2024-04 --end 2026-04 \
-    --stratified
+    --stratified \
+    --exclude-system
 ```
 
 Estimat: 5-10 min.
 
 ### Full pull 24 luni
 
-~5.000 mesaje. Take-uri ~30-60 min.
+~50.000 mesaje (inbound + outbound, după excludere zgomot sistem).
+Take-uri ~3-4 ore.
 
 ```bash
 uv run --group research python research/pipelines/ingest/fetch_gmail.py \
     --user contact@paff.ro \
-    --start 2024-04 --end 2026-04
+    --start 2024-04 --end 2026-04 \
+    --exclude-system
 ```
 
 ### Resume după întrerupere
