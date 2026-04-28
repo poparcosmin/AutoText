@@ -1,12 +1,15 @@
 ---
 created: 2026-04-29
-status: actionable
+status: SUPERSEDED — vezi 2026-04-29-crestere-comenzi-recomandari-v2.md
+superseded_reason: răspunsurile scurte sunt în mare parte refuzuri/confirmări plată, NU eșec comunicare; v1 supraestima impactul P0-A
 window: 2024-04 → 2026-04 (25 luni)
-total_threads_clean: 19900 (3169 spam mutate in corpus/spam/)
+total_threads_clean: 19900
 total_threads_raw: 23069
 focus: cresterea ratei de conversie comenzi
-updated: 2026-04-29 (cifre după curățare spam newsletter+automated+cold outreach)
 ---
+
+> ⚠️ **SUPERSEDED 2026-04-29** — feedback user: "raspunsul scurt e un fel de 'nu avem ce cautati dvs'". V2 corectat: 86% din răspunsurile scurte sunt corecte (refuz / confirmare plată / livrare), doar 11% (79 threads / 25 luni = ~3/lună) sunt oportunitate reală. Estimare impact corectată de la +140 comenzi/lună la **+24-35 comenzi/lună**. Vezi `2026-04-29-crestere-comenzi-recomandari-v2.md` pentru analiza onestă.
+
 
 # Recomandări creștere comenzi — analiza pattern conversie pe 23k threads
 
