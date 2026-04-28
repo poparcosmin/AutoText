@@ -1,12 +1,16 @@
 ---
 created: 2026-04-28
-status: final
+status: superseded-partial
+correction: 2026-04-29-corectie-cauza-brand-inconsistent.md
 window: 2024-04 → 2026-04 (25 luni)
 total_messages: 66052
 total_threads: 23069
 outbound: 37862
 inbound: 27624
 ---
+
+> ⚠️ **CORECȚIE 2026-04-29**: Secțiunile 3 (Audit shortcut-uri) și 5.P0-A sunt **incorecte**. Cauza reală a regresiei `brand_string_inconsistent` NU sunt cele 23 shortcut-uri — sunt semnăturile Gmail (footer). Vezi `2026-04-29-corectie-cauza-brand-inconsistent.md` pentru analiza corectată. Cifrele globale (TL;DR §1-2, §4 anti-patterns globale, §6 limitări) rămân valabile.
+
 
 # Raport final — Analiza comunicării PAFF, 25 luni
 
