@@ -11,8 +11,8 @@ if [ -z "$STAGED" ]; then
   exit 0
 fi
 
-# 1. Hard block on corpus/, pii_mapping/, *.gpg, audit.log
-PROHIBITED=$(echo "$STAGED" | grep -E "^research/corpus/|/pii_mapping/|\.gpg$|^research/audit\.log$" || true)
+# 1. Hard block on corpus/, pii_mapping/, audit.log
+PROHIBITED=$(echo "$STAGED" | grep -E "^research/corpus/|/pii_mapping/|^research/audit\.log$" || true)
 
 if [ -n "$PROHIBITED" ]; then
   echo "BLOCK pre-commit-corpus-guard: prohibited research artifacts in staged files"
@@ -27,7 +27,7 @@ fi
 
 # 2. Soft warning on PII patterns in staged content (non-corpus files)
 # Romanian patterns: CIF (RO + 6-10 digits), IBAN (RO + 22 chars), mobile (07XXXXXXXX)
-LEAK_DIFF=$(git diff --cached -U0 --diff-filter=AM -- ':!research/corpus/' ':!**/*.gpg' || true)
+LEAK_DIFF=$(git diff --cached -U0 --diff-filter=AM -- ':!research/corpus/' || true)
 
 PII_HITS=""
 

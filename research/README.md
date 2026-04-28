@@ -46,11 +46,11 @@ research/
 │   ├── analyze/                 ← Etapa 5: pattern mining
 │   └── report/                  ← Etapa 6: synthesis output
 │
-├── corpus/                      ← 🚫 GITIGNORED (PII)
-│   ├── raw/                     ← gpg-encrypted Gmail dumps
+├── corpus/                      ← GITIGNORED + chmod 700 (PII)
+│   ├── raw/                     ← Gmail dumps cu PII (plain JSON)
 │   ├── pseudonymized/           ← PII-stripped working set
 │   ├── enriched/                ← + classifications
-│   └── pii_mapping/             ← gpg-encrypted token table
+│   └── pii_mapping/             ← token table (plain JSON, chmod 600)
 │
 ├── ground-truth/                ← versioned (anonymous)
 │   ├── annotations-v1.jsonl     ← 200 manual labels
@@ -99,20 +99,20 @@ Etapa 7: Validation          [░░░░░░░] /plan-critique, /dual-llm, 
 ```bash
 # 0. Verifică prerequisites
 gemini --version       # ≥ 0.39.1
-gpg --list-keys poparcosmin@gmail.com  # GPG key necesar pentru raw encryption
 uv --version           # pentru Python deps
-which spacy            # va fi installed în Etapa 2
 
 # 1. Install Python deps (Etapa 2)
 cd /home/cosmin/Work/AutoText
 uv add --dev spacy pandas pydantic tenacity httpx ruff jupyter streamlit
 uv run python -m spacy download ro_core_news_lg
 
-# 2. Install pre-commit hook (Etapa 2)
-cp research/scripts/pre-commit-corpus-guard.sh .git/hooks/pre-commit
-chmod +x .git/hooks/pre-commit
+# 2. Pre-commit hook deja instalat în .git/hooks/pre-commit (Etapa 1)
+#    Pentru clone-uri viitoare: cp research/scripts/pre-commit-corpus-guard.sh .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
 
-# 3. Rulează ingestion (Etapa 2)
+# 3. File permissions pentru corpus (după primul run ingestion)
+chmod 700 research/corpus/
+
+# 4. Rulează ingestion (Etapa 2)
 uv run python research/pipelines/ingest/01_fetch_gmail_window.py --month 2024-04
 # repetă pentru fiecare lună 2024-04 → 2026-04
 ```

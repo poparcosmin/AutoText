@@ -8,11 +8,12 @@
 
 ## 1. Principles
 
-1. **Privacy by design** — toate stages după `corpus/raw/` sunt pseudonymized. PII apare ONLY în `corpus/raw/` (encrypted, gitignored).
+1. **Privacy by design** — toate stages după `corpus/raw/` sunt pseudonymized. PII apare ONLY în `corpus/raw/` și `corpus/pii_mapping/` (gitignored, file permissions restrictive).
 2. **Data minimization** — păstrăm doar ce e necesar pentru research; atașamente, conținut binar, header-uri intrusive eliminate la stage `pseudonymized`.
 3. **Storage limitation** — corpus original (raw) șters la +12 luni de la finalul cercetării (parking lot reminder).
 4. **No third-party PII exposure** — Gemini CLI primește exclusiv text pseudonymized. Mapping table nu părăsește disk-ul local.
-5. **Reversibility for legitimate need** — mapping `<TOKEN> → real value` păstrat encrypted (gpg) pentru re-identificare manuală dacă apare necesar (ex: un client cere ștergere → găsim toate mesajele lui).
+5. **Reversibility for legitimate need** — mapping `<TOKEN> → real value` păstrat ca JSON local pentru re-identificare manuală dacă apare necesar (ex: un client cere ștergere → găsim toate mesajele lui).
+6. **Layered protection (no encryption overhead)** — protecție prin (a) gitignore strict, (b) pre-commit hook, (c) file permissions Linux, (d) disk encryption la nivel OS (LUKS/dm-crypt). NU folosim GPG/gpg per fișier — overhead operațional fără beneficiu marginal pe sistem single-user.
 
 ---
 
@@ -77,7 +78,7 @@ pseudonymized/
 
 ### 3.3 Mapping table
 
-**Locație:** `research/corpus/pii_mapping/tokens-{YYYY-MM}.json.gpg`
+**Locație:** `research/corpus/pii_mapping/tokens-{YYYY-MM}.json` (plain JSON, gitignored, `chmod 600`).
 
 ```json
 {
@@ -98,19 +99,19 @@ pseudonymized/
 }
 ```
 
-**Encrypted with:** GPG armored, recipient = `poparcosmin@gmail.com` (Cosmin's GPG key).
-
-```bash
-gpg --encrypt --armor -r poparcosmin@gmail.com tokens-2026-04.json
-# Result: tokens-2026-04.json.gpg (committed: NO)
-```
+**Protecție:**
+- `.gitignore` blochează `**/pii_mapping/`
+- Pre-commit hook blochează commit accidental
+- `chmod 600` pe fișiere (read/write doar owner)
+- `chmod 700` pe directorul `pii_mapping/`
+- Sistem cu disk encryption (LUKS) la nivel OS — single layer suficient pentru threat model single-user local
 
 ### 3.4 Reverse lookup (when needed)
 
 Pentru cazuri legitime (ex: cerere ștergere GDPR, debug findings):
 
 ```bash
-gpg --decrypt research/corpus/pii_mapping/tokens-2026-04.json.gpg | jq '.tokens["<PERSON_47>"]'
+jq '.tokens["<PERSON_47>"]' research/corpus/pii_mapping/tokens-2026-04.json
 # → {"real_value": "Anca Oprea", ...}
 ```
 
@@ -137,8 +138,8 @@ Audit log obligatoriu în `research/audit.log`:
 
 | Threat | Likelihood | Impact | Mitigation |
 |---|---|---|---|
-| **T1: Commit accidental `corpus/raw/` în public repo** | Med | Mare | `.gitignore` strict + pre-commit hook (vezi §6) + GPG encryption a raw |
-| **T2: Mapping table compromis (laptop furat)** | Mică | Mare | Disk encryption (LUKS) + GPG armor (double encryption) |
+| **T1: Commit accidental `corpus/raw/` în public repo** | Med | Mare | `.gitignore` strict + pre-commit hook (vezi §6) |
+| **T2: Mapping table compromis (laptop furat)** | Mică | Mare | Disk encryption (LUKS) la nivel OS — single layer suficient |
 | **T3: PII leak la Gemini provider via CLI** | Med | Mediu | Pseudonymization PRE-CLI mandatory; sanity scan între `pseudonymized/` și CLI input |
 | **T4: Re-identification din `enriched/` fără mapping** | Mică | Mediu | Token format atomic (`<PERSON_N>` indistinguishable), nu păstrăm hint-uri |
 | **T5: Insider threat (alți useri pe sistem)** | Mică | Mare | Permisiuni `chmod 700 research/corpus/` + `chmod 600` pe fișiere |
@@ -174,10 +175,8 @@ Adăugat în `.gitignore` la root:
 ```gitignore
 # Research — PII protection
 research/corpus/
-!research/corpus/.gitkeep
 research/audit.log
 research/.env
-**/*.gpg
 **/pii_mapping/
 ```
 
@@ -213,8 +212,9 @@ exit 0
 
 ```bash
 chmod 700 research/corpus/
-chmod 600 research/corpus/raw/*.gpg
-chmod 600 research/corpus/pii_mapping/*.gpg
+chmod 600 research/corpus/raw/*.json
+chmod 700 research/corpus/pii_mapping/
+chmod 600 research/corpus/pii_mapping/*.json
 ```
 
 ### 6.4 Audit log format
@@ -234,7 +234,7 @@ chmod 600 research/corpus/pii_mapping/*.gpg
 
 | Stage | Retention | Trigger ștergere |
 |---|---|---|
-| `corpus/raw/` (gpg) | **12 luni post-research finalizare** | Calendar trigger; manual confirmation |
+| `corpus/raw/` | **12 luni post-research finalizare** | Calendar trigger; manual confirmation; `rm -rf corpus/raw/` |
 | `corpus/pii_mapping/` | **12 luni post-research** | Idem |
 | `corpus/pseudonymized/` | **24 luni** (utilă pentru re-runs) | După 24m sau dacă schema bumps major |
 | `corpus/enriched/` | **24 luni** | Idem |
@@ -266,9 +266,9 @@ Cu cine partajăm date și sub ce contract:
 - [x] Token format definit (§3.2)
 - [x] Threat model documentat (§4)
 - [x] Subject rights handling (§5)
-- [ ] **TODO:** Generate GPG key pair pentru `poparcosmin@gmail.com` dacă nu există
-- [ ] **TODO:** Install pre-commit hook (`research/scripts/pre-commit-corpus-guard.sh`)
-- [ ] **TODO:** Test pseudonymization pipeline pe sample 10 mesaje + verify 0 PII reziduală
+- [x] Pre-commit hook instalat (`.git/hooks/pre-commit`)
+- [ ] **TODO:** Test pseudonymization pipeline pe sample 10 mesaje + verify 0 PII reziduală (Etapa 2)
+- [ ] **TODO:** `chmod 700 research/corpus/` după prima rulare ingestion (Etapa 2)
 
 ---
 

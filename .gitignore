@@ -237,5 +237,3 @@ research/eval/results/
 research/notebooks/.ipynb_checkpoints/
 research/.cache/
 **/pii_mapping/
-**/*.gpg
-**/*.pgp

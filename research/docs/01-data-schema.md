@@ -213,21 +213,21 @@ Format pentru cele 200 etichetări manuale + 50 ideal responses.
 ## 6. File naming + folder layout
 
 ```
-research/corpus/
-├── raw/                                  # gpg-encrypted, gitignored
-│   └── 2024-04/
-│       ├── thread-{thread_id}.json.gpg
-│       └── ...
-├── pseudonymized/                        # plain JSON, gitignored
+research/corpus/                          # gitignored, chmod 700
+├── raw/                                  # plain JSON (Gmail dumps with PII)
 │   └── 2024-04/
 │       ├── thread-{thread_id}.json
 │       └── ...
-├── enriched/                             # plain JSON + classifications, gitignored
+├── pseudonymized/                        # plain JSON, PII tokens replaced
 │   └── 2024-04/
 │       ├── thread-{thread_id}.json
 │       └── ...
-└── pii_mapping/                          # gpg-encrypted, gitignored
-    └── tokens-2026-04.json.gpg
+├── enriched/                             # plain JSON + classifications
+│   └── 2024-04/
+│       ├── thread-{thread_id}.json
+│       └── ...
+└── pii_mapping/                          # plain JSON, chmod 700, gitignored
+    └── tokens-2026-04.json
 
 research/ground-truth/                    # versioned (committed)
 ├── annotations-v1.jsonl                  # 200 manual labels
