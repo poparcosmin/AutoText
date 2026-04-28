@@ -166,18 +166,42 @@ def month_windows(start: str, end: str) -> list[str]:
     return out
 
 
-def window_to_query(window: str, stratified: bool = False) -> str:
+# Filter pentru zgomot sistem (WooCommerce auto-orders, password resets, no-reply newsletters).
+# Bazat pe pattern-urile observate in batch-001 (2026-04-28-batch-001.json).
+SYSTEM_NOISE_FILTER = (
+    '-from:no-reply -from:noreply -from:notification -from:notifications '
+    '-from:newsletter -from:donotreply '
+    '-subject:"Comanda noua pe site" '
+    '-subject:"Resetare parol" '
+    '-subject:"Reset parol"'
+)
+
+
+def window_to_query(
+    window: str,
+    stratified: bool = False,
+    exclude_system: bool = False,
+    extra_filter: str | None = None,
+) -> str:
     y, m = window.split("-")
     y_int, m_int = int(y), int(m)
     next_y, next_m = (y_int, m_int + 1) if m_int < 12 else (y_int + 1, 1)
     if stratified:
         next_first = datetime(next_y, next_m, 1)
         last_7_start = next_first - timedelta(days=7)
-        return (
+        base = (
             f"after:{last_7_start.strftime('%Y/%m/%d')} "
             f"before:{next_first.strftime('%Y/%m/%d')}"
         )
-    return f"after:{y}/{m}/01 before:{next_y:04d}/{next_m:02d}/01"
+    else:
+        base = f"after:{y}/{m}/01 before:{next_y:04d}/{next_m:02d}/01"
+
+    parts = [base]
+    if exclude_system:
+        parts.append(SYSTEM_NOISE_FILTER)
+    if extra_filter:
+        parts.append(extra_filter)
+    return " ".join(parts)
 
 
 # ============================================================
@@ -242,6 +266,8 @@ def fetch_window(
     window: str,
     state: IngestionState,
     stratified: bool = False,
+    exclude_system: bool = False,
+    extra_filter: str | None = None,
     dry_run: bool = False,
 ) -> None:
     win_state = state.windows.get(window) or WindowState()
@@ -254,7 +280,12 @@ def fetch_window(
     state.windows[window] = win_state
     save_state(state)
 
-    query = window_to_query(window, stratified=stratified)
+    query = window_to_query(
+        window,
+        stratified=stratified,
+        exclude_system=exclude_system,
+        extra_filter=extra_filter,
+    )
     log.info("window.start", window=window, query=query)
     audit("window_start", window=window, query=query, stratified=stratified)
 
@@ -326,6 +357,16 @@ def main() -> int:
     parser.add_argument("--stratified", action="store_true", help="Doar ultimele 7 zile per luna")
     parser.add_argument("--resume", action="store_true", help="Skip windows marcate done")
     parser.add_argument("--dry-run", action="store_true", help="Doar count, nu fetch content")
+    parser.add_argument(
+        "--exclude-system",
+        action="store_true",
+        help="Exclude zgomot sistem (no-reply, WooCommerce auto-orders, password resets)",
+    )
+    parser.add_argument(
+        "--extra-filter",
+        default=None,
+        help='Gmail query suplimentar (ex: "in:inbox OR in:sent"). Concatenat cu AND.',
+    )
     args = parser.parse_args()
 
     creds = get_credentials()
@@ -358,6 +399,8 @@ def main() -> int:
                 window,
                 state,
                 stratified=args.stratified,
+                exclude_system=args.exclude_system,
+                extra_filter=args.extra_filter,
                 dry_run=args.dry_run,
             )
         except Exception as e:
