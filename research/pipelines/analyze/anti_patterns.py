@@ -23,6 +23,7 @@ from pathlib import Path
 import structlog
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
+RAW_DIR = REPO_ROOT / "research" / "corpus" / "raw"
 ENRICHED_DIR = REPO_ROOT / "research" / "corpus" / "enriched"
 SUMMARY_PATH = ENRICHED_DIR / "_anti_patterns_summary.json"
 AUDIT_LOG = REPO_ROOT / "research" / "audit.log"
@@ -150,10 +151,23 @@ def detect_anti_patterns(body: str) -> list[str]:
 # ============================================================
 # Main
 # ============================================================
-def list_enriched_threads() -> list[Path]:
-    if not ENRICHED_DIR.exists():
+def list_threads_for_processing() -> list[Path]:
+    """Bootstrap enriched/ din raw/ daca lipseste, returneaza enriched paths."""
+    if not RAW_DIR.exists():
         return []
-    return sorted(ENRICHED_DIR.glob("*/thread-*.json"))
+    out = []
+    for raw in sorted(RAW_DIR.glob("*/thread-*.json")):
+        rel = raw.relative_to(RAW_DIR)
+        target = ENRICHED_DIR / rel
+        if not target.exists():
+            target.parent.mkdir(parents=True, exist_ok=True)
+            with raw.open() as fr:
+                data = json.load(fr)
+            data["_stage"] = "enriched"
+            with target.open("w") as fe:
+                json.dump(data, fe, ensure_ascii=False, indent=2)
+        out.append(target)
+    return out
 
 
 def process_thread(path: Path) -> dict:
@@ -220,7 +234,7 @@ def main() -> int:
     parser.add_argument("--window", default=None)
     args = parser.parse_args()
 
-    threads = list_enriched_threads()
+    threads = list_threads_for_processing()
     if args.window:
         threads = [t for t in threads if f"/{args.window}/" in str(t)]
     if args.limit:
