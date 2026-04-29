@@ -240,3 +240,6 @@ research/.cache/
 # Research corpus spam quarantine (large + reversible move)
 research/corpus/spam/
 research/corpus/_quarantine.log
+
+# Production rollout data dumps (contain IBAN-public-id; transferred manually via scp)
+research/prod-rollout/**/textsync_data.json
