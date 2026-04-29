@@ -749,6 +749,45 @@ describe('content.js — text expansion core', () => {
   });
 
   // ---------------------------------------------------------------------------
+  describe('processConditionals()', () => {
+    it('passes through text without [[if:...]] tokens', () => {
+      expect(content.processConditionals('hello world')).toBe('hello world');
+    });
+
+    it('endswith: routes Italian email to EN, others to RO', () => {
+      const tpl = '[[if:client@bialetti.it endswith .it]]Hello![[else]]Bună ziua,[[endif]]';
+      expect(content.processConditionals(tpl)).toBe('Hello!');
+      const tpl2 = '[[if:vasile@firma.ro endswith .it]]Hello![[else]]Bună ziua,[[endif]]';
+      expect(content.processConditionals(tpl2)).toBe('Bună ziua,');
+    });
+
+    it('contains: substring match (case-insensitive)', () => {
+      const tpl = '[[if:bialetti.IT contains bialetti]]known client[[else]]new[[endif]]';
+      expect(content.processConditionals(tpl)).toBe('known client');
+    });
+
+    it('== and != operators (string equality, case-insensitive)', () => {
+      expect(content.processConditionals('[[if:Aura == aura]]match[[endif]]')).toBe('match');
+      expect(content.processConditionals('[[if:Aura != Bogdan]]different[[endif]]')).toBe('different');
+    });
+
+    it('missing [[else]] renders empty string when condition is false', () => {
+      const tpl = 'before [[if:foo == bar]]inner[[endif]] after';
+      expect(content.processConditionals(tpl)).toBe('before  after');
+    });
+
+    it('startswith routes by prefix', () => {
+      const tpl = '[[if:RO74INGB startswith RO]]formal IBAN[[else]]other[[endif]]';
+      expect(content.processConditionals(tpl)).toBe('formal IBAN');
+    });
+
+    it('preserves surrounding text around the conditional block', () => {
+      const tpl = 'Hi! [[if:a == a]]MATCH[[else]]NO[[endif]] — done.';
+      expect(content.processConditionals(tpl)).toBe('Hi! MATCH — done.');
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   describe('processSnippetNesting()', () => {
     it('passes through text without nesting tokens', () => {
       expect(content.processSnippetNesting('hello', {})).toBe('hello');

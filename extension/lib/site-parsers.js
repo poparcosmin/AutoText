@@ -134,9 +134,49 @@ function _gmailRecipient() {
   return '';
 }
 
+function _gmailRecipientEmail() {
+  // Sister-parser to _gmailRecipient — returns the email address rather
+  // than the display name. Used by [[recipient_email]] and consumed by
+  // [[if:...]] conditions for language routing (e.g. .it/.de → English).
+  if (!_runtimeAlive()) return '';
+
+  const strategies = [
+    // 1. Compose chip with [email] attribute (most reliable when present)
+    () => {
+      const chip = document.querySelector('[role="dialog"] [email]')
+                || document.querySelector('[email]');
+      return chip ? (chip.getAttribute('email') || '') : '';
+    },
+    // 2. Raw "To" field — first address in comma-separated list
+    () => {
+      const el = document.querySelector('[role="dialog"] input[name="to"]')
+              || document.querySelector('input[name="to"]')
+              || document.querySelector('textarea[name="to"]');
+      if (!el || !el.value) return '';
+      // Match "Name <email@domain>" or bare "email@domain"
+      const first = el.value.split(',')[0].trim();
+      const m = first.match(/<([^>]+)>/);
+      if (m) return m[1].trim();
+      // Bare email if no angle brackets
+      return /@/.test(first) ? first : '';
+    },
+  ];
+
+  for (const strategy of strategies) {
+    try {
+      const value = strategy();
+      if (value) return value;
+    } catch (_e) {
+      // strategy threw — keep walking
+    }
+  }
+  return '';
+}
+
 const siteParsers = {
   'mail.google.com': {
     recipient: _gmailRecipient,
+    recipient_email: _gmailRecipientEmail,
   },
   // Future: outlook.live.com, mail.yahoo.com, web.whatsapp.com
 };

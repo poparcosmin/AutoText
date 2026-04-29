@@ -604,7 +604,7 @@ function processDateMacros(input, now = new Date()) {
 // passwords, tokens, private text). The risk is too high for an
 // always-on auto-expansion. Bring it back only with explicit consent
 // — e.g. a confirm dialog or a separate `[[clipboard:confirm]]` flavour.
-const SYSTEM_VAR_RE = /\[\[(day|greeting|user|random|select|recipient|recipient_first|var)(?::([^\]]*))?\]\]/g;
+const SYSTEM_VAR_RE = /\[\[(day|greeting|user|random|select|recipient|recipient_first|recipient_email|var)(?::([^\]]*))?\]\]/g;
 
 const ROMANIAN_DAY_NAMES = [
   'Duminică', 'Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă'
@@ -721,6 +721,16 @@ function _readRecipientFirst() {
   return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
 }
 
+function _readRecipientEmail() {
+  // Sister to _readRecipient — pulls the email address (not display name)
+  // from the active site parser. Empty string if no parser matches or
+  // Gmail layout shifted.
+  if (typeof getSiteValue === 'function') {
+    return getSiteValue('recipient_email');
+  }
+  return '';
+}
+
 // Resolve [[var:name]] from the user's saved variables (synced via
 // background.js into chrome.storage.local.userVariables). Supports
 // referencing other [[var:...]] inside the value — Espanso pattern —
@@ -808,6 +818,7 @@ async function processSystemVars(input, now = new Date()) {
         case 'select': replacements.push(_promptSelect(args || '')); break;
         case 'recipient': replacements.push(_readRecipient()); break;
         case 'recipient_first': replacements.push(_readRecipientFirst()); break;
+        case 'recipient_email': replacements.push(_readRecipientEmail()); break;
         case 'var': replacements.push(await _readUserVariable((args || '').trim())); break;
         default: replacements.push('');
       }
@@ -826,6 +837,64 @@ async function processSystemVars(input, now = new Date()) {
   });
   out.push(input.slice(lastIdx));
   return out.join('');
+}
+
+// Conditional expansion — [[if:<lhs> <op> <rhs>]]A[[else]]B[[endif]]
+// Runs AFTER system vars are resolved, so LHS/RHS may include the
+// resolved value of [[recipient_email]] / [[var:foo]]. Operators:
+//   ==          string equality, case-insensitive
+//   !=          string inequality
+//   contains    LHS contains RHS as substring
+//   startswith  LHS starts with RHS
+//   endswith    LHS ends with RHS
+// LHS and RHS are trimmed; quoting is not required.
+//
+// [[else]] branch is optional; missing → empty string when condition false.
+// Nested [[if]] inside [[if]] is NOT supported (single-level only) — keeps
+// the parser simple and avoids fragile regex backtracking.
+const IF_RE = /\[\[if:\s*([^\]]+?)\s*\]\]([\s\S]*?)(?:\[\[else\]\]([\s\S]*?))?\[\[endif\]\]/g;
+
+function _evaluateCondition(condStr) {
+  // Tokenize: LHS, op, RHS. Operator is the first matching keyword.
+  const ops = ['contains', 'startswith', 'endswith', '==', '!='];
+  for (const op of ops) {
+    // Match operator surrounded by whitespace, but only as a whole word
+    // for word-like operators (contains/startswith/endswith). Symbols ==/!=
+    // can be tight-spaced.
+    const opRegex = (op === '==' || op === '!=')
+      ? new RegExp(`\\s*${op}\\s*`)
+      : new RegExp(`\\s+${op}\\s+`);
+    const idx = condStr.search(opRegex);
+    if (idx === -1) continue;
+    const match = condStr.match(opRegex);
+    const lhs = condStr.slice(0, idx).trim();
+    const rhs = condStr.slice(idx + match[0].length).trim();
+    const L = lhs.toLowerCase();
+    const R = rhs.toLowerCase();
+    switch (op) {
+      case '==': return L === R;
+      case '!=': return L !== R;
+      case 'contains': return L.includes(R);
+      case 'startswith': return L.startsWith(R);
+      case 'endswith': return L.endsWith(R);
+    }
+  }
+  // No operator matched — treat as truthy if non-empty
+  return condStr.trim().length > 0;
+}
+
+function processConditionals(input) {
+  if (!input || typeof input !== 'string' || !input.includes('[[if:')) {
+    return input;
+  }
+  // Replace once — non-greedy regex matches innermost cleanly. Nested
+  // [[if]] inside another [[if]] is documented as unsupported, so a single
+  // pass is enough.
+  return input.replace(IF_RE, (_full, cond, ifBody, elseBody) => {
+    const result = _evaluateCondition(cond);
+    if (result) return ifBody;
+    return elseBody !== undefined ? elseBody : '';
+  });
 }
 
 // Extract cursor marker position from expansion. Returns {text, cursorOffset}
@@ -1175,7 +1244,8 @@ async function handleTriggerKey(event) {
   //   1. Snippet nesting — flatten [[%s(other)]] references recursively
   //   2. Date macros — [[date]], [[date+7d]], etc.
   //   3. System vars — [[day]], [[greeting]], [[user]], [[clipboard]], [[random:A|B|C]]
-  //   4. Form placeholders — {{name:Label|default}}, prompted interactively
+  //   4. Conditionals — [[if:cond]]A[[else]]B[[endif]] (after system vars resolve)
+  //   5. Form placeholders — {{name:Label|default}}, prompted interactively
   // Cursor marker ($|$) is handled later, inside replace* functions.
   textContent = processSnippetNesting(textContent, shortcuts);
   if (htmlContent) {
@@ -1188,6 +1258,12 @@ async function handleTriggerKey(event) {
   textContent = await processSystemVars(textContent);
   if (htmlContent) {
     htmlContent = await processSystemVars(htmlContent);
+  }
+  // Conditionals run AFTER system vars so [[recipient_email]] / [[var:]] are
+  // resolved by the time the [[if:LHS op RHS]] expression is evaluated.
+  textContent = processConditionals(textContent);
+  if (htmlContent) {
+    htmlContent = processConditionals(htmlContent);
   }
 
   // Collect placeholders across both text and html (same field fills both).
@@ -1491,6 +1567,7 @@ if (typeof module !== "undefined" && module.exports) {
     extractCursorMarker,
     processDateMacros,
     processSystemVars,
+    processConditionals,
     processSnippetNesting,
     extractPlaceholders,
     substitutePlaceholders,
