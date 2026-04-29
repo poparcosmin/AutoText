@@ -101,23 +101,77 @@ ATOMIC_SNIPPETS = {
     # Greeting — usable standalone or chained
     "salut": "[[greeting]],",
 
-    # Closings — variation between formal and warm
-    "mts": "[[random:Mulțumim!|Vă mulțumim!|Mulțumim pentru încredere!]]",
+    # Closings — high variation
+    "mts": (
+        "[[random:Mulțumim!|"
+        "Vă mulțumim!|"
+        "Mulțumim pentru încredere!|"
+        "Mulțumim mult!|"
+        "Vă mulțumim pentru comandă!|"
+        "Cu drag, mulțumim!]]"
+    ),
     "mts_short": "Mulțumim!",
 
-    # CTAs reusable
-    "cta-mod": "Pentru orice modificare la adresă sau cantitate, răspundeți la acest email cât mai curând posibil.",
+    # Confirmation: plata
+    "confirm-plata": (
+        "[[random:Plata din [[date:DD.MM.YYYY]] a fost confirmată — mulțumim.|"
+        "Am primit plata azi, [[date:DD.MM.YYYY]]. Mulțumim!|"
+        "Plata a intrat în cont — mulțumim.|"
+        "Confirmăm primirea plății din [[date:DD.MM.YYYY]] — mulțumim.|"
+        "Plata confirmată azi, [[date:DD.MM]] — mulțumim.|"
+        "Mulțumim, plata e confirmată în contul nostru.]]"
+    ),
+
+    # Transition: ce facem după plată
+    "tranzitie-pleaca": (
+        "[[random:Astăzi pregătim coletele pentru curier.|"
+        "Coletele intră acum în pregătire pentru expediere.|"
+        "Pregătim coletele pentru expedierea prin serviciul de curierat.|"
+        "Astăzi se pregătesc coletele pentru livrare.|"
+        "Coletele se pregătesc imediat pentru expediere.]]"
+    ),
+    "tranzitie-pleaca-buc": (
+        "[[random:Coletele pleacă spre București cu mașinile noastre.|"
+        "Pregătim coletele pentru livrarea în București cu flota proprie.|"
+        "Coletele intră astăzi în pregătire pentru livrarea cu mașinile noastre.|"
+        "Astăzi pregătim livrarea în București cu mașinile PAFF.]]"
+    ),
+
+    # CTAs cu variație
+    "cta-mod": (
+        "[[random:Pentru orice modificare la adresă sau cantitate, răspundeți la acest email cât mai curând posibil.|"
+        "Dacă apar modificări la adresă sau cantitate, scrieți-ne pe acest email cât mai repede.|"
+        "Pentru schimbări la adresă sau cantitate, ne anunțați aici cât mai curând.|"
+        "Dacă vreți să schimbați ceva (adresă, cantitate), răspundeți rapid la acest email.]]"
+    ),
+    "cta-primire": (
+        "[[random:Pentru orice nelămurire la primire, răspundeți direct la acest email.|"
+        "La primire, dacă observați ceva ce nu e în regulă, scrieți-ne — rezolvăm rapid.|"
+        "Dacă coletele par deteriorate la primire, refuzați semnătura și scrieți-ne.|"
+        "La primire, dacă există probleme cu coletele, ne anunțați aici.]]"
+    ),
+
+    # Promise: trimitem AWB
+    "promise-awb": (
+        "[[random:Vă trimitem numărul de AWB și factura imediat ce pachetul pleacă.|"
+        "Imediat ce coletele pleacă din depozit, vă trimitem AWB-ul și factura.|"
+        "Cum coletele ies din depozit, primiți de la noi AWB-ul și factura fiscală.|"
+        "Vă transmitem AWB-ul și factura imediat ce pachetul iese spre livrare.]]"
+    ),
 
     # Reply scaffolding (standardized 3-option pattern)
-    "reply-yn": "Răspundeți scurt:\n ✓ \"OK\" → continuăm\n ✓ \"modificare: ___\" → schimb ceva\n ✓ \"amân\" → lăsăm în coadă",
+    "reply-yn": (
+        "Răspundeți scurt:\n"
+        " ✓ \"OK\" → continuăm\n"
+        " ✓ \"modificare: ___\" → schimb ceva\n"
+        " ✓ \"amân\" → lăsăm în coadă"
+    ),
 
-    # ETAs — single source of truth (schimbi 1 dată, propagă în toate)
+    # ETAs — single source of truth
     "eta-curier": "Termen estimat livrare: 4-7 zile lucrătoare.",
     "eta-paff": "Termen estimat livrare: 1-3 zile lucrătoare (București).",
 
     # Signatures — per-user via [[var:my_name]] + [[var:my_phone]]
-    # [[user]] retornează username capitalizat (Aura, Bogdan, Cosmin, Florian)
-    # [[var:my_name]] / [[var:my_phone]] sunt per-user (PER_USER_VARIABLES)
     "sig-personal": "Cu stimă,\n[[var:my_name]]\n[[var:my_phone]]",
     "sig-short": "Cu stimă,\n[[user]]",
     "sig-equipe": "Cu stimă,\nEchipa PAFF",
@@ -125,6 +179,14 @@ ATOMIC_SNIPPETS = {
     # Tracking links per courier
     "track-fan": "Tracking: [[var:track_fan]]",
     "track-dragon": "Tracking: [[var:track_dragon]]",
+
+    # Closing line variations (after main message body)
+    "closing": (
+        "[[random:Mulțumim pentru încredere!|"
+        "Vă mulțumim pentru colaborare!|"
+        "Mulțumim mult — rămânem la dispoziție.|"
+        "Cu drag, mulțumim pentru încredere.]]"
+    ),
 }
 
 
@@ -134,199 +196,300 @@ ATOMIC_SNIPPETS = {
 # (id) → (primary, [variant_warm, variant_concise])
 
 SHORTCUT_REFACTORS = {
-    # mc1 — Confirmare plată curier
+    # mc1 — Confirmare plată curier (maximum variation)
     107: (
-        "[[%s(salut)]]\n\nPlata din [[date:DD.MM.YYYY]] confirmată — mulțumim.\n\n"
-        "[[random:Pregătim coletele pentru expedierea prin curier.|Coletele intră astăzi în pregătire pentru curier.|Astăzi pregătim coletele pentru curier.]]\n\n"
+        "[[%s(salut)]]\n\n[[%s(confirm-plata)]]\n\n[[%s(tranzitie-pleaca)]]\n\n"
         "----------------\n\n"
         "INFORMAȚII EXPEDIERE:\n"
         " - [[%s(eta-curier)]]\n"
-        " - Vă trimitem numărul de AWB și factura imediat ce pachetul pleacă.\n\n"
+        " - [[%s(promise-awb)]]\n\n"
         "----------------\n\n"
         "[[%s(cta-mod)]]\n\n"
         "[[%s(mts)]]\n$|$",
         [
-            # Cald
-            "[[%s(salut)]]\n\nPlata a intrat — mulțumim.\n\n"
-            "Coletele intră astăzi în pregătire pentru expediere prin curier. "
-            "[[%s(eta-curier)]] Imediat ce pleacă din depozit, vă trimitem AWB-ul "
-            "și factura fiscală.\n\n"
-            "Dacă apar modificări la adresă sau cantitate, scrieți-ne pe acest email.\n\n"
-            "Mulțumim pentru încredere!\n$|$",
-            # Scurt
-            "[[%s(salut)]]\n\nPlata confirmată azi, [[date:DD.MM]]. "
-            "Coletele pleacă în curând prin curier (4-7 zile lucrătoare).\n\n"
-            "Pentru orice modificare, răspundeți la acest email.\n\n"
-            "Mulțumim!\n$|$",
+            # Cald — narrative flow
+            "[[%s(salut)]]\n\n[[%s(confirm-plata)]]\n\n"
+            "[[random:Coletele intră astăzi în pregătire pentru expediere prin curier.|"
+            "Astăzi se pregătesc coletele pentru curier.|"
+            "Pregătim astăzi coletele și le predăm curier-ului în maxim 24h.]] "
+            "[[%s(eta-curier)]] [[%s(promise-awb)]]\n\n"
+            "[[random:Dacă apar modificări la adresă sau cantitate, scrieți-ne pe acest email.|"
+            "Pentru schimbări la adresă sau cantitate, ne anunțați aici cât mai repede.|"
+            "Dacă vreți să schimbați ceva, răspundeți rapid la acest email.]]\n\n"
+            "[[%s(closing)]]\n$|$",
+            # Scurt — minimal
+            "[[%s(salut)]]\n\n[[random:Plata confirmată azi, [[date:DD.MM]].|"
+            "Plata a intrat azi, [[date:DD.MM]].|"
+            "Plata e în cont — mulțumim.]] "
+            "[[random:Coletele pleacă în curând prin curier (4-7 zile lucrătoare).|"
+            "Coletele pleacă imediat la curier — livrare 4-7 zile lucrătoare.|"
+            "Coletele se duc la curier în următoarele zile (4-7 zile lucrătoare).]]\n\n"
+            "[[random:Pentru orice modificare, răspundeți la acest email.|"
+            "Pentru schimbări, scrieți aici.|"
+            "Modificări? Răspundeți la acest email.]]\n\n"
+            "[[%s(mts)]]\n$|$",
         ],
     ),
 
-    # ffd — Factură + AWB Dragon Star
+    # ffd — Factură + AWB Dragon Star (max variation)
     91: (
         "[[%s(salut)]]\n\nAWB: $|$ (Dragon Star)\n[[%s(track-dragon)]]\n\n"
-        "Atașat: factura fiscală pentru produsele expediate. "
+        "[[random:Atașat: factura fiscală pentru produsele expediate.|"
+        "Atașăm factura fiscală pentru produsele expediate prin Dragon Star.|"
+        "Factura fiscală pentru această expediere e atașată mai jos.]] "
         "Disponibilă și în e-Factura.\n\n"
-        "[[random:Pentru orice nelămurire la primire, răspundeți direct la acest email.|"
-        "La primire, dacă observați ceva ce nu e în regulă, scrieți-ne — rezolvăm rapid.|"
-        "Dacă coletele par deteriorate la primire, refuzați semnătura și scrieți-ne.]]\n\n"
-        "Mulțumim pentru încredere!",
+        "[[%s(cta-primire)]]\n\n[[%s(closing)]]",
         [
-            "[[%s(salut)]]\n\nColetele au plecat astăzi prin Dragon Star.\n\n"
+            "[[%s(salut)]]\n\n[[random:Coletele au plecat astăzi prin Dragon Star.|"
+            "Astăzi coletele au ieșit din depozit cu Dragon Star.|"
+            "Coletele sunt deja la Dragon Star pentru livrare.]]\n\n"
             "AWB: $|$\n[[%s(track-dragon)]]\n"
-            "Factură atașată (și disponibilă în e-Factura).\n\n"
-            "La primire, dacă observați ceva ce nu e în regulă, scrieți-ne.\n\n"
-            "Mulțumim!",
+            "[[random:Factură atașată (și disponibilă în e-Factura).|"
+            "Atașăm factura fiscală — disponibilă și în e-Factura.|"
+            "Factura e atașată; aceeași e și în e-Factura.]]\n\n"
+            "[[%s(cta-primire)]]\n\n[[%s(mts)]]",
             "[[%s(salut)]]\n\nAWB: $|$ (Dragon Star)\n[[%s(track-dragon)]]\n"
-            "Factura atașată + e-Factura.\n\n"
-            "Mulțumim!",
+            "[[random:Factura atașată + e-Factura.|"
+            "Factură atașată; aceeași în e-Factura.|"
+            "Atașat factura — disponibilă și în e-Factura.]]\n\n"
+            "[[%s(mts_short)]]",
         ],
     ),
 
-    # ffan — Factură + AWB Fan Courier
+    # ffan — Factură + AWB Fan Courier (max variation)
     90: (
         "[[%s(salut)]]\n\nAWB: $|$ (Fan Courier)\n[[%s(track-fan)]]\n\n"
-        "Atașat: factura fiscală pentru produsele expediate. "
+        "[[random:Atașat: factura fiscală pentru produsele expediate.|"
+        "Atașăm factura fiscală pentru produsele expediate prin Fan Courier.|"
+        "Factura fiscală pentru această expediere e atașată mai jos.]] "
         "Disponibilă și în e-Factura.\n\n"
-        "[[random:Pentru orice nelămurire la primire, răspundeți direct la acest email.|"
-        "La primire, dacă observați ceva ce nu e în regulă, scrieți-ne — rezolvăm rapid.|"
-        "Dacă coletele par deteriorate la primire, refuzați semnătura și scrieți-ne.]]\n\n"
-        "Mulțumim pentru încredere!",
+        "[[%s(cta-primire)]]\n\n[[%s(closing)]]",
         [
-            "[[%s(salut)]]\n\nColetele au plecat astăzi prin Fan Courier.\n\n"
+            "[[%s(salut)]]\n\n[[random:Coletele au plecat astăzi prin Fan Courier.|"
+            "Astăzi coletele au ieșit din depozit cu Fan Courier.|"
+            "Coletele sunt deja la Fan Courier pentru livrare.]]\n\n"
             "AWB: $|$\n[[%s(track-fan)]]\n"
-            "Factură atașată (și disponibilă în e-Factura).\n\n"
-            "La primire, dacă observați ceva ce nu e în regulă, scrieți-ne.\n\n"
-            "Mulțumim!",
+            "[[random:Factură atașată (și disponibilă în e-Factura).|"
+            "Atașăm factura fiscală — disponibilă și în e-Factura.|"
+            "Factura e atașată; aceeași e și în e-Factura.]]\n\n"
+            "[[%s(cta-primire)]]\n\n[[%s(mts)]]",
             "[[%s(salut)]]\n\nAWB: $|$ (Fan Courier)\n[[%s(track-fan)]]\n"
-            "Factura atașată + e-Factura.\n\n"
-            "Mulțumim!",
+            "[[random:Factura atașată + e-Factura.|"
+            "Factură atașată; aceeași în e-Factura.|"
+            "Atașat factura — disponibilă și în e-Factura.]]\n\n"
+            "[[%s(mts_short)]]",
         ],
     ),
 
-    # op — Confirmare comandă + proformă (SINGLE-CTA cu reply scaffolding)
+    # op — Confirmare comandă + proformă (max variation, SINGLE-CTA)
     115: (
-        "[[%s(salut)]]\n\nMulțumim pentru comandă! Atașat: proforma {{nr:Număr proformă|}}.\n\n"
+        "[[%s(salut)]]\n\n[[random:Mulțumim pentru comandă!|Vă mulțumim pentru comandă!|"
+        "Mulțumim mult pentru comandă!|Cu drag, mulțumim pentru comandă!]] "
+        "[[random:Atașat: proforma|Găsiți atașată proforma|"
+        "Mai jos găsiți proforma|În atașament e proforma]] {{nr:Număr proformă|}}.\n\n"
         "[[%s(reply-yn)]]\n\n"
-        "După plată, producem și ajunge la dvs. în 4-7 zile lucrătoare.\n\n"
-        "Mulțumim!\n$|$",
-        [
-            # Cald
-            "[[%s(salut)]]\n\nMulțumim pentru comandă! Găsiți atașată proforma {{nr:Număr proformă|}}.\n\n"
-            "Vă rugăm să verificați:\n"
-            " - prețul, cantitatea și dimensiunile sunt cele agreate?\n"
-            " - dacă da, după plată trimiteți-ne un printscreen al ordinului — "
-            "accelerează start-ul producției.\n\n"
-            "Pregătim imediat după confirmarea plății; ajung la dvs. în 4-7 zile lucrătoare.\n\n"
-            "Mulțumim!\n$|$",
-            # Scurt
-            "[[%s(salut)]]\n\nMulțumim pentru comandă. Atașat: proforma {{nr:Nr proformă|}}.\n\n"
-            "După plată, dacă ne trimiteți printscreen al ordinului, începem pregătirea imediat. "
-            "Livrare 4-7 zile lucrătoare.\n\n"
-            "Mulțumim!\n$|$",
-        ],
-    ),
-
-    # mp1 — Livrare PAFF gratuit București
-    110: (
-        "[[%s(salut)]]\n\nPlata din [[date:DD.MM.YYYY]] confirmată — mulțumim.\n\n"
-        "[[random:Coletele pleacă spre București cu mașinile noastre.|Pregătim coletele pentru livrarea în București cu flota proprie.|Coletele intră astăzi în pregătire pentru livrarea cu mașinile noastre.]] "
-        "Astfel, [[%s(eta-paff)]]\n\n"
-        "----------------\n\n"
-        "CONDIȚII LIVRARE PAFF (GRATUITĂ):\n\n"
-        " - Livrarea se face până la sediul dumneavoastră.\n"
-        " - Produsele se predau în cel mai apropiat loc de parcare sau în curtea sediului.\n"
-        " - Șoferul nu poate muta coletele din mașină în incinta clădirii.\n\n"
-        "----------------\n\n"
-        "Detalii suplimentare: [[var:webfaq]]\n\n"
+        "[[random:După plată, producem și ajunge la dvs. în 4-7 zile lucrătoare.|"
+        "După confirmarea plății, intrăm imediat în producție; livrare 4-7 zile lucrătoare.|"
+        "Imediat ce confirmăm plata, începem producția. Livrare 4-7 zile lucrătoare.|"
+        "Plătiți, intrăm în producție, livrăm în 4-7 zile lucrătoare.]]\n\n"
         "[[%s(mts)]]\n$|$",
         [
-            "[[%s(salut)]]\n\nPlata a intrat — mulțumim!\n\n"
-            "Coletele pleacă spre București cu mașinile noastre — ajung la dvs. "
-            "în 1-3 zile lucrătoare.\n\n"
-            "Detalii practice:\n"
+            # Cald — checklist verification
+            "[[%s(salut)]]\n\n[[random:Mulțumim pentru comandă!|"
+            "Vă mulțumim pentru comandă!|"
+            "Cu drag, mulțumim pentru comandă!]] "
+            "Găsiți atașată proforma {{nr:Număr proformă|}}.\n\n"
+            "[[random:Vă rugăm să verificați:|Înainte de plată, verificați:|"
+            "Două lucruri rapide de verificat:]]\n"
+            " - prețul, cantitatea și dimensiunile sunt cele agreate?\n"
+            " - dacă da, după plată trimiteți-ne un printscreen al ordinului — "
+            "[[random:accelerează start-ul producției.|"
+            "intrăm imediat în producție.|"
+            "ne ajută să intrăm rapid în execuție.]]\n\n"
+            "[[random:Pregătim imediat după confirmarea plății; ajung la dvs. în 4-7 zile lucrătoare.|"
+            "Cum confirmăm plata, intrăm în producție; livrare 4-7 zile lucrătoare.|"
+            "Imediat după plată producem și expediem — total 4-7 zile lucrătoare.]]\n\n"
+            "[[%s(mts)]]\n$|$",
+            # Scurt
+            "[[%s(salut)]]\n\n[[random:Mulțumim pentru comandă.|Mulțumim mult.|"
+            "Mulțumim!]] [[random:Atașat: proforma|Atașată proforma|"
+            "Proformă atașată]] {{nr:Nr proformă|}}.\n\n"
+            "[[random:După plată, dacă ne trimiteți printscreen al ordinului, începem pregătirea imediat.|"
+            "Trimiteți-ne printscreen-ul ordinului după plată — intrăm imediat în producție.|"
+            "Plată confirmată cu printscreen → producție imediată.]] Livrare 4-7 zile lucrătoare.\n\n"
+            "[[%s(mts_short)]]\n$|$",
+        ],
+    ),
+
+    # mp1 — Livrare PAFF gratuit București (max variation)
+    110: (
+        "[[%s(salut)]]\n\n[[%s(confirm-plata)]]\n\n[[%s(tranzitie-pleaca-buc)]] "
+        "Astfel, [[%s(eta-paff)]]\n\n"
+        "----------------\n\n"
+        "[[random:CONDIȚII LIVRARE PAFF (GRATUITĂ):|DETALII LIVRARE PAFF:|"
+        "DESPRE LIVRAREA NOASTRĂ:]]\n\n"
+        " - [[random:Livrarea se face până la sediul dumneavoastră.|"
+        "Aducem coletele la sediul dvs.|"
+        "Livrarea e la sediul dvs.]]\n"
+        " - [[random:Produsele se predau în cel mai apropiat loc de parcare sau în curtea sediului.|"
+        "Predăm coletele la cel mai apropiat loc de parcare sau în curtea sediului.|"
+        "Coletele se lasă la parcare/curte (locul cel mai apropiat).]]\n"
+        " - [[random:Șoferul nu poate muta coletele din mașină în incinta clădirii.|"
+        "Șoferul nu urcă coletele în clădire (etaj/birou).|"
+        "Coletele rămân la mașină — nu intrăm în clădire.]]\n\n"
+        "----------------\n\n"
+        "[[random:Detalii suplimentare: [[var:webfaq]]|"
+        "Pentru întrebări frecvente: [[var:webfaq]]|"
+        "Vezi FAQ: [[var:webfaq]]]]\n\n"
+        "[[%s(mts)]]\n$|$",
+        [
+            # Cald
+            "[[%s(salut)]]\n\n[[random:Plata a intrat — mulțumim!|"
+            "Plata e confirmată — mulțumim!|"
+            "Plata din [[date:DD.MM]] e în cont — mulțumim!]]\n\n"
+            "[[%s(tranzitie-pleaca-buc)]] [[%s(eta-paff)]]\n\n"
+            "Câteva detalii practice:\n"
             " - livrarea e până la sediul dvs., gratuită.\n"
             " - șoferul lasă coletele la cel mai apropiat loc de parcare/curte.\n"
-            " - nu poate urca în clădire — pregătiți cineva la primire.\n\n"
-            "FAQ: [[var:webfaq]]\n\nMulțumim!\n$|$",
-            "[[%s(salut)]]\n\nPlata confirmată, coletele pleacă cu mașinile noastre "
+            " - nu poate urca în clădire — pregătiți cineva la primire dacă e cazul.\n\n"
+            "FAQ: [[var:webfaq]]\n\n[[%s(closing)]]\n$|$",
+            # Scurt
+            "[[%s(salut)]]\n\n[[random:Plata confirmată|Plata a intrat|"
+            "Mulțumim, plata e în cont]], [[random:coletele pleacă cu mașinile noastre|"
+            "trimitem cu flota proprie|expediem cu flota PAFF]] "
             "(1-3 zile lucrătoare, gratuit, predare la parcare/curte).\n\n"
-            "Detalii: [[var:webfaq]]\n\nMulțumim!\n$|$",
+            "Detalii: [[var:webfaq]]\n\n[[%s(mts_short)]]\n$|$",
         ],
     ),
 
-    # mr — Contact șofer Marius (cu var pentru telefon)
+    # mr — Contact șofer Marius (max variation)
     105: (
-        "Pentru livrarea cu flota PAFF în București, șoferul nostru este Marius. "
-        "Îl puteți contacta la [[var:tel_marius]] sau [[var:tel_marius_2]] (apel/WhatsApp). "
-        "Disponibil L-V 08-17.",
+        "[[random:Pentru livrarea cu flota PAFF în București, șoferul nostru este Marius.|"
+        "Pe traseu pe București cu mașinile PAFF e Marius, șoferul nostru.|"
+        "Livrarea cu flota PAFF e gestionată de Marius pe traseul București.]] "
+        "[[random:Îl puteți contacta la|Sunați-l direct la|Apelați-l la]] "
+        "[[var:tel_marius]] [[random:sau|/]] [[var:tel_marius_2]] "
+        "[[random:(apel/WhatsApp).|(apel sau WhatsApp).|— și WhatsApp.]] "
+        "[[random:Disponibil L-V 08-17.|Program: L-V 08-17.|Răspunde L-V între 08:00-17:00.]]",
         [
-            "Pentru detalii livrare, sunați direct pe Marius (șoferul nostru pe București): "
-            "[[var:tel_marius]] / [[var:tel_marius_2]] — apel sau WhatsApp.",
-            "Marius (șofer PAFF București) — [[var:tel_marius]] / [[var:tel_marius_2]] (apel/WhatsApp, L-V 08-17).",
+            "[[random:Pentru detalii livrare, sunați direct pe Marius|"
+            "Marius e direct disponibil pentru detalii livrare|"
+            "Pentru orice despre livrare, vorbiți direct cu Marius]] "
+            "(șoferul nostru pe București): [[var:tel_marius]] / [[var:tel_marius_2]] "
+            "[[random:— apel sau WhatsApp.|(apel/WhatsApp).|pe orice canal preferați.]]",
+            "Marius (șofer PAFF București) — [[var:tel_marius]] / [[var:tel_marius_2]] "
+            "(apel/WhatsApp, L-V 08-17).",
         ],
     ),
 
-    # pi — Contact șofer Picu
+    # pi — Contact șofer Picu (max variation)
     114: (
-        "Pentru livrarea cu flota PAFF în București, șoferul nostru este Picu (Marales Gheorghe). "
-        "Îl puteți contacta la [[var:tel_picu]] (apel/WhatsApp). Disponibil L-V 08-17.",
+        "[[random:Pentru livrarea cu flota PAFF în București, șoferul nostru este Picu (Marales Gheorghe).|"
+        "Pe traseu pe București cu mașinile PAFF e Picu (Marales Gheorghe), șoferul nostru.|"
+        "Livrarea cu flota PAFF pe această rută e gestionată de Picu (Marales Gheorghe).]] "
+        "[[random:Îl puteți contacta la|Sunați-l direct la|Apelați-l la]] "
+        "[[var:tel_picu]] [[random:(apel/WhatsApp).|(apel sau WhatsApp).|— și WhatsApp.]] "
+        "[[random:Disponibil L-V 08-17.|Program: L-V 08-17.|Răspunde L-V între 08:00-17:00.]]",
         [
-            "Pe traseu pe București vă întâlniți cu Picu (Marales Gheorghe), șoferul nostru. "
+            "[[random:Pe traseu pe București vă întâlniți cu Picu|"
+            "Cu Picu vorbiți direct dacă e ceva|"
+            "Picu e omul nostru pe București]] (Marales Gheorghe), șoferul nostru. "
             "Direct la el: [[var:tel_picu]] — apel sau WhatsApp.",
             "Picu (Marales Gheorghe), șofer PAFF — [[var:tel_picu]] (apel/WhatsApp, L-V 08-17).",
         ],
     ),
 
-    # ia1 — Concediu (cu form placeholders pentru date)
+    # ia1 — Concediu (max variation pe greeting + closing)
     95: (
-        "[[%s(salut)]]\n\nPAFF e în concediu între {{start:Data început|22.12}} și "
-        "{{end:Data sfârșit|07.01}}.\n\n"
-        "Comenzile primite acum intră în coadă pentru prima parte a lunii "
+        "[[%s(salut)]]\n\n[[random:PAFF e în concediu între|"
+        "Suntem în concediu între|"
+        "Echipa PAFF e în vacanță între]] "
+        "{{start:Data început|22.12}} și {{end:Data sfârșit|07.01}}.\n\n"
+        "[[random:Comenzile primite acum intră în coadă pentru prima parte a lunii|"
+        "Comenzile sosite în această perioadă se procesează după revenire, în prima parte a lunii|"
+        "Comenzile noi se rețin în coadă și intră în producție în prima parte a lunii]] "
         "{{revenire:Luna revenire|ianuarie}}, în ordinea sosirii.\n\n"
         "Răspundeți cu:\n"
         " ✓ \"păstrez\" → ținem comanda activă, trimitem proforma după revenire\n"
         " ✓ \"anulez\" → dezactivăm comanda\n\n"
-        "Sărbători liniștite!\n$|$",
+        "[[random:Sărbători liniștite!|Vă dorim sărbători frumoase!|"
+        "Vacanță plăcută și sărbători cu spor!|Sărbători cu pace și liniște!]]\n$|$",
         [
-            "[[%s(salut)]]\n\nÎn perioada {{start:Data început|22.12}} - {{end:Data sfârșit|07.01}} "
-            "PAFF e în concediu.\n\n"
-            "Comenzile primite acum se procesează după întoarcere — în prima parte a lunii "
+            # Cald
+            "[[%s(salut)]]\n\n[[random:În perioada|Între datele|"
+            "Pe perioada]] {{start:Data început|22.12}} - {{end:Data sfârșit|07.01}} "
+            "[[random:PAFF e în concediu.|suntem în vacanță.|echipa PAFF e off.]]\n\n"
+            "[[random:Comenzile primite acum se procesează după întoarcere|"
+            "Cererile sosite acum intră în lucru după revenire|"
+            "Tot ce primim acum intră în coadă pentru]] — în prima parte a lunii "
             "{{revenire:Luna revenire|ianuarie}}.\n\n"
-            "Dacă sunteți de acord, păstrăm comanda în coadă și vă trimitem proforma "
-            "imediat ce reluăm activitatea. Așteptăm un OK scurt din partea dvs.\n\n"
-            "Sărbători liniștite!\n$|$",
-            "[[%s(salut)]]\n\nSuntem în concediu între {{start:Început|22.12}} și "
-            "{{end:Sfârșit|07.01}}. Comanda dvs. intră în prima parte a lunii "
-            "{{revenire:Luna revenire|ianuarie}} — confirmați dacă o păstrăm.\n\n"
-            "Mulțumim și sărbători frumoase!\n$|$",
+            "[[random:Dacă sunteți de acord, păstrăm comanda în coadă și vă trimitem proforma "
+            "imediat ce reluăm activitatea.|"
+            "Dacă confirmați, ținem comanda activă și vă trimitem proforma imediat după concediu.|"
+            "Cu acordul dvs., păstrăm comanda și revenim cu proforma după întoarcere.]] "
+            "Așteptăm un OK scurt.\n\n"
+            "[[random:Sărbători liniștite!|Vă dorim sărbători frumoase!|"
+            "Sărbători cu pace și spor!]]\n$|$",
+            # Scurt
+            "[[%s(salut)]]\n\n[[random:Suntem în concediu între|"
+            "PAFF e off între|"
+            "Concediu între]] {{start:Început|22.12}} și {{end:Sfârșit|07.01}}. "
+            "Comanda dvs. intră în prima parte a lunii {{revenire:Luna revenire|ianuarie}} — "
+            "confirmați dacă o păstrăm.\n\n"
+            "[[random:Mulțumim și sărbători frumoase!|"
+            "Mulțumim — sărbători cu spor!|"
+            "Mulțumim și vacanță plăcută!]]\n$|$",
         ],
     ),
 
-    # nu1 — Refuz cu form placeholder pentru reason
+    # nu1 — Refuz cu form placeholder + max variation pe empathy & alternative
     112: (
-        "[[%s(salut)]]\n\nMulțumim pentru interesul acordat produselor PAFF.\n\n"
-        "Din păcate, nu putem da curs cererii dumneavoastră deoarece "
+        "[[%s(salut)]]\n\n[[random:Mulțumim pentru interesul acordat produselor PAFF.|"
+        "Mulțumim că v-ați gândit la noi.|"
+        "Vă mulțumim pentru interes.|"
+        "Mulțumim mult pentru interesul acordat produselor noastre.]]\n\n"
+        "[[random:Din păcate, nu putem da curs cererii dumneavoastră deoarece|"
+        "Din păcate, nu vă putem ajuta în acest caz —|"
+        "Ne pare rău, nu reușim să acoperim această cerere —]] "
         "{{motiv:Motivul refuzului|nu intră în portofoliul nostru}}.\n\n"
         "[[%s(sig-personal)]]\n$|$",
         [
-            "[[%s(salut)]]\n\nMulțumim că v-ați gândit la noi pentru "
-            "{{produs:Ce a cerut clientul|}}. Din păcate {{motiv:Motiv|nu producem acest tip de produs}}"
-            " — specializarea PAFF e ambalaje carton ondulat.\n\n"
-            "Pentru ce căutați, încercați [recomandare partener / motor căutare]. "
-            "Pentru cutii ondulate, suntem aici.\n\n"
+            # Cu sugestie partener + empathy
+            "[[%s(salut)]]\n\n[[random:Mulțumim că v-ați gândit la noi pentru|"
+            "Vă mulțumim pentru interesul acordat — pentru|"
+            "Apreciem că v-ați gândit la PAFF pentru]] "
+            "{{produs:Ce a cerut clientul|}}.\n\n"
+            "[[random:Din păcate|Ne pare rău|Din păcate, în acest caz]] "
+            "{{motiv:Motiv|nu producem acest tip de produs}} — "
+            "[[random:specializarea PAFF e ambalaje carton ondulat.|"
+            "noi facem doar ambalaje carton ondulat.|"
+            "ne specializăm exclusiv pe carton ondulat.]]\n\n"
+            "[[random:Pentru ce căutați, încercați [recomandare partener / motor căutare].|"
+            "Pentru această cerere, vă putem recomanda [partener] dacă e util.|"
+            "Pentru produsul respectiv, încercați [recomandare].]] "
+            "[[random:Pentru cutii ondulate, suntem aici.|"
+            "Pentru ambalaje carton ondulat, oricând.|"
+            "Cu plăcere oricând pentru cutii carton.]]\n\n"
             "[[%s(sig-personal)]]\n$|$",
-            "[[%s(salut)]]\n\nDin păcate, {{motiv:Motiv (frază completă)|nu putem da curs acestei cereri}}.\n\n"
-            "Pentru acest tip de cerere, [recomandare partener / sugestie / \"ne pare rău\"].\n\n"
+            # Scurt
+            "[[%s(salut)]]\n\n[[random:Din păcate|Ne pare rău|Din păcate, în acest caz]], "
+            "{{motiv:Motiv (frază completă)|nu putem da curs acestei cereri}}.\n\n"
+            "[[random:Pentru acest tip de cerere|Pentru această problemă|"
+            "Pentru produsul respectiv]], [recomandare partener / sugestie / \"ne pare rău\"].\n\n"
             "[[%s(sig-personal)]]\n$|$",
         ],
     ),
 
-    # mc2 — Up-sell București
+    # mc2 — Up-sell București (max variation pe framing + closing)
     108: (
-        "[[%s(salut)]]\n\nVă mulțumim pentru plată.\n\n"
-        "Adresa dumneavoastră din București ne permite să vă oferim o opțiune de "
-        "transport mai rapidă decât cea standard, folosind mașinile noastre.\n\n"
-        "Ce variantă preferați:\n\n"
+        "[[%s(salut)]]\n\n[[%s(confirm-plata)]]\n\n"
+        "[[random:Adresa dumneavoastră din București ne permite să vă oferim o opțiune de "
+        "transport mai rapidă decât cea standard, folosind mașinile noastre.|"
+        "Pentru că adresa e în București, vă putem trimite cu flota proprie — mai rapid și gratuit.|"
+        "Fiind în București, avem o opțiune mai rapidă și gratuită cu mașinile noastre, "
+        "dacă vă convine.]]\n\n"
+        "[[random:Ce variantă preferați:|Aveți două variante:|"
+        "Două opțiuni de livrare:]]\n\n"
         "----------------\n\n"
         "OPȚIUNEA 1: LIVRARE RAPIDĂ PAFF (RECOMANDAT)\n"
         " - 1-3 zile lucrătoare, fără înfoliere.\n"
@@ -335,36 +498,57 @@ SHORTCUT_REFACTORS = {
         " - 4-7 zile lucrătoare, cu AWB și înfoliere.\n"
         " - Condițiile firmei de curierat.\n\n"
         "----------------\n\n"
-        "Răspundeți cu \"PAFF\" sau \"curier\" și pregătesc expedierea.\n\n"
-        "Mulțumim!\n$|$",
+        "[[random:Răspundeți cu \"PAFF\" sau \"curier\" și pregătesc expedierea.|"
+        "Spuneți-mi \"PAFF\" sau \"curier\" și pregătim expedierea.|"
+        "Un cuvânt scurt — \"PAFF\" sau \"curier\" — și pregătesc totul.]]\n\n"
+        "[[%s(mts)]]\n$|$",
         [
-            "[[%s(salut)]]\n\nMulțumim pentru plată!\n\n"
-            "Pentru București, vă putem trimite cu mașinile noastre — vă scapă de costul curier "
-            "și vă scurtează termenul.\n\n"
+            # Cald — emphasis on benefit
+            "[[%s(salut)]]\n\n[[random:Mulțumim pentru plată!|"
+            "Plata e confirmată — mulțumim!|"
+            "Plata din [[date:DD.MM]] a intrat — mulțumim!]]\n\n"
+            "[[random:Pentru București, vă putem trimite cu mașinile noastre — vă scapă de costul "
+            "curier și vă scurtează termenul.|"
+            "Fiind în București, vă putem servi cu flota proprie — fără cost de curier și "
+            "ajunge mai rapid.|"
+            "Pentru zona dvs., flota PAFF e o opțiune mai bună: gratuit și mai rapid.]]\n\n"
             "OPȚIUNEA 1 — LIVRARE PAFF (recomandat: rapid, gratuit)\n"
             " - 1-3 zile lucrătoare, fără înfoliere\n"
             " - șoferul predă la parcare/curte (nu urcă în clădire)\n\n"
             "OPȚIUNEA 2 — CURIER STANDARD\n"
             " - 4-7 zile lucrătoare, cu AWB și înfoliere\n\n"
-            "Care preferați? Aștept un OK scurt și pregătesc expedierea.\n\nMulțumim!\n$|$",
-            "[[%s(salut)]]\n\nPlata confirmată. Pentru București vă putem trimite cu flota proprie:\n"
+            "[[random:Care preferați? Aștept un OK scurt și pregătesc expedierea.|"
+            "Care variantă alegeți? Pregătesc expedierea cum confirmați.|"
+            "Spuneți-mi care vă convine și pregătim totul.]]\n\n[[%s(mts)]]\n$|$",
+            # Scurt
+            "[[%s(salut)]]\n\n[[random:Plata confirmată.|Plata a intrat.|"
+            "Plata e în cont, mulțumim.]] "
+            "[[random:Pentru București vă putem trimite cu flota proprie:|"
+            "În București avem 2 opțiuni:|Pentru zona dvs.:]]\n"
             " 1) PAFF: 1-3 zile, gratuit, predare parcare/curte.\n"
             " 2) Curier: 4-7 zile, cu înfoliere și AWB.\n\n"
-            "Care preferați?\n\nMulțumim!\n$|$",
+            "[[random:Care preferați?|Care variantă alegeți?|Care e ok?]]\n\n"
+            "[[%s(mts_short)]]\n$|$",
         ],
     ),
 
-    # fb — Facturare Boxpack (cu var pentru IBAN)
+    # fb — Facturare Boxpack (max variation)
     88: (
-        "Facturarea se face pe firma noastră Boxpack SRL.\n\n"
-        "Plata se face în contul ING: [[var:iban_boxpack]]\n\n"
-        "Beneficiar: BOXPACK SRL",
+        "[[random:Facturarea se face pe firma noastră Boxpack SRL.|"
+        "Pentru această comandă, factura va fi pe firma noastră Boxpack SRL.|"
+        "Factura emitem pe firma Boxpack SRL.]]\n\n"
+        "[[random:Plata se face în contul ING:|Cont bancar (ING):|"
+        "IBAN ING:]] [[var:iban_boxpack]]\n\nBeneficiar: BOXPACK SRL",
         [
-            "Pentru această comandă, facturarea se face pe firma noastră Boxpack SRL.\n\n"
+            "[[random:Pentru această comandă, facturarea se face pe firma noastră Boxpack SRL.|"
+            "Factura va fi emisă pe firma Boxpack SRL pentru această comandă.|"
+            "Detalii facturare: pe firma Boxpack SRL.]]\n\n"
             "Cont bancar (ING):\n[[var:iban_boxpack]]\n\n"
             "Beneficiar: BOXPACK SRL\n\n"
-            "(IBAN-ul se poate folosi direct, fără spații, dacă aplicația dvs. de banking "
-            "nu acceptă formatul cu spații.)",
+            "[[random:(IBAN-ul se poate folosi direct, fără spații, dacă aplicația dvs. de banking "
+            "nu acceptă formatul cu spații.)|"
+            "(Dacă banking-ul dvs. nu acceptă spații în IBAN, folosiți forma fără spații.)|"
+            "(IBAN-ul funcționează în orice format de banking.)]]",
             "Factură pe Boxpack SRL.\nIBAN ING: [[var:iban_boxpack]]",
         ],
     ),
