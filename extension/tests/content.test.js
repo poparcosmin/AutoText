@@ -489,6 +489,21 @@ describe('content.js — text expansion core', () => {
       expect(content.processDateMacros('[[date+1y:DD.MM.YYYY]]', fixedDate)).toBe('24.04.2027');
     });
 
+    it('[[date+5wd]] skips weekends — Friday 24.04 + 5 working days = Friday 01.05', () => {
+      // Fri 24.04.2026 → Mon 27 → Tue 28 → Wed 29 → Thu 30 → Fri 01.05
+      expect(content.processDateMacros('[[date+5wd:DD.MM.YYYY]]', fixedDate)).toBe('01.05.2026');
+    });
+
+    it('[[date+1wd]] from Friday lands on Monday', () => {
+      // Fri 24.04.2026 + 1 working day = Mon 27.04.2026
+      expect(content.processDateMacros('[[date+1wd:DD.MM.YYYY]]', fixedDate)).toBe('27.04.2026');
+    });
+
+    it('[[date-3wd]] subtracts working days', () => {
+      // Fri 24.04 → Thu 23 → Wed 22 → Tue 21
+      expect(content.processDateMacros('[[date-3wd:DD.MM.YYYY]]', fixedDate)).toBe('21.04.2026');
+    });
+
     it('[[time]] returns HH:mm', () => {
       expect(content.processDateMacros('[[time]]', fixedDate)).toBe('14:30');
     });
@@ -641,6 +656,40 @@ describe('content.js — text expansion core', () => {
       // — should gracefully return empty string
       const result = await content.processSystemVars('Hi [[recipient]]', friday);
       expect(result).toBe('Hi ');
+    });
+
+    it('[[recipient_first]] returns empty when no site parser matches', async () => {
+      // Mirror the [[recipient]] empty-fallback behaviour for the first-name
+      // variant — used in templates that want graceful no-op when Gmail
+      // recipient extraction fails.
+      const result = await content.processSystemVars('Bună [[recipient_first]]', friday);
+      expect(result).toBe('Bună ');
+    });
+
+    it('[[recipient_first]] capitalizes the first word from a stub parser', async () => {
+      // Inject a stub site parser that returns "aura chițulescu" — the
+      // resolver should return only the first word capitalized.
+      const original = global.getSiteValue;
+      global.getSiteValue = (name) => name === 'recipient' ? 'aura chițulescu' : '';
+      try {
+        const result = await content.processSystemVars('Bună [[recipient_first]]', friday);
+        expect(result).toBe('Bună Aura');
+      } finally {
+        global.getSiteValue = original;
+      }
+    });
+
+    it('[[recipient_first]] strips dotted email-derived names', async () => {
+      // Gmail parser falls back to email local-part when no `name` attribute
+      // is present, e.g. "ana.maria" — we want just "Ana".
+      const original = global.getSiteValue;
+      global.getSiteValue = (name) => name === 'recipient' ? 'ana.maria' : '';
+      try {
+        const result = await content.processSystemVars('Bună [[recipient_first]]', friday);
+        expect(result).toBe('Bună Ana');
+      } finally {
+        global.getSiteValue = original;
+      }
     });
   });
 

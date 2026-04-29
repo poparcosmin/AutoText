@@ -435,11 +435,12 @@ function setNativeValue(element, value) {
 //   [[date:short|medium|long]]     → localized format
 //   [[date:DD.MM.YYYY]]            → custom tokens: YYYY MM DD HH mm
 //   [[date+7d]], [[date-30d]]       → offset by days (d), weeks (w), months (m), years (y)
+//   [[date+5wd]]                    → offset by working days (skip Saturday/Sunday)
 //   [[date+7d:DD.MM.YYYY]]          → offset + format combined
 //   [[time]]                        → HH:mm
 // Unknown tokens are preserved so snippets don't silently mangle content.
 // ----------------------------------------------------------------------------
-const DATE_MACRO_RE = /\[\[(date|time)(?:([+-])(\d+)([dwmy]))?(?::([^\]]+))?\]\]/g;
+const DATE_MACRO_RE = /\[\[(date|time)(?:([+-])(\d+)(wd|[dwmy]))?(?::([^\]]+))?\]\]/g;
 
 function _applyOffset(date, sign, amount, unit) {
   const mult = sign === '-' ? -1 : 1;
@@ -450,6 +451,20 @@ function _applyOffset(date, sign, amount, unit) {
     case 'w': d.setDate(d.getDate() + n * 7); break;
     case 'm': d.setMonth(d.getMonth() + n); break;
     case 'y': d.setFullYear(d.getFullYear() + n); break;
+    case 'wd': {
+      // Working-days offset — skip Saturday (6) and Sunday (0). Walks
+      // forward/backward one day at a time and only counts business
+      // days. n=0 returns same date even if today is weekend (caller's
+      // responsibility to handle that semantic).
+      let remaining = Math.abs(n);
+      const step = n >= 0 ? 1 : -1;
+      while (remaining > 0) {
+        d.setDate(d.getDate() + step);
+        const dow = d.getDay();
+        if (dow !== 0 && dow !== 6) remaining--;
+      }
+      break;
+    }
   }
   return d;
 }
@@ -589,7 +604,7 @@ function processDateMacros(input, now = new Date()) {
 // passwords, tokens, private text). The risk is too high for an
 // always-on auto-expansion. Bring it back only with explicit consent
 // — e.g. a confirm dialog or a separate `[[clipboard:confirm]]` flavour.
-const SYSTEM_VAR_RE = /\[\[(day|greeting|user|random|select|recipient|var)(?::([^\]]*))?\]\]/g;
+const SYSTEM_VAR_RE = /\[\[(day|greeting|user|random|select|recipient|recipient_first|var)(?::([^\]]*))?\]\]/g;
 
 const ROMANIAN_DAY_NAMES = [
   'Duminică', 'Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă'
@@ -668,6 +683,21 @@ function _readRecipient() {
     return getSiteValue('recipient');
   }
   return '';
+}
+
+// Return only the first word from the recipient name. "Aura Chițulescu" → "Aura",
+// "ana.maria@firma.ro" → "Ana" (heuristic: split on whitespace, take token,
+// then if it contains a dot strip everything after — handles email-derived
+// names where the parser couldn't pull a "name" attribute and fell back to
+// the email local-part).
+function _readRecipientFirst() {
+  const full = _readRecipient();
+  if (!full) return '';
+  const firstWord = full.trim().split(/\s+/)[0] || '';
+  // Strip trailing dotted segments (e.g. "ana.maria" → "ana")
+  const trimmed = firstWord.split('.')[0];
+  if (!trimmed) return '';
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
 }
 
 // Resolve [[var:name]] from the user's saved variables (synced via
@@ -756,6 +786,7 @@ async function processSystemVars(input, now = new Date()) {
         case 'user': replacements.push(await _readUsername()); break;
         case 'select': replacements.push(_promptSelect(args || '')); break;
         case 'recipient': replacements.push(_readRecipient()); break;
+        case 'recipient_first': replacements.push(_readRecipientFirst()); break;
         case 'var': replacements.push(await _readUserVariable((args || '').trim())); break;
         default: replacements.push('');
       }
