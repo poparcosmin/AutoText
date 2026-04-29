@@ -628,7 +628,9 @@ async function _readUsername() {
   if (!_runtimeAlive()) return '';
   try {
     const stored = await chrome.storage.local.get('username');
-    return (stored && stored.username) || '';
+    const raw = (stored && stored.username) || '';
+    if (!raw) return '';
+    return raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
   } catch {
     return '';
   }

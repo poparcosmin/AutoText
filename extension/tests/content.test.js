@@ -549,9 +549,9 @@ describe('content.js — text expansion core', () => {
       expect(await content.processSystemVars('[[greeting]]', evening)).toBe('Bună seara');
     });
 
-    it('[[user]] reads from chrome.storage.local', async () => {
+    it('[[user]] reads from chrome.storage.local with first-letter capitalize', async () => {
       const result = await content.processSystemVars('Salut [[user]]', friday);
-      expect(result).toBe('Salut cosmin');
+      expect(result).toBe('Salut Cosmin');
     });
 
     it('[[user]] returns empty string when storage missing', async () => {
@@ -577,7 +577,7 @@ describe('content.js — text expansion core', () => {
 
     it('handles multiple system vars in one string', async () => {
       const result = await content.processSystemVars('[[greeting]] [[user]]!', friday);
-      expect(result).toBe('Bună ziua cosmin!');
+      expect(result).toBe('Bună ziua Cosmin!');
     });
 
     it('preserves unknown system vars', async () => {

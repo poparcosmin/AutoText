@@ -44,6 +44,28 @@ USER_VARIABLES = {
 }
 
 
+# Per-user variables — different value per user (signature data).
+# Keyed by username (must match auth_user.username), then var_name → value.
+PER_USER_VARIABLES = {
+    "cosmin": {
+        "my_name": "Popa R. Cosmin",
+        "my_phone": "0756.562.229",
+    },
+    "bogdan": {
+        "my_name": "Bogdan Popa",
+        "my_phone": "0756.119.876",
+    },
+    "aura": {
+        "my_name": "Aura Chițulescu",
+        "my_phone": "074.466.7233",
+    },
+    "florian": {
+        "my_name": "Popa Florian",
+        "my_phone": "0756.119.875",
+    },
+}
+
+
 def _extract_iban_from_fb(con: sqlite3.Connection) -> str | None:
     """Read IBAN from fb shortcut. Falls back to backup file if current `fb`
     has been refactored to use [[var:iban_boxpack]] (chicken-and-egg).
@@ -93,8 +115,11 @@ ATOMIC_SNIPPETS = {
     "eta-curier": "Termen estimat livrare: 4-7 zile lucrătoare.",
     "eta-paff": "Termen estimat livrare: 1-3 zile lucrătoare (București).",
 
-    # Signatures personalizate per user via [[user]] + [[var:my_phone]]
-    "sig-personal": "Cu stimă,\n[[user]]\nPAFF — [[var:tel_office]]",
+    # Signatures — per-user via [[var:my_name]] + [[var:my_phone]]
+    # [[user]] retornează username capitalizat (Aura, Bogdan, Cosmin, Florian)
+    # [[var:my_name]] / [[var:my_phone]] sunt per-user (PER_USER_VARIABLES)
+    "sig-personal": "Cu stimă,\n[[var:my_name]]\n[[var:my_phone]]",
+    "sig-short": "Cu stimă,\n[[user]]",
     "sig-equipe": "Cu stimă,\nEchipa PAFF",
 
     # Tracking links per courier
@@ -282,17 +307,17 @@ SHORTCUT_REFACTORS = {
         "[[%s(salut)]]\n\nMulțumim pentru interesul acordat produselor PAFF.\n\n"
         "Din păcate, nu putem da curs cererii dumneavoastră deoarece "
         "{{motiv:Motivul refuzului|nu intră în portofoliul nostru}}.\n\n"
-        "[[%s(sig-equipe)]]\n$|$",
+        "[[%s(sig-personal)]]\n$|$",
         [
             "[[%s(salut)]]\n\nMulțumim că v-ați gândit la noi pentru "
             "{{produs:Ce a cerut clientul|}}. Din păcate {{motiv:Motiv|nu producem acest tip de produs}}"
             " — specializarea PAFF e ambalaje carton ondulat.\n\n"
             "Pentru ce căutați, încercați [recomandare partener / motor căutare]. "
             "Pentru cutii ondulate, suntem aici.\n\n"
-            "[[%s(sig-equipe)]]\n$|$",
+            "[[%s(sig-personal)]]\n$|$",
             "[[%s(salut)]]\n\nDin păcate, {{motiv:Motiv (frază completă)|nu putem da curs acestei cereri}}.\n\n"
             "Pentru acest tip de cerere, [recomandare partener / sugestie / \"ne pare rău\"].\n\n"
-            "[[%s(sig-equipe)]]\n$|$",
+            "[[%s(sig-personal)]]\n$|$",
         ],
     ),
 
@@ -347,23 +372,39 @@ SHORTCUT_REFACTORS = {
 
 
 def upsert_user_variables(con: sqlite3.Connection):
-    """Insert/update shared variables for all active users."""
+    """Insert/update shared variables on all users + per-user signature data."""
     cur = con.cursor()
-    cur.execute("SELECT id FROM auth_user WHERE is_active = 1;")
-    user_ids = [r[0] for r in cur.fetchall()]
+    cur.execute("SELECT id, username FROM auth_user WHERE is_active = 1;")
+    users = cur.fetchall()  # [(id, username), ...]
 
-    # Compose effective vars: static + dynamically extracted IBAN
-    effective = dict(USER_VARIABLES)
+    # Compose effective shared vars: static + dynamically extracted IBAN
+    effective_shared = dict(USER_VARIABLES)
     iban = _extract_iban_from_fb(con)
     if iban:
-        effective["iban_boxpack"] = iban
+        effective_shared["iban_boxpack"] = iban
     else:
         print("  ⚠️  fb shortcut missing or no IBAN matched — iban_boxpack skipped")
 
-    print(f"  Setting {len(effective)} vars × {len(user_ids)} users = "
-          f"{len(effective) * len(user_ids)} INSERTs/UPDATEs")
-    for uid in user_ids:
-        for name, value in effective.items():
+    shared_count = len(effective_shared) * len(users)
+    per_user_count = sum(
+        len(PER_USER_VARIABLES.get(uname, {})) for _, uname in users
+    )
+    print(f"  Shared: {len(effective_shared)} × {len(users)} = {shared_count} ops")
+    print(f"  Per-user signatures: {per_user_count} ops")
+
+    for uid, uname in users:
+        # Shared vars (same value all users)
+        for name, value in effective_shared.items():
+            cur.execute(
+                "INSERT INTO textsync_uservariable (user_id, name, value, updated_at) "
+                "VALUES (?, ?, ?, datetime('now')) "
+                "ON CONFLICT(user_id, name) DO UPDATE SET "
+                "value = excluded.value, updated_at = datetime('now');",
+                (uid, name, value),
+            )
+        # Per-user vars (different value per user)
+        per_user = PER_USER_VARIABLES.get(uname, {})
+        for name, value in per_user.items():
             cur.execute(
                 "INSERT INTO textsync_uservariable (user_id, name, value, updated_at) "
                 "VALUES (?, ?, ?, datetime('now')) "
