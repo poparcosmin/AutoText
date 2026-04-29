@@ -612,9 +612,30 @@ const ROMANIAN_DAY_NAMES = [
 
 function _greeting(date) {
   const h = date.getHours();
-  if (h < 11) return 'Bună dimineața';
-  if (h < 18) return 'Bună ziua';
-  return 'Bună seara';
+  // Base greeting picks on hour-of-day. Seasonal flavour is appended only
+  // when the calendar window is unambiguous (winter holidays, new year,
+  // summer vacation) — short windows so it doesn't sound off-context the
+  // rest of the year.
+  let base;
+  if (h < 11) base = 'Bună dimineața';
+  else if (h < 18) base = 'Bună ziua';
+  else base = 'Bună seara';
+
+  const month = date.getMonth(); // 0-indexed: Jan=0, Dec=11
+  const day = date.getDate();
+  // Late December (15-31) — pre-Christmas
+  if (month === 11 && day >= 15) {
+    return base + ' și sărbători apropiate';
+  }
+  // Early January (1-7) — new year wishes
+  if (month === 0 && day <= 7) {
+    return base + ' și un an cu spor';
+  }
+  // Mid July through end of August — summer vacation window
+  if ((month === 6 && day >= 15) || month === 7) {
+    return base + ' și vacanță plăcută';
+  }
+  return base;
 }
 
 function _randomPick(args) {

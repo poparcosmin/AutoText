@@ -564,6 +564,30 @@ describe('content.js — text expansion core', () => {
       expect(await content.processSystemVars('[[greeting]]', evening)).toBe('Bună seara');
     });
 
+    it('[[greeting]] in late December appends "și sărbători apropiate"', async () => {
+      // 20 December 2026 at 14:00 — Christmas window
+      const winter = new Date(2026, 11, 20, 14, 0);
+      expect(await content.processSystemVars('[[greeting]]', winter)).toBe(
+        'Bună ziua și sărbători apropiate'
+      );
+    });
+
+    it('[[greeting]] in early January appends "și un an cu spor"', async () => {
+      // 3 January 2027 at 09:00 — new year window
+      const newYear = new Date(2027, 0, 3, 9, 0);
+      expect(await content.processSystemVars('[[greeting]]', newYear)).toBe(
+        'Bună dimineața și un an cu spor'
+      );
+    });
+
+    it('[[greeting]] in August appends "și vacanță plăcută"', async () => {
+      // 15 August 2026 at 19:00 — summer vacation window
+      const summer = new Date(2026, 7, 15, 19, 0);
+      expect(await content.processSystemVars('[[greeting]]', summer)).toBe(
+        'Bună seara și vacanță plăcută'
+      );
+    });
+
     it('[[user]] reads from chrome.storage.local with first-letter capitalize', async () => {
       const result = await content.processSystemVars('Salut [[user]]', friday);
       expect(result).toBe('Salut Cosmin');
