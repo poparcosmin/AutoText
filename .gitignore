@@ -224,8 +224,8 @@ __marimo__/
 .env
 
 **:Zone.Identifier
+# Historical: 0004 was rebased and the rewritten version lives in 0005+.
 textsync/migrations/0004_alter_shortcut_value.py
-textsync/migrations/*
 db.sqlite3
 
 # Research — data + credentials
