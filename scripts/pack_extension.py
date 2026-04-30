@@ -17,7 +17,6 @@ import argparse
 import hashlib
 import json
 import os
-import shutil
 import struct
 import zipfile
 from datetime import datetime
@@ -27,6 +26,7 @@ try:
     from cryptography.hazmat.primitives import hashes, serialization
     from cryptography.hazmat.primitives.asymmetric import rsa, padding
     from cryptography.hazmat.backends import default_backend
+
     HAS_CRYPTO = True
 except ImportError:
     HAS_CRYPTO = False
@@ -44,24 +44,24 @@ UPDATE_URL = "https://autotext.zua.ro/extension"
 def get_manifest_version():
     """Read version from manifest.json"""
     manifest_path = EXTENSION_DIR / "manifest.json"
-    with open(manifest_path, 'r', encoding='utf-8') as f:
+    with open(manifest_path, "r", encoding="utf-8") as f:
         manifest = json.load(f)
-    return manifest.get('version', '1.0.0')
+    return manifest.get("version", "1.0.0")
 
 
 def update_manifest_version(new_version):
     """Update version in manifest.json"""
     manifest_path = EXTENSION_DIR / "manifest.json"
-    with open(manifest_path, 'r', encoding='utf-8') as f:
+    with open(manifest_path, "r", encoding="utf-8") as f:
         manifest = json.load(f)
 
-    old_version = manifest.get('version', '1.0.0')
-    manifest['version'] = new_version
+    old_version = manifest.get("version", "1.0.0")
+    manifest["version"] = new_version
 
     # Remove update_url if present (not allowed for Chrome Web Store)
-    manifest.pop('update_url', None)
+    manifest.pop("update_url", None)
 
-    with open(manifest_path, 'w', encoding='utf-8') as f:
+    with open(manifest_path, "w", encoding="utf-8") as f:
         json.dump(manifest, f, indent=2)
 
     return old_version
@@ -71,20 +71,34 @@ def create_zip(output_path):
     """Create a ZIP file of the extension, skipping dev-only files."""
     # Directories never shipped to users
     EXCLUDE_DIRS = {
-        '.git', '__pycache__', 'tests', 'node_modules', 'coverage',
+        ".git",
+        "__pycache__",
+        "tests",
+        "node_modules",
+        "coverage",
     }
     # Exact filenames never shipped
     EXCLUDE_FILES = {
-        '.DS_Store', 'Thumbs.db', '.env', '.eslintrc', '.eslintrc.js',
-        '.eslintrc.json', 'package.json', 'pnpm-lock.yaml', 'yarn.lock',
-        'package-lock.json', 'jest.config.js', 'babel.config.js',
+        ".DS_Store",
+        "Thumbs.db",
+        ".env",
+        ".eslintrc",
+        ".eslintrc.js",
+        ".eslintrc.json",
+        "package.json",
+        "pnpm-lock.yaml",
+        "yarn.lock",
+        "package-lock.json",
+        "jest.config.js",
+        "babel.config.js",
         # Dev-only content script variants — never ship to users
-        'content-debug.js', 'content-test.js',
+        "content-debug.js",
+        "content-test.js",
     }
     # Suffix-based exclusions (compiled/test/debug artifacts)
-    EXCLUDE_SUFFIXES = ('.pyc', '.test.js', '.spec.js', '.map')
+    EXCLUDE_SUFFIXES = (".pyc", ".test.js", ".spec.js", ".map")
 
-    with zipfile.ZipFile(output_path, 'w', zipfile.ZIP_DEFLATED) as zf:
+    with zipfile.ZipFile(output_path, "w", zipfile.ZIP_DEFLATED) as zf:
         for root, dirs, files in os.walk(EXTENSION_DIR):
             # Filter directories in-place so os.walk skips them
             dirs[:] = [d for d in dirs if d not in EXCLUDE_DIRS]
@@ -109,28 +123,26 @@ def get_or_create_key():
         return None
 
     if KEY_FILE.exists():
-        with open(KEY_FILE, 'rb') as f:
+        with open(KEY_FILE, "rb") as f:
             private_key = serialization.load_pem_private_key(
-                f.read(),
-                password=None,
-                backend=default_backend()
+                f.read(), password=None, backend=default_backend()
             )
         print(f"Loaded existing key from {KEY_FILE}")
     else:
         # Generate new RSA key
         private_key = rsa.generate_private_key(
-            public_exponent=65537,
-            key_size=2048,
-            backend=default_backend()
+            public_exponent=65537, key_size=2048, backend=default_backend()
         )
 
         # Save the key
-        with open(KEY_FILE, 'wb') as f:
-            f.write(private_key.private_bytes(
-                encoding=serialization.Encoding.PEM,
-                format=serialization.PrivateFormat.PKCS8,
-                encryption_algorithm=serialization.NoEncryption()
-            ))
+        with open(KEY_FILE, "wb") as f:
+            f.write(
+                private_key.private_bytes(
+                    encoding=serialization.Encoding.PEM,
+                    format=serialization.PrivateFormat.PKCS8,
+                    encryption_algorithm=serialization.NoEncryption(),
+                )
+            )
 
         print(f"Generated new key: {KEY_FILE}")
         print("IMPORTANT: Keep this key safe! You need it for updates.")
@@ -144,8 +156,9 @@ def get_extension_id(public_key_bytes):
     digest = hashlib.sha256(public_key_bytes).digest()[:16]
 
     # Chrome's alphabet: a-p (instead of 0-9a-f)
-    extension_id = ''.join(chr(ord('a') + (b >> 4)) + chr(ord('a') + (b & 0xf))
-                          for b in digest)
+    extension_id = "".join(
+        chr(ord("a") + (b >> 4)) + chr(ord("a") + (b & 0xF)) for b in digest
+    )
     return extension_id
 
 
@@ -156,14 +169,14 @@ def create_crx3(zip_path, output_path, private_key):
         return None
 
     # Read ZIP content
-    with open(zip_path, 'rb') as f:
+    with open(zip_path, "rb") as f:
         zip_content = f.read()
 
     # Get public key in DER format
     public_key = private_key.public_key()
     public_key_bytes = public_key.public_bytes(
         encoding=serialization.Encoding.DER,
-        format=serialization.PublicFormat.SubjectPublicKeyInfo
+        format=serialization.PublicFormat.SubjectPublicKeyInfo,
     )
 
     # Calculate extension ID
@@ -175,11 +188,7 @@ def create_crx3(zip_path, output_path, private_key):
     # which Chrome still supports for unpacked extensions
 
     # Sign the ZIP content
-    signature = private_key.sign(
-        zip_content,
-        padding.PKCS1v15(),
-        hashes.SHA256()
-    )
+    signature = private_key.sign(zip_content, padding.PKCS1v15(), hashes.SHA256())
 
     # CRX2 format (simpler, still works):
     # - Magic: "Cr24" (4 bytes)
@@ -190,15 +199,15 @@ def create_crx3(zip_path, output_path, private_key):
     # - Signature
     # - ZIP content
 
-    with open(output_path, 'wb') as f:
+    with open(output_path, "wb") as f:
         # Magic number
-        f.write(b'Cr24')
+        f.write(b"Cr24")
         # Version
-        f.write(struct.pack('<I', 2))
+        f.write(struct.pack("<I", 2))
         # Public key length
-        f.write(struct.pack('<I', len(public_key_bytes)))
+        f.write(struct.pack("<I", len(public_key_bytes)))
         # Signature length
-        f.write(struct.pack('<I', len(signature)))
+        f.write(struct.pack("<I", len(signature)))
         # Public key
         f.write(public_key_bytes)
         # Signature
@@ -212,16 +221,16 @@ def create_crx3(zip_path, output_path, private_key):
 
 def create_updates_xml(extension_id, version, output_dir):
     """Create updates.xml for self-hosted auto-updates"""
-    xml_content = f'''<?xml version='1.0' encoding='UTF-8'?>
+    xml_content = f"""<?xml version='1.0' encoding='UTF-8'?>
 <gupdate xmlns='http://www.google.com/update2/response' protocol='2.0'>
   <app appid='{extension_id}'>
     <updatecheck codebase='{UPDATE_URL}/textsync-{version}.crx' version='{version}' />
   </app>
 </gupdate>
-'''
+"""
 
     output_path = output_dir / "updates.xml"
-    with open(output_path, 'w', encoding='utf-8') as f:
+    with open(output_path, "w", encoding="utf-8") as f:
         f.write(xml_content)
 
     print(f"Created updates.xml: {output_path}")
@@ -230,7 +239,7 @@ def create_updates_xml(extension_id, version, output_dir):
 
 def create_install_instructions(version, extension_id, output_dir):
     """Create installation instructions file"""
-    content = f'''# TextSync Extension v{version}
+    content = f"""# TextSync Extension v{version}
 
 ## Installation Instructions
 
@@ -258,25 +267,34 @@ Update URL: `{UPDATE_URL}/updates.xml`
 
 ## Version History
 
-- {version} - {datetime.now().strftime('%Y-%m-%d')}
+- {version} - {datetime.now().strftime("%Y-%m-%d")}
 
 ---
 Generated: {datetime.now().isoformat()}
-'''
+"""
 
     output_path = output_dir / "README.txt"
-    with open(output_path, 'w', encoding='utf-8') as f:
+    with open(output_path, "w", encoding="utf-8") as f:
         f.write(content)
 
     print(f"Created README: {output_path}")
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Pack Chrome extension for distribution')
-    parser.add_argument('--version', '-v', help='Version number (default: from manifest.json)')
-    parser.add_argument('--output-dir', '-o', help='Output directory', default=str(OUTPUT_DIR))
-    parser.add_argument('--bump', choices=['major', 'minor', 'patch'],
-                        help='Bump version (major.minor.patch)')
+    parser = argparse.ArgumentParser(
+        description="Pack Chrome extension for distribution"
+    )
+    parser.add_argument(
+        "--version", "-v", help="Version number (default: from manifest.json)"
+    )
+    parser.add_argument(
+        "--output-dir", "-o", help="Output directory", default=str(OUTPUT_DIR)
+    )
+    parser.add_argument(
+        "--bump",
+        choices=["major", "minor", "patch"],
+        help="Bump version (major.minor.patch)",
+    )
     args = parser.parse_args()
 
     # Ensure output directory exists
@@ -287,18 +305,18 @@ def main():
     current_version = get_manifest_version()
 
     if args.bump:
-        parts = [int(x) for x in current_version.split('.')]
+        parts = [int(x) for x in current_version.split(".")]
         while len(parts) < 3:
             parts.append(0)
 
-        if args.bump == 'major':
+        if args.bump == "major":
             parts = [parts[0] + 1, 0, 0]
-        elif args.bump == 'minor':
+        elif args.bump == "minor":
             parts = [parts[0], parts[1] + 1, 0]
         else:  # patch
             parts = [parts[0], parts[1], parts[2] + 1]
 
-        version = '.'.join(str(x) for x in parts)
+        version = ".".join(str(x) for x in parts)
         update_manifest_version(version)
         print(f"Bumped version: {current_version} -> {version}")
     elif args.version:
@@ -328,13 +346,13 @@ def main():
         create_install_instructions(version, extension_id, output_dir)
 
     # Summary
-    print("\n" + "="*50)
+    print("\n" + "=" * 50)
     print("BUILD COMPLETE")
-    print("="*50)
+    print("=" * 50)
     print(f"Version: {version}")
     if extension_id:
         print(f"Extension ID: {extension_id}")
-    print(f"\nOutput files:")
+    print("\nOutput files:")
     print(f"  - {zip_path}")
     if extension_id:
         print(f"  - {crx_path}")
@@ -342,5 +360,5 @@ def main():
     print(f"\nTo deploy, upload files to: {UPDATE_URL}/")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

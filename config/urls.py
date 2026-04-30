@@ -14,21 +14,22 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+
 from django.conf import settings
 from django.contrib import admin
 from django.urls import path, include
 from textsync.views.health import privacy_view, help_view, landing_view
 
 urlpatterns = [
-    path('', landing_view, name='landing'),
-    path('admin/', admin.site.urls),
-    path('api/', include('textsync.urls')),
-    path('tinymce/', include('tinymce.urls')),
-    path('privacy.html', privacy_view, name='privacy'),
-    path('help', help_view, name='help'),
-    path('help/', help_view),  # tolerate trailing slash
+    path("", landing_view, name="landing"),
+    path("admin/", admin.site.urls),
+    path("api/", include("textsync.urls")),
+    path("tinymce/", include("tinymce.urls")),
+    path("privacy.html", privacy_view, name="privacy"),
+    path("help", help_view, name="help"),
+    path("help/", help_view),  # tolerate trailing slash
 ]
 
 # django-silk profiling dashboard — enabled via ENABLE_SILK env var
-if 'silk' in settings.INSTALLED_APPS:
-    urlpatterns += [path('silk/', include('silk.urls', namespace='silk'))]
+if "silk" in settings.INSTALLED_APPS:
+    urlpatterns += [path("silk/", include("silk.urls", namespace="silk"))]

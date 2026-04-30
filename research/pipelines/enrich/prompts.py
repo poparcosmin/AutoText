@@ -3,6 +3,7 @@
 Fiecare prompt e auto-suficient: include taxonomia, instructiunile, formatul de output.
 Versionat in `_classifier_versions` din output JSON.
 """
+
 from __future__ import annotations
 
 CLASSIFIER_VERSION = "v1.0-gemini-cli"

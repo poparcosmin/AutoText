@@ -5,6 +5,7 @@ citeste/scrie date din corpus/raw/ TREBUIE sa importe de aici.
 
 Versiune schema: 1.0
 """
+
 from __future__ import annotations
 
 from datetime import datetime

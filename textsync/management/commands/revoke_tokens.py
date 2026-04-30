@@ -10,6 +10,7 @@ Examples:
     uv run python manage.py revoke_tokens cosmin bogdan aura
     uv run python manage.py revoke_tokens --all   # nuclear: every user
 """
+
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand, CommandError
 
@@ -37,9 +38,7 @@ class Command(BaseCommand):
         usernames = options["usernames"]
 
         if not revoke_all and not usernames:
-            raise CommandError(
-                "Specify usernames or pass --all. Nothing was revoked."
-            )
+            raise CommandError("Specify usernames or pass --all. Nothing was revoked.")
 
         if revoke_all:
             qs = ExpiringToken.objects.all()
@@ -61,12 +60,8 @@ class Command(BaseCommand):
 
         count = qs.count()
         if count == 0:
-            self.stdout.write(self.style.WARNING(
-                f"No active tokens for {label}."
-            ))
+            self.stdout.write(self.style.WARNING(f"No active tokens for {label}."))
             return
 
         qs.delete()
-        self.stdout.write(self.style.SUCCESS(
-            f"Revoked {count} token(s) for {label}."
-        ))
+        self.stdout.write(self.style.SUCCESS(f"Revoked {count} token(s) for {label}."))

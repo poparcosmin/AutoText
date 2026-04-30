@@ -36,7 +36,9 @@ class Command(BaseCommand):
             owner = User.objects.get(username=owner_username)
             self.stdout.write(f"✅ Using owner: {owner.username}\n")
         except User.DoesNotExist:
-            self.stdout.write(self.style.ERROR(f"❌ User '{owner_username}' not found!"))
+            self.stdout.write(
+                self.style.ERROR(f"❌ User '{owner_username}' not found!")
+            )
             self.stdout.write("   Available users:")
             for u in User.objects.all():
                 self.stdout.write(f"   - {u.username}")
@@ -48,7 +50,9 @@ class Command(BaseCommand):
 
         if sets_count > 0:
             self.stdout.write(
-                self.style.WARNING(f"\n⚠️  Found {sets_count} ShortcutSet(s) without owner:")
+                self.style.WARNING(
+                    f"\n⚠️  Found {sets_count} ShortcutSet(s) without owner:"
+                )
             )
             for s in sets_without_owner:
                 self.stdout.write(f"  - {s.name} ({s.get_set_type_display()})")
@@ -60,7 +64,9 @@ class Command(BaseCommand):
                 )
             else:
                 self.stdout.write(
-                    self.style.WARNING(f"🔍 DRY RUN - Would update {sets_count} ShortcutSet(s)")
+                    self.style.WARNING(
+                        f"🔍 DRY RUN - Would update {sets_count} ShortcutSet(s)"
+                    )
                 )
         else:
             self.stdout.write(self.style.SUCCESS("✅ All ShortcutSets have owners!"))
@@ -71,7 +77,9 @@ class Command(BaseCommand):
 
         if shortcuts_count > 0:
             self.stdout.write(
-                self.style.WARNING(f"\n⚠️  Found {shortcuts_count} Shortcut(s) without owner")
+                self.style.WARNING(
+                    f"\n⚠️  Found {shortcuts_count} Shortcut(s) without owner"
+                )
             )
 
             # Show sample
@@ -89,14 +97,20 @@ class Command(BaseCommand):
                 )
             else:
                 self.stdout.write(
-                    self.style.WARNING(f"🔍 DRY RUN - Would update {shortcuts_count} Shortcut(s)")
+                    self.style.WARNING(
+                        f"🔍 DRY RUN - Would update {shortcuts_count} Shortcut(s)"
+                    )
                 )
         else:
             self.stdout.write(self.style.SUCCESS("\n✅ All Shortcuts have owners!"))
 
         if dry_run:
             self.stdout.write(
-                self.style.WARNING("\n🔍 DRY RUN - No changes made. Run without --dry-run to apply changes.")
+                self.style.WARNING(
+                    "\n🔍 DRY RUN - No changes made. Run without --dry-run to apply changes."
+                )
             )
         else:
-            self.stdout.write(self.style.SUCCESS("\n✅ Done! All objects now have owners."))
+            self.stdout.write(
+                self.style.SUCCESS("\n✅ Done! All objects now have owners.")
+            )

@@ -10,6 +10,7 @@ Strategy:
 
 Backup is the caller's responsibility (see filesystem snapshot).
 """
+
 import json
 import sqlite3
 from pathlib import Path
@@ -52,7 +53,6 @@ UPDATES: dict[int, tuple[str, list[str]]] = {
             "Mulțumim!",
         ],
     ),
-
     # ffd — Factură + AWB Dragon Star (2.738)
     91: (
         "Bună ziua,\n\n"
@@ -75,7 +75,6 @@ UPDATES: dict[int, tuple[str, list[str]]] = {
             "Mulțumim!",
         ],
     ),
-
     # ffan — Factură + AWB Fan Courier (1.830)
     90: (
         "Bună ziua,\n\n"
@@ -98,7 +97,6 @@ UPDATES: dict[int, tuple[str, list[str]]] = {
             "Mulțumim!",
         ],
     ),
-
     # op — Confirmare comandă + proformă (1.381)
     # NOTE: păstrat "4-7 zile" — vezi nota mc1.
     115: (
@@ -128,7 +126,6 @@ UPDATES: dict[int, tuple[str, list[str]]] = {
             "Mulțumim!",
         ],
     ),
-
     # mp1 — Livrare PAFF gratuit București (1.252)
     # Primary păstrat aproape ca-este (e bine scris); doar variante diferite.
     110: (
@@ -167,7 +164,6 @@ UPDATES: dict[int, tuple[str, list[str]]] = {
             "Mulțumim!",
         ],
     ),
-
     # mr — Contact șofer Marius (4.337)
     # Adăugat: diacritice + context "flota PAFF în București"
     105: (
@@ -179,7 +175,6 @@ UPDATES: dict[int, tuple[str, list[str]]] = {
             "Marius (șofer PAFF București): 0756.119.864 / 0737.642.346.",
         ],
     ),
-
     # pi — Contact șofer Picu (824)
     # Adăugat: diacritice + context
     114: (
@@ -191,7 +186,6 @@ UPDATES: dict[int, tuple[str, list[str]]] = {
             "Picu (Marales Gheorghe), șofer PAFF: 0745 992 533.",
         ],
     ),
-
     # ia1 — Concediu (469) — datele 2023 BUG OBVIOUS, înlocuit cu placeholder
     95: (
         "Bună ziua,\n\n"
@@ -216,7 +210,6 @@ UPDATES: dict[int, tuple[str, list[str]]] = {
             "Mulțumim și sărbători frumoase!",
         ],
     ),
-
     # nu1 — Refuz (171) — adăugat diacritice + placeholder reason
     112: (
         "Bună ziua,\n\n"
@@ -235,12 +228,11 @@ UPDATES: dict[int, tuple[str, list[str]]] = {
             "Echipa PAFF",
             "Bună ziua,\n\n"
             "Din păcate nu putem produce [___]. Pentru acest tip de cerere, "
-            "[recomandare partener / sugestie / \"ne pare rău\"].\n\n"
+            '[recomandare partener / sugestie / "ne pare rău"].\n\n'
             "Cu stimă,\n"
             "Echipa PAFF",
         ],
     ),
-
     # mc2 — Up-sell București (80) — primary OK, variante alternative
     108: (
         "Bună ziua,\n\n"
@@ -334,8 +326,10 @@ def main():
                 "WHERE id = ?;",
                 (primary, json.dumps(variants, ensure_ascii=False), sid),
             )
-            print(f"  id={sid:>3} updated: primary={len(primary)} chars, "
-                  f"variants={len(variants)}")
+            print(
+                f"  id={sid:>3} updated: primary={len(primary)} chars, "
+                f"variants={len(variants)}"
+            )
         con.commit()
     except Exception:
         con.rollback()
@@ -355,8 +349,10 @@ def main():
         row = cur.fetchone()
         if row:
             sid, vlen, vrlen, vrcount = row
-            print(f"  {k:<6} (id={sid}): primary={vlen} chars, "
-                  f"variants={vrcount} entries ({vrlen} chars json)")
+            print(
+                f"  {k:<6} (id={sid}): primary={vlen} chars, "
+                f"variants={vrcount} entries ({vrlen} chars json)"
+            )
 
     con.close()
 

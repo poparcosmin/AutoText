@@ -19,6 +19,7 @@ Exit code:
   1 — warnings only
   2 — errors (hardcoded year, broken refs)
 """
+
 import argparse
 import json
 import re
@@ -56,8 +57,9 @@ class Issue(NamedTuple):
     detail: str
 
 
-def lint_text(text: str, sc_key: str, location: str,
-              all_keys: set[str], all_var_names: set[str]) -> list[Issue]:
+def lint_text(
+    text: str, sc_key: str, location: str, all_keys: set[str], all_var_names: set[str]
+) -> list[Issue]:
     issues = []
     if not text:
         return issues
@@ -66,10 +68,15 @@ def lint_text(text: str, sc_key: str, location: str,
     for match in re.finditer(r"\b(20[1-2][0-9])\b", text):
         year = int(match.group(1))
         if year < CURRENT_YEAR:
-            issues.append(Issue(
-                "ERROR", sc_key, location, "hardcoded-stale-year",
-                f"Found year {year} (current: {CURRENT_YEAR}). Replace with placeholder."
-            ))
+            issues.append(
+                Issue(
+                    "ERROR",
+                    sc_key,
+                    location,
+                    "hardcoded-stale-year",
+                    f"Found year {year} (current: {CURRENT_YEAR}). Replace with placeholder.",
+                )
+            )
 
     # 2. Lipsă diacritice (skip case where text is in plain ASCII intentionally
     # — only flag if SOME diacritics exist elsewhere in the same text)
@@ -77,28 +84,43 @@ def lint_text(text: str, sc_key: str, location: str,
     if has_diacritics:
         for pattern, suggestion in NON_DIACRITIC_PATTERNS.items():
             if re.search(pattern, text):
-                issues.append(Issue(
-                    "WARN", sc_key, location, "missing-diacritics",
-                    f"Found '{re.search(pattern, text).group(0)}' — should be '{suggestion}'."
-                ))
+                issues.append(
+                    Issue(
+                        "WARN",
+                        sc_key,
+                        location,
+                        "missing-diacritics",
+                        f"Found '{re.search(pattern, text).group(0)}' — should be '{suggestion}'.",
+                    )
+                )
 
     # 3. [[var:NAME]] referencing a name that exists for NO user
     for match in re.finditer(r"\[\[var:([^\]]+)\]\]", text):
         name = match.group(1).strip()
         if name not in all_var_names:
-            issues.append(Issue(
-                "ERROR", sc_key, location, "broken-var-ref",
-                f"[[var:{name}]] but no user_variable named '{name}' exists."
-            ))
+            issues.append(
+                Issue(
+                    "ERROR",
+                    sc_key,
+                    location,
+                    "broken-var-ref",
+                    f"[[var:{name}]] but no user_variable named '{name}' exists.",
+                )
+            )
 
     # 4. [[%s(target)]] with non-existent target
     for match in re.finditer(r"\[\[%s\(([^)]+)\)\]\]", text):
         target = match.group(1).strip()
         if target not in all_keys:
-            issues.append(Issue(
-                "ERROR", sc_key, location, "broken-nesting-ref",
-                f"[[%s({target})]] but no shortcut with key '{target}' exists."
-            ))
+            issues.append(
+                Issue(
+                    "ERROR",
+                    sc_key,
+                    location,
+                    "broken-nesting-ref",
+                    f"[[%s({target})]] but no shortcut with key '{target}' exists.",
+                )
+            )
 
     # 5. Form placeholders with invalid syntax
     # Valid: {{name}}, {{name:Label}}, {{name:Label|default}}
@@ -107,18 +129,28 @@ def lint_text(text: str, sc_key: str, location: str,
         # Must have at least a name without spaces
         name = body.split(":")[0].strip()
         if not name or " " in name:
-            issues.append(Issue(
-                "WARN", sc_key, location, "form-placeholder-syntax",
-                f"Suspect form placeholder: {{{{ {body} }}}}. Expected {{name:Label|default}}."
-            ))
+            issues.append(
+                Issue(
+                    "WARN",
+                    sc_key,
+                    location,
+                    "form-placeholder-syntax",
+                    f"Suspect form placeholder: {{{{ {body} }}}}. Expected {{name:Label|default}}.",
+                )
+            )
 
     # 7. Cursor marker $|$ duplicated
     cursor_count = text.count("$|$")
     if cursor_count > 1:
-        issues.append(Issue(
-            "WARN", sc_key, location, "duplicate-cursor",
-            f"$|$ appears {cursor_count} times — only the first lands cursor."
-        ))
+        issues.append(
+            Issue(
+                "WARN",
+                sc_key,
+                location,
+                "duplicate-cursor",
+                f"$|$ appears {cursor_count} times — only the first lands cursor.",
+            )
+        )
 
     return issues
 
@@ -128,7 +160,9 @@ def lint_db() -> list[Issue]:
     con = sqlite3.connect(DB)
 
     # Load all shortcut keys for nesting validation
-    cur = con.execute("SELECT key, value, COALESCE(variants, '[]') FROM textsync_shortcut;")
+    cur = con.execute(
+        "SELECT key, value, COALESCE(variants, '[]') FROM textsync_shortcut;"
+    )
     rows = list(cur.fetchall())
     all_keys = {row[0] for row in rows}
 
@@ -142,16 +176,26 @@ def lint_db() -> list[Issue]:
         try:
             variants = json.loads(variants_json) if variants_json else []
             if not isinstance(variants, list):
-                issues.append(Issue(
-                    "ERROR", key, "variants", "variants-not-list",
-                    f"variants is not a JSON array (got {type(variants).__name__})."
-                ))
+                issues.append(
+                    Issue(
+                        "ERROR",
+                        key,
+                        "variants",
+                        "variants-not-list",
+                        f"variants is not a JSON array (got {type(variants).__name__}).",
+                    )
+                )
                 variants = []
         except json.JSONDecodeError as e:
-            issues.append(Issue(
-                "ERROR", key, "variants", "variants-json-invalid",
-                f"variants JSON parse error: {e}"
-            ))
+            issues.append(
+                Issue(
+                    "ERROR",
+                    key,
+                    "variants",
+                    "variants-json-invalid",
+                    f"variants JSON parse error: {e}",
+                )
+            )
             variants = []
 
         # Lint primary
@@ -159,7 +203,9 @@ def lint_db() -> list[Issue]:
 
         # Lint variants
         for i, v in enumerate(variants):
-            issues.extend(lint_text(v, key, f"variant {i+1}", all_keys, all_var_names))
+            issues.extend(
+                lint_text(v, key, f"variant {i + 1}", all_keys, all_var_names)
+            )
 
     con.close()
     return issues
@@ -168,9 +214,12 @@ def lint_db() -> list[Issue]:
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--json", action="store_true", help="Output JSON for CI")
-    parser.add_argument("--severity", choices=["ERROR", "WARN", "INFO"],
-                        default="WARN",
-                        help="Minimum severity to report (default: WARN)")
+    parser.add_argument(
+        "--severity",
+        choices=["ERROR", "WARN", "INFO"],
+        default="WARN",
+        help="Minimum severity to report (default: WARN)",
+    )
     args = parser.parse_args()
 
     threshold = {"ERROR": 0, "WARN": 1, "INFO": 2}[args.severity]

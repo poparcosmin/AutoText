@@ -19,6 +19,7 @@ Usage:
     # Resume:
     ... --resume
 """
+
 from __future__ import annotations
 
 import argparse
@@ -35,7 +36,12 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
-from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO_ROOT / "research" / "pipelines" / "ingest"))
@@ -126,9 +132,7 @@ def list_messages(service, user_id: str, query: str, page_token: str | None) -> 
     return (
         service.users()
         .messages()
-        .list(
-            userId=user_id, q=query, pageToken=page_token, maxResults=PAGE_SIZE
-        )
+        .list(userId=user_id, q=query, pageToken=page_token, maxResults=PAGE_SIZE)
         .execute()
     )
 
@@ -169,8 +173,8 @@ def month_windows(start: str, end: str) -> list[str]:
 # Filter pentru zgomot sistem (WooCommerce auto-orders, password resets, no-reply newsletters).
 # Bazat pe pattern-urile observate in batch-001 (2026-04-28-batch-001.json).
 SYSTEM_NOISE_FILTER = (
-    '-from:no-reply -from:noreply -from:notification -from:notifications '
-    '-from:newsletter -from:donotreply '
+    "-from:no-reply -from:noreply -from:notification -from:notifications "
+    "-from:newsletter -from:donotreply "
     '-subject:"Comanda noua pe site" '
     '-subject:"Resetare parol" '
     '-subject:"Reset parol"'
@@ -297,7 +301,12 @@ def fetch_window(
             ids = [m["id"] for m in resp.get("messages", [])]
             message_ids.extend(ids)
             page_token = resp.get("nextPageToken")
-            log.info("window.page", window=window, page_msgs=len(ids), running=len(message_ids))
+            log.info(
+                "window.page",
+                window=window,
+                page_msgs=len(ids),
+                running=len(message_ids),
+            )
             if not page_token:
                 break
             time.sleep(THROTTLE_SLEEP_SECONDS)
@@ -319,7 +328,12 @@ def fetch_window(
                 log.warning("message.fetch_error", message_id=mid, error=str(e))
                 continue
             if (i + 1) % 50 == 0:
-                log.info("window.progress", window=window, fetched=i + 1, total=len(message_ids))
+                log.info(
+                    "window.progress",
+                    window=window,
+                    fetched=i + 1,
+                    total=len(message_ids),
+                )
             time.sleep(THROTTLE_SLEEP_SECONDS)
 
         threads = assemble_threads(messages)
@@ -336,8 +350,12 @@ def fetch_window(
         state.total_threads += len(threads)
         save_state(state)
 
-        log.info("window.done", window=window, messages=len(messages), threads=len(threads))
-        audit("window_done", window=window, messages=len(messages), threads=len(threads))
+        log.info(
+            "window.done", window=window, messages=len(messages), threads=len(threads)
+        )
+        audit(
+            "window_done", window=window, messages=len(messages), threads=len(threads)
+        )
     except Exception as e:
         win_state.status = "error"
         win_state.error = str(e)
@@ -354,9 +372,15 @@ def main() -> int:
     parser.add_argument("--user", required=True, help="Gmail account email")
     parser.add_argument("--start", required=True, help="Start window YYYY-MM")
     parser.add_argument("--end", required=True, help="End window YYYY-MM (inclusive)")
-    parser.add_argument("--stratified", action="store_true", help="Doar ultimele 7 zile per luna")
-    parser.add_argument("--resume", action="store_true", help="Skip windows marcate done")
-    parser.add_argument("--dry-run", action="store_true", help="Doar count, nu fetch content")
+    parser.add_argument(
+        "--stratified", action="store_true", help="Doar ultimele 7 zile per luna"
+    )
+    parser.add_argument(
+        "--resume", action="store_true", help="Skip windows marcate done"
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Doar count, nu fetch content"
+    )
     parser.add_argument(
         "--exclude-system",
         action="store_true",
@@ -374,7 +398,9 @@ def main() -> int:
 
     state = load_state(args.user)
     if state.user_email != args.user:
-        log.warning("state.user_mismatch", existing=state.user_email, requested=args.user)
+        log.warning(
+            "state.user_mismatch", existing=state.user_email, requested=args.user
+        )
         state.user_email = args.user
 
     windows = month_windows(args.start, args.end)
@@ -389,7 +415,9 @@ def main() -> int:
     )
 
     for window in windows:
-        if args.resume and (state.windows.get(window) and state.windows[window].status == "done"):
+        if args.resume and (
+            state.windows.get(window) and state.windows[window].status == "done"
+        ):
             log.info("run.skip_done", window=window)
             continue
         try:
@@ -407,8 +435,16 @@ def main() -> int:
             log.error("run.window_failed_continuing", window=window, error=str(e))
             continue
 
-    log.info("run.done", total_messages=state.total_messages, total_threads=state.total_threads)
-    audit("run_done", total_messages=state.total_messages, total_threads=state.total_threads)
+    log.info(
+        "run.done",
+        total_messages=state.total_messages,
+        total_threads=state.total_threads,
+    )
+    audit(
+        "run_done",
+        total_messages=state.total_messages,
+        total_threads=state.total_threads,
+    )
     return 0
 
 

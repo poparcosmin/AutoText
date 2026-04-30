@@ -9,6 +9,7 @@ NU foloseste LLM — pure Python (rapidfuzz + chrf score).
 Usage:
     uv run --group research python research/pipelines/enrich/match_template.py
 """
+
 from __future__ import annotations
 
 import argparse
@@ -46,7 +47,9 @@ log = structlog.get_logger("match_template")
 
 def audit(action: str, **kwargs: object) -> None:
     AUDIT_LOG.parent.mkdir(parents=True, exist_ok=True)
-    line = json.dumps({"ts": datetime.now(timezone.utc).isoformat(), "action": action, **kwargs})
+    line = json.dumps(
+        {"ts": datetime.now(timezone.utc).isoformat(), "action": action, **kwargs}
+    )
     with AUDIT_LOG.open("a") as f:
         f.write(line + "\n")
 
@@ -180,7 +183,12 @@ def process_thread(path: Path, shortcuts: list[dict]) -> dict:
     with path.open() as f:
         thread = json.load(f)
 
-    stats = {"messages_processed": 0, "matches_pure": 0, "matches_modified": 0, "ad_hoc": 0}
+    stats = {
+        "messages_processed": 0,
+        "matches_pure": 0,
+        "matches_modified": 0,
+        "ad_hoc": 0,
+    }
 
     for msg in thread.get("messages", []):
         if msg.get("direction") != "outbound":
@@ -208,7 +216,9 @@ def process_thread(path: Path, shortcuts: list[dict]) -> dict:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Fuzzy match PAFF responses to shortcuts")
+    parser = argparse.ArgumentParser(
+        description="Fuzzy match PAFF responses to shortcuts"
+    )
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--window", default=None, help="Filter pe window YYYY-MM")
     args = parser.parse_args()
@@ -227,7 +237,12 @@ def main() -> int:
     log.info("run.start", total_threads=len(threads))
     audit("template_match_start", total_threads=len(threads))
 
-    aggregate = {"messages_processed": 0, "matches_pure": 0, "matches_modified": 0, "ad_hoc": 0}
+    aggregate = {
+        "messages_processed": 0,
+        "matches_pure": 0,
+        "matches_modified": 0,
+        "ad_hoc": 0,
+    }
     for i, path in enumerate(threads):
         try:
             stats = process_thread(path, shortcuts)

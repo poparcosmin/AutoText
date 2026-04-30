@@ -45,7 +45,7 @@ class RequestLoggingMiddleware(MiddlewareMixin):
     def process_view(self, request, view_func, view_args, view_kwargs):
         """Called after request but before view."""
         # Add user context once authentication has processed
-        if hasattr(request, 'user') and request.user.is_authenticated:
+        if hasattr(request, "user") and request.user.is_authenticated:
             structlog.contextvars.bind_contextvars(
                 user_id=request.user.id,
                 username=request.user.username,
@@ -56,16 +56,16 @@ class RequestLoggingMiddleware(MiddlewareMixin):
         """Called on each response."""
         # Calculate request duration
         duration_ms = 0
-        if hasattr(request, '_start_time'):
+        if hasattr(request, "_start_time"):
             duration_ms = (time.time() - request._start_time) * 1000
 
         # Log request completion (only for API requests to reduce noise)
-        if request.path.startswith('/api/'):
-            log_level = 'info'
+        if request.path.startswith("/api/"):
+            log_level = "info"
             if response.status_code >= 500:
-                log_level = 'error'
+                log_level = "error"
             elif response.status_code >= 400:
-                log_level = 'warning'
+                log_level = "warning"
 
             getattr(logger, log_level)(
                 "request_completed",
@@ -77,8 +77,8 @@ class RequestLoggingMiddleware(MiddlewareMixin):
         structlog.contextvars.clear_contextvars()
 
         # Add request ID header for client-side debugging
-        if hasattr(request, 'request_id'):
-            response['X-Request-ID'] = request.request_id
+        if hasattr(request, "request_id"):
+            response["X-Request-ID"] = request.request_id
 
         return response
 
@@ -94,9 +94,9 @@ class RequestLoggingMiddleware(MiddlewareMixin):
     @staticmethod
     def _get_client_ip(request):
         """Extract client IP, considering proxy headers."""
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
         if x_forwarded_for:
-            ip = x_forwarded_for.split(',')[0].strip()
+            ip = x_forwarded_for.split(",")[0].strip()
         else:
-            ip = request.META.get('REMOTE_ADDR', 'unknown')
+            ip = request.META.get("REMOTE_ADDR", "unknown")
         return ip

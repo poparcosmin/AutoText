@@ -17,6 +17,7 @@ Usage:
     # Parallelism (default 1, max 10):
     uv run --group research python research/pipelines/enrich/classify_thread.py --workers 5
 """
+
 from __future__ import annotations
 
 import argparse
@@ -66,7 +67,9 @@ log = structlog.get_logger("classify_thread")
 
 def audit(action: str, **kwargs: object) -> None:
     AUDIT_LOG.parent.mkdir(parents=True, exist_ok=True)
-    line = json.dumps({"ts": datetime.now(timezone.utc).isoformat(), "action": action, **kwargs})
+    line = json.dumps(
+        {"ts": datetime.now(timezone.utc).isoformat(), "action": action, **kwargs}
+    )
     with AUDIT_LOG.open("a") as f:
         f.write(line + "\n")
 
@@ -91,7 +94,9 @@ def call_gemini(prompt: str, model: str = GEMINI_MODEL) -> str:
         raise RuntimeError(f"Gemini CLI timeout after {GEMINI_TIMEOUT_SECONDS}s")
 
     if result.returncode != 0:
-        raise RuntimeError(f"Gemini CLI failed (rc={result.returncode}): {result.stderr[:500]}")
+        raise RuntimeError(
+            f"Gemini CLI failed (rc={result.returncode}): {result.stderr[:500]}"
+        )
     return result.stdout
 
 
@@ -119,7 +124,9 @@ def extract_json_from_response(text: str) -> dict:
         except json.JSONDecodeError:
             pass
 
-    raise ValueError(f"Could not extract valid JSON from response (first 500 chars): {text[:500]}")
+    raise ValueError(
+        f"Could not extract valid JSON from response (first 500 chars): {text[:500]}"
+    )
 
 
 # ============================================================
@@ -143,7 +150,9 @@ def is_already_enriched(raw_path: Path) -> bool:
     return target.exists() and target.stat().st_size > 0
 
 
-def classify_one_thread(raw_path: Path, model: str, verbose: bool = False) -> tuple[Path, dict]:
+def classify_one_thread(
+    raw_path: Path, model: str, verbose: bool = False
+) -> tuple[Path, dict]:
     """Process un singur thread JSON. Returneaza (path, classification dict)."""
     with raw_path.open() as f:
         thread_data = json.load(f)
@@ -160,7 +169,11 @@ def classify_one_thread(raw_path: Path, model: str, verbose: bool = False) -> tu
     prompt = render_thread_prompt(thread_json)
 
     if verbose:
-        log.info("thread.start", thread_id=thread_data.get("thread_id"), prompt_len=len(prompt))
+        log.info(
+            "thread.start",
+            thread_id=thread_data.get("thread_id"),
+            prompt_len=len(prompt),
+        )
 
     response = call_gemini(prompt, model=model)
 
@@ -210,10 +223,18 @@ def process_thread_safe(args_tuple: tuple) -> dict:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Classify threads via Gemini CLI")
-    parser.add_argument("--limit", type=int, default=None, help="Max threads to process (debug)")
-    parser.add_argument("--workers", type=int, default=1, help="Parallel workers (1-10)")
-    parser.add_argument("--resume", action="store_true", help="Skip threads already in enriched/")
-    parser.add_argument("--verbose", action="store_true", help="Verbose per-thread logging")
+    parser.add_argument(
+        "--limit", type=int, default=None, help="Max threads to process (debug)"
+    )
+    parser.add_argument(
+        "--workers", type=int, default=1, help="Parallel workers (1-10)"
+    )
+    parser.add_argument(
+        "--resume", action="store_true", help="Skip threads already in enriched/"
+    )
+    parser.add_argument(
+        "--verbose", action="store_true", help="Verbose per-thread logging"
+    )
     parser.add_argument("--model", default=GEMINI_MODEL, help="Gemini model")
     parser.add_argument(
         "--window",
@@ -237,7 +258,12 @@ def main() -> int:
     log.info(
         "run.start", total_threads=len(threads), workers=args.workers, model=args.model
     )
-    audit("classify_run_start", total_threads=len(threads), workers=args.workers, model=args.model)
+    audit(
+        "classify_run_start",
+        total_threads=len(threads),
+        workers=args.workers,
+        model=args.model,
+    )
 
     if not threads:
         log.info("run.nothing_to_do")

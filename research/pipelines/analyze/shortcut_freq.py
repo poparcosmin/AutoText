@@ -5,6 +5,7 @@ Uses two-stage fingerprint:
   2. Token-overlap fallback — top-3 distinctive 4-word ngrams
 Output: CSV with id, key, length, distinct_msg_matches, role_inferred
 """
+
 import json
 import sqlite3
 import sys
@@ -90,7 +91,9 @@ def iter_outbound_messages():
 
 def main():
     shortcuts = load_shortcuts()
-    print(f"# Loaded {len(shortcuts)} shortcuts with valid fingerprints", file=sys.stderr)
+    print(
+        f"# Loaded {len(shortcuts)} shortcuts with valid fingerprints", file=sys.stderr
+    )
 
     counts = defaultdict(int)
     msg_total = 0

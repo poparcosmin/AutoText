@@ -6,7 +6,7 @@ from .models import Shortcut, ShortcutSet, UserVariable
 from .validators import sanitize_html, validate_shortcut_key
 
 
-VARIABLE_NAME_RE = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*$')
+VARIABLE_NAME_RE = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*$")
 
 
 class UserVariableSerializer(serializers.ModelSerializer):
@@ -17,27 +17,37 @@ class UserVariableSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UserVariable
-        fields = ['id', 'name', 'value', 'updated_at']
-        read_only_fields = ['id', 'updated_at']
+        fields = ["id", "name", "value", "updated_at"]
+        read_only_fields = ["id", "updated_at"]
 
     def validate_name(self, value):
         if not VARIABLE_NAME_RE.match(value):
             raise serializers.ValidationError(
-                'Name must start with a letter or underscore and contain only '
-                'letters, digits, or underscores.'
+                "Name must start with a letter or underscore and contain only "
+                "letters, digits, or underscores."
             )
         return value
 
 
 class ShortcutSetSerializer(serializers.ModelSerializer):
     """Serializer for ShortcutSet model"""
+
     shortcut_count = serializers.SerializerMethodField()
     owner_username = serializers.SerializerMethodField()
     visible_to_usernames = serializers.SerializerMethodField()
 
     class Meta:
         model = ShortcutSet
-        fields = ["id", "name", "set_type", "description", "owner_username", "visible_to_usernames", "shortcut_count", "created_at"]
+        fields = [
+            "id",
+            "name",
+            "set_type",
+            "description",
+            "owner_username",
+            "visible_to_usernames",
+            "shortcut_count",
+            "created_at",
+        ]
 
     def get_shortcut_count(self, obj):
         # Use annotated value when available to avoid extra queries
@@ -54,6 +64,7 @@ class ShortcutSetSerializer(serializers.ModelSerializer):
 
 class ShortcutSerializer(serializers.ModelSerializer):
     """Serializer for Shortcut model with set information"""
+
     set_names = serializers.SerializerMethodField()
     set_types = serializers.SerializerMethodField()
     owner_username = serializers.SerializerMethodField()
@@ -69,19 +80,27 @@ class ShortcutSerializer(serializers.ModelSerializer):
     )
     # Allow writing sets via PrimaryKeyRelatedField
     sets = serializers.PrimaryKeyRelatedField(
-        queryset=ShortcutSet.objects.all(),
-        many=True,
-        required=False
+        queryset=ShortcutSet.objects.all(), many=True, required=False
     )
 
     class Meta:
         model = Shortcut
         fields = [
-            "id", "key", "content_type", "value", "html_value",
-            "owner_username", "sets", "set_names", "set_types",
-            "aliases", "aliases_input",
+            "id",
+            "key",
+            "content_type",
+            "value",
+            "html_value",
+            "owner_username",
+            "sets",
+            "set_names",
+            "set_types",
+            "aliases",
+            "aliases_input",
             "variants",
-            "updated_at", "usage_count", "last_used_at",
+            "updated_at",
+            "usage_count",
+            "last_used_at",
         ]
         read_only_fields = ["usage_count", "last_used_at"]
 
@@ -93,16 +112,16 @@ class ShortcutSerializer(serializers.ModelSerializer):
             return []
 
         if not isinstance(value, list):
-            raise serializers.ValidationError('variants must be a list of strings.')
+            raise serializers.ValidationError("variants must be a list of strings.")
         if len(value) > self.MAX_VARIANTS:
             raise serializers.ValidationError(
-                f'Maximum {self.MAX_VARIANTS} variants supported.'
+                f"Maximum {self.MAX_VARIANTS} variants supported."
             )
         cleaned = []
         for entry in value:
             if not isinstance(entry, str):
                 raise serializers.ValidationError(
-                    'Each variant must be a string body matching the shortcut content_type.'
+                    "Each variant must be a string body matching the shortcut content_type."
                 )
             stripped = entry.strip()
             if not stripped:
@@ -130,7 +149,9 @@ class ShortcutSerializer(serializers.ModelSerializer):
                 continue
             ok, err = validate_shortcut_key(key)
             if not ok:
-                raise serializers.ValidationError({'aliases_input': [f"'{key}': {err}"]})
+                raise serializers.ValidationError(
+                    {"aliases_input": [f"'{key}': {err}"]}
+                )
             if key == instance.key:
                 # Don't store the primary key as an alias of itself.
                 continue
@@ -144,29 +165,32 @@ class ShortcutSerializer(serializers.ModelSerializer):
             alias_key__in=cleaned,
         ).exclude(shortcut=instance)
         if existing_other.exists():
-            conflicts = list(existing_other.values_list('alias_key', flat=True))
-            raise serializers.ValidationError({
-                'aliases_input': [f"Aliases already used by other shortcuts: {', '.join(conflicts)}"]
-            })
+            conflicts = list(existing_other.values_list("alias_key", flat=True))
+            raise serializers.ValidationError(
+                {
+                    "aliases_input": [
+                        f"Aliases already used by other shortcuts: {', '.join(conflicts)}"
+                    ]
+                }
+            )
 
         # Replace set: drop removed, add new, leave existing untouched.
-        current = set(instance.aliases.values_list('alias_key', flat=True))
+        current = set(instance.aliases.values_list("alias_key", flat=True))
         target = set(cleaned)
         instance.aliases.filter(alias_key__in=(current - target)).delete()
-        ShortcutAlias.objects.bulk_create([
-            ShortcutAlias(shortcut=instance, alias_key=k)
-            for k in (target - current)
-        ])
+        ShortcutAlias.objects.bulk_create(
+            [ShortcutAlias(shortcut=instance, alias_key=k) for k in (target - current)]
+        )
 
     def create(self, validated_data):
-        alias_list = validated_data.pop('aliases_input', None)
+        alias_list = validated_data.pop("aliases_input", None)
         instance = super().create(validated_data)
         if alias_list is not None:
             self._sync_aliases(instance, alias_list)
         return instance
 
     def update(self, instance, validated_data):
-        alias_list = validated_data.pop('aliases_input', None)
+        alias_list = validated_data.pop("aliases_input", None)
         instance = super().update(instance, validated_data)
         if alias_list is not None:
             self._sync_aliases(instance, alias_list)
@@ -195,12 +219,12 @@ class ShortcutSerializer(serializers.ModelSerializer):
         # Variants inherit the same XSS surface as html_value when the
         # parent shortcut is in HTML mode — apply bleach to each entry
         # so the storefront can trust the field uniformly.
-        content_type = attrs.get('content_type') or (
-            self.instance.content_type if self.instance else 'text'
+        content_type = attrs.get("content_type") or (
+            self.instance.content_type if self.instance else "text"
         )
-        variants = attrs.get('variants')
-        if content_type == 'html' and variants:
-            attrs['variants'] = [sanitize_html(v) for v in variants]
+        variants = attrs.get("variants")
+        if content_type == "html" and variants:
+            attrs["variants"] = [sanitize_html(v) for v in variants]
         return attrs
 
     def validate_key(self, value):

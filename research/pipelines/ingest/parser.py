@@ -2,6 +2,7 @@
 
 Pure functions — no I/O, no API calls. Test-friendly.
 """
+
 from __future__ import annotations
 
 import base64

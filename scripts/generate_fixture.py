@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 
 def clean_trigger(trigger):
     """Remove leading backtick from trigger."""
-    if trigger.startswith('`'):
+    if trigger.startswith("`"):
         return trigger[1:]
     return trigger
 
@@ -36,17 +36,17 @@ def text_to_html(text):
     text = text.strip()
 
     # If text already contains HTML tags, clean them up
-    if '<b>' in text or '<font' in text:
+    if "<b>" in text or "<font" in text:
         # Clean up incomplete tags
-        text = text.replace('"', '')  # Remove trailing quotes
+        text = text.replace('"', "")  # Remove trailing quotes
         text = text.strip()
         return text
 
     # Convert newlines to <br>
-    html = text.replace('\n', '<br>')
+    html = text.replace("\n", "<br>")
 
     # Convert URLs to links
-    url_pattern = r'(https?://[^\s\)]+)'
+    url_pattern = r"(https?://[^\s\)]+)"
     html = re.sub(url_pattern, r'<a href="\1">\1</a>', html)
 
     return html
@@ -63,15 +63,15 @@ def generate_fixture(yaml_file, output_file, set_id=1):
     """
 
     # Load YAML
-    with open(yaml_file, 'r', encoding='utf-8') as f:
+    with open(yaml_file, "r", encoding="utf-8") as f:
         data = yaml.safe_load(f)
 
     fixtures = []
 
     # Process each match
-    for idx, match in enumerate(data.get('matches', []), start=1):
-        trigger = match.get('trigger', '')
-        replace = match.get('replace', '')
+    for idx, match in enumerate(data.get("matches", []), start=1):
+        trigger = match.get("trigger", "")
+        replace = match.get("replace", "")
 
         if not trigger or not replace:
             continue
@@ -95,14 +95,14 @@ def generate_fixture(yaml_file, output_file, set_id=1):
                 "html_value": html_value,
                 "sets": [set_id],  # Birou set
                 "updated_at": datetime.now(timezone.utc).isoformat(),
-                "updated_by": None
-            }
+                "updated_by": None,
+            },
         }
 
         fixtures.append(fixture)
 
     # Write fixture to JSON
-    with open(output_file, 'w', encoding='utf-8') as f:
+    with open(output_file, "w", encoding="utf-8") as f:
         json.dump(fixtures, f, ensure_ascii=False, indent=2)
 
     print(f"✅ Generated {len(fixtures)} shortcuts in {output_file}")
@@ -111,9 +111,9 @@ def generate_fixture(yaml_file, output_file, set_id=1):
     print(f"   python manage.py loaddata {output_file}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     generate_fixture(
-        yaml_file='paff.yml',
-        output_file='textsync/fixtures/birou_shortcuts.json',
-        set_id=1  # ID of "birou" set - adjust if needed
+        yaml_file="paff.yml",
+        output_file="textsync/fixtures/birou_shortcuts.json",
+        set_id=1,  # ID of "birou" set - adjust if needed
     )

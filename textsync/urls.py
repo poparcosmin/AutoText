@@ -15,17 +15,14 @@ router.register(r"user-variables", UserVariableViewSet, basename="user_variable"
 
 urlpatterns = [
     # Health check (for monitoring/load balancers)
-    path('health/', health_check_view, name='health_check'),
-
+    path("health/", health_check_view, name="health_check"),
     # Auth endpoints
-    path('auth/login/', login_view, name='login'),
-    path('auth/logout/', logout_view, name='logout'),
-    path('auth/verify/', verify_token_view, name='verify_token'),
-    path('auth/refresh/', refresh_token_view, name='refresh_token'),
-
+    path("auth/login/", login_view, name="login"),
+    path("auth/logout/", logout_view, name="logout"),
+    path("auth/verify/", verify_token_view, name="verify_token"),
+    path("auth/refresh/", refresh_token_view, name="refresh_token"),
     # Bulk operations
-    path('sync/bulk/', bulk_sync_view, name='bulk_sync'),
-
+    path("sync/bulk/", bulk_sync_view, name="bulk_sync"),
     # Analytics
-    path('track-usage/', track_usage_view, name='track_usage'),
+    path("track-usage/", track_usage_view, name="track_usage"),
 ] + router.urls

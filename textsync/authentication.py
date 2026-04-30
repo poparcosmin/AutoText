@@ -8,7 +8,7 @@ class ExpiringTokenAuthentication(authentication.BaseAuthentication):
     Tokens expire after 180 days.
     """
 
-    keyword = 'Token'
+    keyword = "Token"
     model = ExpiringToken
 
     def authenticate(self, request):
@@ -18,32 +18,32 @@ class ExpiringTokenAuthentication(authentication.BaseAuthentication):
             return None
 
         if len(auth) == 1:
-            msg = 'Invalid token header. No credentials provided.'
+            msg = "Invalid token header. No credentials provided."
             raise exceptions.AuthenticationFailed(msg)
         elif len(auth) > 2:
-            msg = 'Invalid token header. Token string should not contain spaces.'
+            msg = "Invalid token header. Token string should not contain spaces."
             raise exceptions.AuthenticationFailed(msg)
 
         try:
             token = auth[1].decode()
         except UnicodeError:
-            msg = 'Invalid token header. Token contains invalid characters.'
+            msg = "Invalid token header. Token contains invalid characters."
             raise exceptions.AuthenticationFailed(msg)
 
         return self.authenticate_credentials(token)
 
     def authenticate_credentials(self, key):
         try:
-            token = self.model.objects.select_related('user').get(key=key)
+            token = self.model.objects.select_related("user").get(key=key)
         except self.model.DoesNotExist:
-            raise exceptions.AuthenticationFailed('Invalid token.')
+            raise exceptions.AuthenticationFailed("Invalid token.")
 
         if not token.user.is_active:
-            raise exceptions.AuthenticationFailed('User inactive or deleted.')
+            raise exceptions.AuthenticationFailed("User inactive or deleted.")
 
         # Check if token is expired
         if token.is_expired():
-            raise exceptions.AuthenticationFailed('Token has expired.')
+            raise exceptions.AuthenticationFailed("Token has expired.")
 
         return (token.user, token)
 

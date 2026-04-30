@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 """Post-deploy verification — sanity-checks production state matches local."""
+
 import os
 import sys
 from pathlib import Path
@@ -13,23 +14,49 @@ import django  # noqa: E402
 
 django.setup()
 
-from textsync.models import Shortcut, ShortcutSet, UserVariable  # noqa: E402
+from textsync.models import Shortcut, UserVariable  # noqa: E402
 
 EXPECTED_TOTAL = 85
 EXPECTED_VARIABLES = 48
 EXPECTED_ATOMIC = [
-    "salut", "mts", "mts_short", "cta-mod", "cta-primire", "reply-yn",
-    "eta-curier", "eta-paff", "sig-personal", "sig-equipe", "sig-short",
-    "track-fan", "track-dragon", "confirm-plata", "tranzitie-pleaca",
-    "tranzitie-pleaca-buc", "promise-awb", "closing",
+    "salut",
+    "mts",
+    "mts_short",
+    "cta-mod",
+    "cta-primire",
+    "reply-yn",
+    "eta-curier",
+    "eta-paff",
+    "sig-personal",
+    "sig-equipe",
+    "sig-short",
+    "track-fan",
+    "track-dragon",
+    "confirm-plata",
+    "tranzitie-pleaca",
+    "tranzitie-pleaca-buc",
+    "promise-awb",
+    "closing",
 ]
 EXPECTED_FOLLOWUP = [
-    "op-fu1", "op-fu2", "op-fu3", "op-accept", "op-rej",
-    "proba", "urg", "ret",
+    "op-fu1",
+    "op-fu2",
+    "op-fu3",
+    "op-accept",
+    "op-rej",
+    "proba",
+    "urg",
+    "ret",
 ]
 EXPECTED_SUBJECT = [
-    "subj-op", "subj-mc1", "subj-mp1", "subj-ffd", "subj-ffan",
-    "subj-nu1", "subj-fu1", "subj-fu3",
+    "subj-op",
+    "subj-mc1",
+    "subj-mp1",
+    "subj-ffd",
+    "subj-ffan",
+    "subj-nu1",
+    "subj-fu1",
+    "subj-fu3",
 ]
 
 
@@ -42,7 +69,9 @@ def check(label: str, actual, expected, *, exact: bool = True) -> bool:
 
 
 def check_keys(label: str, expected_keys: list[str]) -> bool:
-    actual_keys = set(Shortcut.objects.filter(key__in=expected_keys).values_list("key", flat=True))
+    actual_keys = set(
+        Shortcut.objects.filter(key__in=expected_keys).values_list("key", flat=True)
+    )
     missing = sorted(set(expected_keys) - actual_keys)
     if missing:
         print(f"  ✗ {label}: missing {len(missing)} → {missing}")
@@ -91,6 +120,7 @@ def main():
     print()
     print("Per-user signature variables (sample check on first user):")
     from django.contrib.auth import get_user_model
+
     User = get_user_model()
     for username in ["aura", "bogdan", "cosmin", "florian"]:
         user = User.objects.filter(username=username).first()
@@ -100,8 +130,10 @@ def main():
         my_name = UserVariable.objects.filter(user=user, name="my_name").first()
         my_phone = UserVariable.objects.filter(user=user, name="my_phone").first()
         marker = "✓" if my_name and my_phone else "✗"
-        print(f"  {marker} {username}: my_name={my_name.value if my_name else 'MISSING'}, "
-              f"my_phone={my_phone.value if my_phone else 'MISSING'}")
+        print(
+            f"  {marker} {username}: my_name={my_name.value if my_name else 'MISSING'}, "
+            f"my_phone={my_phone.value if my_phone else 'MISSING'}"
+        )
         if not (my_name and my_phone):
             all_ok = False
 
@@ -111,7 +143,9 @@ def main():
     if mj2 and "{{data:" in mj2.value:
         print("  ✓ mj2 contains form placeholder {{data:...}}")
     else:
-        print(f"  ✗ mj2 missing or no form placeholder. Value head: {mj2.value[:80] if mj2 else 'NOT FOUND'}...")
+        print(
+            f"  ✗ mj2 missing or no form placeholder. Value head: {mj2.value[:80] if mj2 else 'NOT FOUND'}..."
+        )
         all_ok = False
 
     print()

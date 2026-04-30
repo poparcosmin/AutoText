@@ -9,6 +9,7 @@ Output:
 Usage:
     uv run --group research python research/pipelines/analyze/anti_patterns.py
 """
+
 from __future__ import annotations
 
 import argparse
@@ -43,7 +44,9 @@ log = structlog.get_logger("anti_patterns")
 
 def audit(action: str, **kwargs: object) -> None:
     AUDIT_LOG.parent.mkdir(parents=True, exist_ok=True)
-    line = json.dumps({"ts": datetime.now(timezone.utc).isoformat(), "action": action, **kwargs})
+    line = json.dumps(
+        {"ts": datetime.now(timezone.utc).isoformat(), "action": action, **kwargs}
+    )
     with AUDIT_LOG.open("a") as f:
         f.write(line + "\n")
 
@@ -126,7 +129,9 @@ def detect_anti_patterns(body: str) -> list[str]:
     word_count = len(body_clean.split())
     has_salut = bool(re.search(r"\b(bună|buna)\s+(ziua|dimineața|seara)", body_lower))
     has_sign = bool(
-        re.search(r"\bcu\s+stim[ăa]\b|\bsalut[ăa]ri\b|\baura\b|\bflorentina\b", body_lower)
+        re.search(
+            r"\bcu\s+stim[ăa]\b|\bsalut[ăa]ri\b|\baura\b|\bflorentina\b", body_lower
+        )
     )
     if word_count < 30 and not has_salut and not has_sign:
         detected.append("mode_telegrafic")
@@ -242,7 +247,9 @@ def aggregate(per_thread: list[dict]) -> dict:
             ap: round(c / total_msgs, 4) if total_msgs else 0
             for ap, c in by_pattern.items()
         },
-        "by_window": {w: dict(cnt.most_common()) for w, cnt in by_window_pattern.items()},
+        "by_window": {
+            w: dict(cnt.most_common()) for w, cnt in by_window_pattern.items()
+        },
         "generated_at": datetime.now(timezone.utc).isoformat(),
     }
 
@@ -277,7 +284,9 @@ def main() -> int:
         json.dump(summary, f, ensure_ascii=False, indent=2)
 
     log.info("run.done", **{k: v for k, v in summary.items() if k != "by_window"})
-    audit("anti_patterns_done", **{k: v for k, v in summary.items() if k != "by_window"})
+    audit(
+        "anti_patterns_done", **{k: v for k, v in summary.items() if k != "by_window"}
+    )
     return 0
 
 

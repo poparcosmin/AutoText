@@ -1,4 +1,5 @@
 """Shortcut usage tracking endpoint."""
+
 import structlog
 
 from django.db.models import F
@@ -12,7 +13,7 @@ from ..models import Shortcut, ShortcutUsageLog
 logger = structlog.get_logger(__name__)
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([permissions.IsAuthenticated])
 def track_usage_view(request):
     """
@@ -27,41 +28,38 @@ def track_usage_view(request):
     2. Updates last_used_at timestamp
     3. Creates a ShortcutUsageLog entry for detailed analytics
     """
-    shortcut_id = request.data.get('shortcut_id')
-    domain = request.data.get('domain', '')
+    shortcut_id = request.data.get("shortcut_id")
+    domain = request.data.get("domain", "")
 
     if not shortcut_id:
         return Response(
-            {'error': 'shortcut_id is required'},
-            status=status.HTTP_400_BAD_REQUEST
+            {"error": "shortcut_id is required"}, status=status.HTTP_400_BAD_REQUEST
         )
 
     try:
         shortcut = Shortcut.objects.get(id=shortcut_id)
     except Shortcut.DoesNotExist:
         return Response(
-            {'error': 'Shortcut not found'},
-            status=status.HTTP_404_NOT_FOUND
+            {"error": "Shortcut not found"}, status=status.HTTP_404_NOT_FOUND
         )
 
     # Update shortcut usage stats (atomic operation)
     Shortcut.objects.filter(id=shortcut_id).update(
-        usage_count=F('usage_count') + 1,
-        last_used_at=timezone.now()
+        usage_count=F("usage_count") + 1, last_used_at=timezone.now()
     )
 
     # Create detailed usage log
     ShortcutUsageLog.objects.create(
         shortcut=shortcut,
         user=request.user,
-        domain=domain[:255] if domain else None  # Truncate to field max length
+        domain=domain[:255] if domain else None,  # Truncate to field max length
     )
 
     logger.info(
         "Shortcut usage tracked",
         shortcut_id=shortcut_id,
         user_id=request.user.id,
-        domain=domain
+        domain=domain,
     )
 
-    return Response({'success': True})
+    return Response({"success": True})

@@ -19,6 +19,7 @@ Strategy:
 
 Backup: db.sqlite3.bak.20260429-pre-advanced
 """
+
 import json
 import sqlite3
 from pathlib import Path
@@ -71,6 +72,7 @@ def _extract_iban_from_fb(con: sqlite3.Connection) -> str | None:
     has been refactored to use [[var:iban_boxpack]] (chicken-and-egg).
     """
     import re
+
     cur = con.execute("SELECT value FROM textsync_shortcut WHERE key = 'fb';")
     row = cur.fetchone()
     if row:
@@ -100,7 +102,6 @@ def _extract_iban_from_fb(con: sqlite3.Connection) -> str | None:
 ATOMIC_SNIPPETS = {
     # Greeting — usable standalone or chained
     "salut": "[[greeting]],",
-
     # Closings — high variation
     "mts": (
         "[[random:Mulțumim!|"
@@ -111,7 +112,6 @@ ATOMIC_SNIPPETS = {
         "Cu drag, mulțumim!]]"
     ),
     "mts_short": "Mulțumim!",
-
     # Confirmation: plata
     "confirm-plata": (
         "[[random:Plata din [[date:DD.MM.YYYY]] a fost confirmată — mulțumim.|"
@@ -121,7 +121,6 @@ ATOMIC_SNIPPETS = {
         "Plata confirmată azi, [[date:DD.MM]] — mulțumim.|"
         "Mulțumim, plata e confirmată în contul nostru.]]"
     ),
-
     # Transition: ce facem după plată
     "tranzitie-pleaca": (
         "[[random:Astăzi pregătim coletele pentru curier.|"
@@ -136,7 +135,6 @@ ATOMIC_SNIPPETS = {
         "Coletele intră astăzi în pregătire pentru livrarea cu mașinile noastre.|"
         "Astăzi pregătim livrarea în București cu mașinile PAFF.]]"
     ),
-
     # CTAs cu variație
     "cta-mod": (
         "[[random:Pentru orice modificare la adresă sau cantitate, răspundeți la acest email cât mai curând posibil.|"
@@ -150,7 +148,6 @@ ATOMIC_SNIPPETS = {
         "Dacă coletele par deteriorate la primire, refuzați semnătura și scrieți-ne.|"
         "La primire, dacă există probleme cu coletele, ne anunțați aici.]]"
     ),
-
     # Promise: trimitem AWB
     "promise-awb": (
         "[[random:Vă trimitem numărul de AWB și factura imediat ce pachetul pleacă.|"
@@ -158,28 +155,23 @@ ATOMIC_SNIPPETS = {
         "Cum coletele ies din depozit, primiți de la noi AWB-ul și factura fiscală.|"
         "Vă transmitem AWB-ul și factura imediat ce pachetul iese spre livrare.]]"
     ),
-
     # Reply scaffolding (standardized 3-option pattern)
     "reply-yn": (
         "Răspundeți scurt:\n"
-        " ✓ \"OK\" → continuăm\n"
-        " ✓ \"modificare: ___\" → schimb ceva\n"
-        " ✓ \"amân\" → lăsăm în coadă"
+        ' ✓ "OK" → continuăm\n'
+        ' ✓ "modificare: ___" → schimb ceva\n'
+        ' ✓ "amân" → lăsăm în coadă'
     ),
-
     # ETAs — single source of truth
     "eta-curier": "Termen estimat livrare: 4-7 zile lucrătoare.",
     "eta-paff": "Termen estimat livrare: 1-3 zile lucrătoare (București).",
-
     # Signatures — per-user via [[var:my_name]] + [[var:my_phone]]
     "sig-personal": "Cu stimă,\n[[var:my_name]]\n[[var:my_phone]]",
     "sig-short": "Cu stimă,\n[[user]]",
     "sig-equipe": "Cu stimă,\nEchipa PAFF",
-
     # Tracking links per courier
     "track-fan": "Tracking: [[var:track_fan]]",
     "track-dragon": "Tracking: [[var:track_dragon]]",
-
     # Closing line variations (after main message body)
     "closing": (
         "[[random:Mulțumim pentru încredere!|"
@@ -230,7 +222,6 @@ SHORTCUT_REFACTORS = {
             "[[%s(mts)]]\n$|$",
         ],
     ),
-
     # ffd — Factură + AWB Dragon Star (max variation)
     91: (
         "[[%s(salut)]]\n\nAWB: $|$ (Dragon Star)\n[[%s(track-dragon)]]\n\n"
@@ -255,7 +246,6 @@ SHORTCUT_REFACTORS = {
             "[[%s(mts_short)]]",
         ],
     ),
-
     # ffan — Factură + AWB Fan Courier (max variation)
     90: (
         "[[%s(salut)]]\n\nAWB: $|$ (Fan Courier)\n[[%s(track-fan)]]\n\n"
@@ -280,7 +270,6 @@ SHORTCUT_REFACTORS = {
             "[[%s(mts_short)]]",
         ],
     ),
-
     # op — Confirmare comandă + proformă (max variation, SINGLE-CTA)
     115: (
         "[[%s(salut)]]\n\n[[random:Mulțumim pentru comandă!|Vă mulțumim pentru comandă!|"
@@ -320,7 +309,6 @@ SHORTCUT_REFACTORS = {
             "[[%s(mts_short)]]\n$|$",
         ],
     ),
-
     # mp1 — Livrare PAFF gratuit București (max variation)
     110: (
         "[[%s(salut)]]\n\n[[%s(confirm-plata)]]\n\n[[%s(tranzitie-pleaca-buc)]] "
@@ -361,7 +349,6 @@ SHORTCUT_REFACTORS = {
             "Detalii: [[var:webfaq]]\n\n[[%s(mts_short)]]\n$|$",
         ],
     ),
-
     # mr — Contact șofer Marius (max variation)
     105: (
         "[[random:Pentru livrarea cu flota PAFF în București, șoferul nostru este Marius.|"
@@ -381,7 +368,6 @@ SHORTCUT_REFACTORS = {
             "(apel/WhatsApp, L-V 08-17).",
         ],
     ),
-
     # pi — Contact șofer Picu (max variation)
     114: (
         "[[random:Pentru livrarea cu flota PAFF în București, șoferul nostru este Picu (Marales Gheorghe).|"
@@ -398,7 +384,6 @@ SHORTCUT_REFACTORS = {
             "Picu (Marales Gheorghe), șofer PAFF — [[var:tel_picu]] (apel/WhatsApp, L-V 08-17).",
         ],
     ),
-
     # ia1 — Concediu (max variation pe greeting + closing)
     95: (
         "[[%s(salut)]]\n\n[[random:PAFF e în concediu între|"
@@ -410,8 +395,8 @@ SHORTCUT_REFACTORS = {
         "Comenzile noi se rețin în coadă și intră în producție în prima parte a lunii]] "
         "{{revenire:Luna revenire|ianuarie}}, în ordinea sosirii.\n\n"
         "Răspundeți cu:\n"
-        " ✓ \"păstrez\" → ținem comanda activă, trimitem proforma după revenire\n"
-        " ✓ \"anulez\" → dezactivăm comanda\n\n"
+        ' ✓ "păstrez" → ținem comanda activă, trimitem proforma după revenire\n'
+        ' ✓ "anulez" → dezactivăm comanda\n\n'
         "[[random:Sărbători liniștite!|Vă dorim sărbători frumoase!|"
         "Vacanță plăcută și sărbători cu spor!|Sărbători cu pace și liniște!]]\n$|$",
         [
@@ -441,7 +426,6 @@ SHORTCUT_REFACTORS = {
             "Mulțumim și vacanță plăcută!]]\n$|$",
         ],
     ),
-
     # nu1 — Refuz cu form placeholder + max variation pe empathy & alternative
     112: (
         "[[%s(salut)]]\n\n[[random:Mulțumim pentru interesul acordat produselor PAFF.|"
@@ -475,11 +459,10 @@ SHORTCUT_REFACTORS = {
             "[[%s(salut)]]\n\n[[random:Din păcate|Ne pare rău|Din păcate, în acest caz]], "
             "{{motiv:Motiv (frază completă)|nu putem da curs acestei cereri}}.\n\n"
             "[[random:Pentru acest tip de cerere|Pentru această problemă|"
-            "Pentru produsul respectiv]], [recomandare partener / sugestie / \"ne pare rău\"].\n\n"
+            'Pentru produsul respectiv]], [recomandare partener / sugestie / "ne pare rău"].\n\n'
             "[[%s(sig-personal)]]\n$|$",
         ],
     ),
-
     # mc2 — Up-sell București (max variation pe framing + closing)
     108: (
         "[[%s(salut)]]\n\n[[%s(confirm-plata)]]\n\n"
@@ -498,9 +481,9 @@ SHORTCUT_REFACTORS = {
         " - 4-7 zile lucrătoare, cu AWB și înfoliere.\n"
         " - Condițiile firmei de curierat.\n\n"
         "----------------\n\n"
-        "[[random:Răspundeți cu \"PAFF\" sau \"curier\" și pregătesc expedierea.|"
-        "Spuneți-mi \"PAFF\" sau \"curier\" și pregătim expedierea.|"
-        "Un cuvânt scurt — \"PAFF\" sau \"curier\" — și pregătesc totul.]]\n\n"
+        '[[random:Răspundeți cu "PAFF" sau "curier" și pregătesc expedierea.|'
+        'Spuneți-mi "PAFF" sau "curier" și pregătim expedierea.|'
+        'Un cuvânt scurt — "PAFF" sau "curier" — și pregătesc totul.]]\n\n'
         "[[%s(mts)]]\n$|$",
         [
             # Cald — emphasis on benefit
@@ -531,7 +514,6 @@ SHORTCUT_REFACTORS = {
             "[[%s(mts_short)]]\n$|$",
         ],
     ),
-
     # fb — Facturare Boxpack (max variation)
     88: (
         "[[random:Facturarea se face pe firma noastră Boxpack SRL.|"
@@ -570,9 +552,7 @@ def upsert_user_variables(con: sqlite3.Connection):
         print("  ⚠️  fb shortcut missing or no IBAN matched — iban_boxpack skipped")
 
     shared_count = len(effective_shared) * len(users)
-    per_user_count = sum(
-        len(PER_USER_VARIABLES.get(uname, {})) for _, uname in users
-    )
+    per_user_count = sum(len(PER_USER_VARIABLES.get(uname, {})) for _, uname in users)
     print(f"  Shared: {len(effective_shared)} × {len(users)} = {shared_count} ops")
     print(f"  Per-user signatures: {per_user_count} ops")
 
@@ -668,7 +648,9 @@ def main():
             )
         )
         atomics = [r[0] for r in cur.fetchall()]
-        print(f"  atomic snippets present: {len(atomics)} / {len(ATOMIC_SNIPPETS)} → {atomics}")
+        print(
+            f"  atomic snippets present: {len(atomics)} / {len(ATOMIC_SNIPPETS)} → {atomics}"
+        )
         cur.execute(
             "SELECT key, length(value), json_array_length(variants) "
             "FROM textsync_shortcut WHERE id IN ({}) ORDER BY id;".format(

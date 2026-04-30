@@ -1,4 +1,5 @@
 """Authentication endpoints — login, logout, verify, refresh."""
+
 import structlog
 from datetime import timedelta
 
@@ -14,7 +15,7 @@ from ..throttling import LoginRateThrottle, TokenRefreshRateThrottle
 logger = structlog.get_logger(__name__)
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([permissions.AllowAny])
 @throttle_classes([LoginRateThrottle])
 def login_view(request):
@@ -27,27 +28,25 @@ def login_view(request):
 
     Rate limited: 10 requests per minute per IP to prevent brute force.
     """
-    username = request.data.get('username')
-    password = request.data.get('password')
+    username = request.data.get("username")
+    password = request.data.get("password")
 
     if not username or not password:
         return Response(
-            {'error': 'Username and password required'},
-            status=status.HTTP_400_BAD_REQUEST
+            {"error": "Username and password required"},
+            status=status.HTTP_400_BAD_REQUEST,
         )
 
     user = authenticate(username=username, password=password)
 
     if user is None:
         return Response(
-            {'error': 'Invalid credentials'},
-            status=status.HTTP_401_UNAUTHORIZED
+            {"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED
         )
 
     if not user.is_active:
         return Response(
-            {'error': 'User account is disabled'},
-            status=status.HTTP_403_FORBIDDEN
+            {"error": "User account is disabled"}, status=status.HTTP_403_FORBIDDEN
         )
 
     # Get or create token for user
@@ -58,20 +57,22 @@ def login_view(request):
         token.delete()
         token = ExpiringToken.objects.create(user=user)
 
-    return Response({
-        'token': token.key,
-        'expires_at': token.expires_at.isoformat(),
-        'user': {
-            'id': user.id,
-            'username': user.username,
-            'email': user.email,
-            'is_superuser': user.is_superuser,
-            'is_birou_curator': user.groups.filter(name='birou-curators').exists(),
+    return Response(
+        {
+            "token": token.key,
+            "expires_at": token.expires_at.isoformat(),
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "is_superuser": user.is_superuser,
+                "is_birou_curator": user.groups.filter(name="birou-curators").exists(),
+            },
         }
-    })
+    )
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([permissions.IsAuthenticated])
 def logout_view(request):
     """
@@ -83,12 +84,12 @@ def logout_view(request):
     try:
         # Delete the user's token
         request.user.auth_token.delete()
-        return Response({'message': 'Successfully logged out'})
+        return Response({"message": "Successfully logged out"})
     except ExpiringToken.DoesNotExist:
-        return Response({'message': 'No active session'})
+        return Response({"message": "No active session"})
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([permissions.IsAuthenticated])
 def verify_token_view(request):
     """
@@ -100,20 +101,24 @@ def verify_token_view(request):
     """
     token = request.user.auth_token
 
-    return Response({
-        'valid': not token.is_expired(),
-        'expires_at': token.expires_at.isoformat(),
-        'user': {
-            'id': request.user.id,
-            'username': request.user.username,
-            'email': request.user.email,
-            'is_superuser': request.user.is_superuser,
-            'is_birou_curator': request.user.groups.filter(name='birou-curators').exists(),
+    return Response(
+        {
+            "valid": not token.is_expired(),
+            "expires_at": token.expires_at.isoformat(),
+            "user": {
+                "id": request.user.id,
+                "username": request.user.username,
+                "email": request.user.email,
+                "is_superuser": request.user.is_superuser,
+                "is_birou_curator": request.user.groups.filter(
+                    name="birou-curators"
+                ).exists(),
+            },
         }
-    })
+    )
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([permissions.IsAuthenticated])
 @throttle_classes([TokenRefreshRateThrottle])
 def refresh_token_view(request):
@@ -132,8 +137,7 @@ def refresh_token_view(request):
         old_token = request.user.auth_token
     except ExpiringToken.DoesNotExist:
         return Response(
-            {'error': 'No active token found'},
-            status=status.HTTP_400_BAD_REQUEST
+            {"error": "No active token found"}, status=status.HTTP_400_BAD_REQUEST
         )
 
     # Check if token is within refresh window (30 days before expiration)
@@ -143,12 +147,14 @@ def refresh_token_view(request):
     if time_until_expiry > refresh_window:
         # Token is still fresh, no need to refresh
         logger.info(f"Token refresh rejected - too early: user={request.user.id}")
-        return Response({
-            'message': 'Token still valid, refresh not needed',
-            'token': old_token.key,
-            'expires_at': old_token.expires_at.isoformat(),
-            'days_until_expiry': time_until_expiry.days,
-        })
+        return Response(
+            {
+                "message": "Token still valid, refresh not needed",
+                "token": old_token.key,
+                "expires_at": old_token.expires_at.isoformat(),
+                "days_until_expiry": time_until_expiry.days,
+            }
+        )
 
     # Delete old token and create new one
     old_token.delete()
@@ -156,14 +162,18 @@ def refresh_token_view(request):
 
     logger.info(f"Token refreshed: user={request.user.id}")
 
-    return Response({
-        'token': new_token.key,
-        'expires_at': new_token.expires_at.isoformat(),
-        'user': {
-            'id': request.user.id,
-            'username': request.user.username,
-            'email': request.user.email,
-            'is_superuser': request.user.is_superuser,
-            'is_birou_curator': request.user.groups.filter(name='birou-curators').exists(),
+    return Response(
+        {
+            "token": new_token.key,
+            "expires_at": new_token.expires_at.isoformat(),
+            "user": {
+                "id": request.user.id,
+                "username": request.user.username,
+                "email": request.user.email,
+                "is_superuser": request.user.is_superuser,
+                "is_birou_curator": request.user.groups.filter(
+                    name="birou-curators"
+                ).exists(),
+            },
         }
-    })
+    )

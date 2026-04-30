@@ -12,6 +12,7 @@ textsync/validators.py is permissive enough for the actual content.
 Usage:
     uv run python scripts/audit_html_shortcuts.py
 """
+
 import os
 import sys
 import django
@@ -41,13 +42,15 @@ def audit():
     for row_id, key, html_value in rows:
         cleaned = sanitize_html(html_value)
         if cleaned != html_value:
-            modified.append({
-                "id": row_id,
-                "key": key,
-                "before_len": len(html_value),
-                "after_len": len(cleaned),
-                "delta": len(html_value) - len(cleaned),
-            })
+            modified.append(
+                {
+                    "id": row_id,
+                    "key": key,
+                    "before_len": len(html_value),
+                    "after_len": len(cleaned),
+                    "delta": len(html_value) - len(cleaned),
+                }
+            )
 
     print(f"Total shortcuts: {total_all}")
     print(f"  With html_value: {total_with_html}")
@@ -62,9 +65,11 @@ def audit():
 
     print("\nFirst 20 affected entries:")
     for m in modified[:20]:
-        print(f"  id={m['id']:>4}  key={m['key']:<20}  "
-              f"{m['before_len']:>5} -> {m['after_len']:<5} "
-              f"(strip {m['delta']} chars)")
+        print(
+            f"  id={m['id']:>4}  key={m['key']:<20}  "
+            f"{m['before_len']:>5} -> {m['after_len']:<5} "
+            f"(strip {m['delta']} chars)"
+        )
 
     if len(modified) > 20:
         print(f"  ... and {len(modified) - 20} more")

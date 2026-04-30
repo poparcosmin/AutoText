@@ -10,14 +10,26 @@ from django.utils import timezone
 from django.utils.html import format_html
 from datetime import timedelta
 from tinymce.widgets import TinyMCE
-from .models import Shortcut, ShortcutSet, ExpiringToken, ShortcutUsageLog, UserVariable, ShortcutVersion, ShortcutAlias
+from .models import (
+    Shortcut,
+    ShortcutSet,
+    ExpiringToken,
+    ShortcutUsageLog,
+    UserVariable,
+    ShortcutVersion,
+    ShortcutAlias,
+)
 
 
 @admin.register(ShortcutSet)
 class ShortcutSetAdmin(admin.ModelAdmin):
     list_display = [
-        "name", "set_type", "owner", "get_visible_to",
-        "get_shortcut_count", "created_at"
+        "name",
+        "set_type",
+        "owner",
+        "get_visible_to",
+        "get_shortcut_count",
+        "created_at",
     ]
     list_filter = ["set_type", "created_at", "owner"]
     search_fields = ["name", "description"]
@@ -25,20 +37,18 @@ class ShortcutSetAdmin(admin.ModelAdmin):
     filter_horizontal = ["visible_to"]
 
     fieldsets = (
-        ('Basic Information', {
-            'fields': ('name', 'set_type', 'description')
-        }),
-        ('Ownership & Sharing', {
-            'fields': ('owner', 'visible_to'),
-            'description': (
-                'Set owner and share with specific users. '
-                'Only superusers can modify these fields.'
-            )
-        }),
-        ('Metadata', {
-            'fields': ('created_at',),
-            'classes': ('collapse',)
-        }),
+        ("Basic Information", {"fields": ("name", "set_type", "description")}),
+        (
+            "Ownership & Sharing",
+            {
+                "fields": ("owner", "visible_to"),
+                "description": (
+                    "Set owner and share with specific users. "
+                    "Only superusers can modify these fields."
+                ),
+            },
+        ),
+        ("Metadata", {"fields": ("created_at",), "classes": ("collapse",)}),
     )
 
     def get_shortcut_count(self, obj):
@@ -59,7 +69,7 @@ class ShortcutSetAdmin(admin.ModelAdmin):
         """Make owner and visible_to readonly for staff users"""
         readonly = list(super().get_readonly_fields(request, obj))
         if not request.user.is_superuser:
-            readonly.extend(['owner', 'visible_to'])
+            readonly.extend(["owner", "visible_to"])
         return readonly
 
     def get_queryset(self, request):
@@ -104,19 +114,19 @@ class ShortcutAdminForm(forms.ModelForm):
         widget=forms.RadioSelect,
         required=False,
         label="Save to Set",
-        help_text="Choose where to save this shortcut"
+        help_text="Choose where to save this shortcut",
     )
 
     class Meta:
         model = Shortcut
-        fields = '__all__'
+        fields = "__all__"
         widgets = {
-            'html_value': TinyMCE(),
+            "html_value": TinyMCE(),
         }
 
     def __init__(self, *args, **kwargs):
         # Extract user from kwargs (passed by admin)
-        self.user = kwargs.pop('user', None)
+        self.user = kwargs.pop("user", None)
         super().__init__(*args, **kwargs)
 
         if self.user and not self.user.is_superuser:
@@ -126,35 +136,40 @@ class ShortcutAdminForm(forms.ModelForm):
             # Get or create personal set
             personal_set, _ = ShortcutSet.objects.get_or_create(
                 owner=self.user,
-                set_type='personal',
+                set_type="personal",
                 defaults={
-                    'name': self.user.username,
-                    'description': f'Personal shortcuts for {self.user.username}'
-                }
+                    "name": self.user.username,
+                    "description": f"Personal shortcuts for {self.user.username}",
+                },
             )
-            choices.append((f'personal_{personal_set.pk}', f'📁 {personal_set.name} (Personal)'))
+            choices.append(
+                (f"personal_{personal_set.pk}", f"📁 {personal_set.name} (Personal)")
+            )
 
             # Get general sets (Birou)
-            general_sets = ShortcutSet.objects.filter(set_type='general')
+            general_sets = ShortcutSet.objects.filter(set_type="general")
             for gs in general_sets:
-                choices.append((f'general_{gs.pk}', f'🏢 {gs.name} (Birou)'))
+                choices.append((f"general_{gs.pk}", f"🏢 {gs.name} (Birou)"))
 
-            self.fields['save_to_set'].choices = choices
+            self.fields["save_to_set"].choices = choices
             # Default to personal set
-            self.fields['save_to_set'].initial = f'personal_{personal_set.pk}'
+            self.fields["save_to_set"].initial = f"personal_{personal_set.pk}"
 
             # If editing existing shortcut, set initial based on current sets
             if self.instance and self.instance.pk:
                 current_sets = self.instance.sets.all()
                 if current_sets.exists():
                     first_set = current_sets.first()
-                    self.fields['save_to_set'].initial = f'{first_set.set_type}_{first_set.pk}'
+                    self.fields[
+                        "save_to_set"
+                    ].initial = f"{first_set.set_type}_{first_set.pk}"
 
 
 class ShortcutSetFilter(admin.SimpleListFilter):
     """Custom filter to filter shortcuts by set with better display"""
-    title = 'Shortcut Set'
-    parameter_name = 'set'
+
+    title = "Shortcut Set"
+    parameter_name = "set"
 
     def lookups(self, request, model_admin):
         """Return list of sets available to current user"""
@@ -166,14 +181,14 @@ class ShortcutSetFilter(admin.SimpleListFilter):
             # - Their own personal sets ONLY
             # - Shared sets where they're in visible_to
             sets = ShortcutSet.objects.filter(
-                Q(set_type='general') |
-                (Q(set_type='personal') & Q(owner=request.user)) |
-                (Q(set_type='shared') & Q(visible_to=request.user))
+                Q(set_type="general")
+                | (Q(set_type="personal") & Q(owner=request.user))
+                | (Q(set_type="shared") & Q(visible_to=request.user))
             ).distinct()
 
         return [
             (s.id, f"{s.name} ({s.get_set_type_display()})")
-            for s in sets.order_by('set_type', 'name')
+            for s in sets.order_by("set_type", "name")
         ]
 
     def queryset(self, request, queryset):
@@ -190,9 +205,10 @@ class ShortcutAliasInline(admin.TabularInline):
     can let users add freely; collisions surface as IntegrityError-mapped
     form errors when saving.
     """
+
     model = ShortcutAlias
     extra = 1
-    fields = ('alias_key',)
+    fields = ("alias_key",)
 
 
 class ShortcutVersionInline(admin.TabularInline):
@@ -202,19 +218,27 @@ class ShortcutVersionInline(admin.TabularInline):
     them would defeat the rollback contract. To restore a snapshot, open
     the standalone ShortcutVersion admin and run the "Restore" action.
     """
+
     model = ShortcutVersion
     extra = 0
-    fields = ('version_number', 'key', 'content_type', 'value_preview',
-              'created_at', 'created_by')
+    fields = (
+        "version_number",
+        "key",
+        "content_type",
+        "value_preview",
+        "created_at",
+        "created_by",
+    )
     readonly_fields = fields
     can_delete = False
     show_change_link = True
-    ordering = ('-version_number',)
+    ordering = ("-version_number",)
 
     def value_preview(self, obj):
-        body = obj.value or obj.html_value or ''
-        return (body[:60] + '…') if len(body) > 60 else body
-    value_preview.short_description = 'Preview'
+        body = obj.value or obj.html_value or ""
+        return (body[:60] + "…") if len(body) > 60 else body
+
+    value_preview.short_description = "Preview"
 
     def has_add_permission(self, request, obj=None):
         return False
@@ -222,19 +246,33 @@ class ShortcutVersionInline(admin.TabularInline):
 
 @admin.register(ShortcutVersion)
 class ShortcutVersionAdmin(admin.ModelAdmin):
-    list_display = ('shortcut', 'version_number', 'key', 'content_type',
-                    'created_at', 'created_by')
-    list_filter = ('content_type', 'created_at')
-    search_fields = ('shortcut__key', 'key', 'value')
-    readonly_fields = ('shortcut', 'version_number', 'key', 'content_type',
-                       'value', 'html_value', 'created_at', 'created_by')
-    ordering = ('-created_at',)
-    actions = ['restore_to_shortcut']
+    list_display = (
+        "shortcut",
+        "version_number",
+        "key",
+        "content_type",
+        "created_at",
+        "created_by",
+    )
+    list_filter = ("content_type", "created_at")
+    search_fields = ("shortcut__key", "key", "value")
+    readonly_fields = (
+        "shortcut",
+        "version_number",
+        "key",
+        "content_type",
+        "value",
+        "html_value",
+        "created_at",
+        "created_by",
+    )
+    ordering = ("-created_at",)
+    actions = ["restore_to_shortcut"]
 
     def has_add_permission(self, request):
         return False
 
-    @admin.action(description='Restore selected version into its parent shortcut')
+    @admin.action(description="Restore selected version into its parent shortcut")
     def restore_to_shortcut(self, request, queryset):
         # Bulk restore is tempting but ambiguous — if two versions of the
         # same shortcut are selected, which wins? Force the user to pick
@@ -242,7 +280,7 @@ class ShortcutVersionAdmin(admin.ModelAdmin):
         if queryset.count() != 1:
             self.message_user(
                 request,
-                'Select exactly one version to restore.',
+                "Select exactly one version to restore.",
                 level=messages.ERROR,
             )
             return
@@ -266,8 +304,14 @@ class ShortcutVersionAdmin(admin.ModelAdmin):
 class ShortcutAdmin(admin.ModelAdmin):
     form = ShortcutAdminForm
     list_display = [
-        "key", "content_type", "value_preview", "owner", "get_sets",
-        "usage_count", "last_used_at", "updated_at"
+        "key",
+        "content_type",
+        "value_preview",
+        "owner",
+        "get_sets",
+        "usage_count",
+        "last_used_at",
+        "updated_at",
     ]
     list_filter = [ShortcutSetFilter, "content_type", "owner", "updated_at"]
     search_fields = ["key", "value", "sets__name"]
@@ -277,42 +321,50 @@ class ShortcutAdmin(admin.ModelAdmin):
     inlines = [ShortcutAliasInline, ShortcutVersionInline]
 
     fieldsets = (
-        ('Content Type', {
-            'fields': ('key', 'content_type'),
-            'description': 'Choose between Plain Text or Rich Text (HTML)'
-        }),
-        ('Plain Text Content', {
-            'fields': ('value',),
-            'classes': ('content-type-section', 'text-section'),
-        }),
-        ('Rich Text Content', {
-            'fields': ('html_value',),
-            'classes': ('content-type-section', 'html-section'),
-            'description': 'Use the WYSIWYG editor for rich text formatting.'
-        }),
-        ('Organization', {
-            'fields': ('sets',)
-        }),
-        ('Metadata', {
-            'fields': ('updated_at', 'updated_by'),
-            'classes': ('collapse',)
-        }),
-        ('Usage Statistics', {
-            'fields': ('usage_count', 'last_used_at'),
-            'classes': ('collapse',),
-            'description': 'Tracked when the shortcut is used.'
-        }),
+        (
+            "Content Type",
+            {
+                "fields": ("key", "content_type"),
+                "description": "Choose between Plain Text or Rich Text (HTML)",
+            },
+        ),
+        (
+            "Plain Text Content",
+            {
+                "fields": ("value",),
+                "classes": ("content-type-section", "text-section"),
+            },
+        ),
+        (
+            "Rich Text Content",
+            {
+                "fields": ("html_value",),
+                "classes": ("content-type-section", "html-section"),
+                "description": "Use the WYSIWYG editor for rich text formatting.",
+            },
+        ),
+        ("Organization", {"fields": ("sets",)}),
+        (
+            "Metadata",
+            {"fields": ("updated_at", "updated_by"), "classes": ("collapse",)},
+        ),
+        (
+            "Usage Statistics",
+            {
+                "fields": ("usage_count", "last_used_at"),
+                "classes": ("collapse",),
+                "description": "Tracked when the shortcut is used.",
+            },
+        ),
     )
 
     class Media:
-        js = ('textsync/admin/js/shortcut_toggle.js',)
-        css = {
-            'all': ('textsync/admin/css/shortcut_toggle.css',)
-        }
+        js = ("textsync/admin/js/shortcut_toggle.js",)
+        css = {"all": ("textsync/admin/css/shortcut_toggle.css",)}
 
     def content_type(self, obj):
         """Display content type with icon"""
-        if obj.content_type == 'text':
+        if obj.content_type == "text":
             return format_html('<span style="color: #666;">📝 Text</span>')
         else:
             return format_html('<span style="color: #4285f4;">🎨 HTML</span>')
@@ -321,7 +373,7 @@ class ShortcutAdmin(admin.ModelAdmin):
 
     def value_preview(self, obj):
         """Show first 50 chars of value or html_value"""
-        if obj.content_type == 'text':
+        if obj.content_type == "text":
             if not obj.value:
                 return format_html('<em style="color: #999;">-</em>')
             return obj.value[:50] + "..." if len(obj.value) > 50 else obj.value
@@ -330,7 +382,8 @@ class ShortcutAdmin(admin.ModelAdmin):
                 return format_html('<em style="color: #999;">-</em>')
             # Strip HTML tags for preview
             import re
-            text = re.sub('<[^<]+?>', '', obj.html_value)
+
+            text = re.sub("<[^<]+?>", "", obj.html_value)
             return text[:50] + "..." if len(text) > 50 else text
 
     value_preview.short_description = "Preview"
@@ -344,12 +397,12 @@ class ShortcutAdmin(admin.ModelAdmin):
         # Color code by set type
         set_badges = []
         for s in sets:
-            if s.set_type == 'general':
-                color = '#4CAF50'  # Green for general
-                icon = '🏢'
+            if s.set_type == "general":
+                color = "#4CAF50"  # Green for general
+                icon = "🏢"
             else:
-                color = '#2196F3'  # Blue for personal
-                icon = '👤'
+                color = "#2196F3"  # Blue for personal
+                icon = "👤"
 
             style = (
                 f"background: {color}; color: white; padding: 2px 8px; "
@@ -358,7 +411,7 @@ class ShortcutAdmin(admin.ModelAdmin):
             badge = f'<span style="{style}">{icon} {s.name}</span>'
             set_badges.append(badge)
 
-        return format_html(''.join(set_badges))
+        return format_html("".join(set_badges))
 
     get_sets.short_description = "Sets"
 
@@ -367,21 +420,25 @@ class ShortcutAdmin(admin.ModelAdmin):
         qs = super().get_queryset(request)
 
         # Prefetch sets for better performance
-        qs = qs.prefetch_related('sets', 'sets__owner')
+        qs = qs.prefetch_related("sets", "sets__owner")
 
         # Filter by user permissions
         if request.user.is_superuser:
-            return qs.order_by('key')
+            return qs.order_by("key")
 
         # Staff users see:
         # 1. Their own shortcuts
         # 2. Shortcuts in general sets (like Birou)
         # 3. Shortcuts in sets shared with them
-        return qs.filter(
-            Q(owner=request.user) |
-            Q(sets__set_type='general') |
-            Q(sets__visible_to=request.user)
-        ).distinct().order_by('key')
+        return (
+            qs.filter(
+                Q(owner=request.user)
+                | Q(sets__set_type="general")
+                | Q(sets__visible_to=request.user)
+            )
+            .distinct()
+            .order_by("key")
+        )
 
     def get_form(self, request, obj=None, **kwargs):
         """Pass user to form for dynamic field population"""
@@ -390,7 +447,7 @@ class ShortcutAdmin(admin.ModelAdmin):
         # Create a wrapper that injects the user
         class FormWithUser(Form):
             def __new__(cls, *args, **form_kwargs):
-                form_kwargs['user'] = request.user
+                form_kwargs["user"] = request.user
                 return Form(*args, **form_kwargs)
 
         return FormWithUser
@@ -407,12 +464,12 @@ class ShortcutAdmin(admin.ModelAdmin):
         # Auto-detect content_type based on which field has data
         # Priority: html_value > value (if html is filled, use html type)
         if obj.html_value and obj.html_value.strip():
-            obj.content_type = 'html'
+            obj.content_type = "html"
         elif obj.value and obj.value.strip():
-            obj.content_type = 'text'
+            obj.content_type = "text"
         # If neither has content, default to 'text'
         else:
-            obj.content_type = 'text'
+            obj.content_type = "text"
 
         super().save_model(request, obj, form, change)
 
@@ -422,10 +479,10 @@ class ShortcutAdmin(admin.ModelAdmin):
 
         # For staff users, handle the save_to_set field
         if not request.user.is_superuser:
-            save_to_set = form.cleaned_data.get('save_to_set')
+            save_to_set = form.cleaned_data.get("save_to_set")
             if save_to_set:
                 # Parse the value (e.g., 'personal_5' or 'general_1')
-                set_type, set_pk = save_to_set.rsplit('_', 1)
+                set_type, set_pk = save_to_set.rsplit("_", 1)
                 try:
                     selected_set = ShortcutSet.objects.get(pk=int(set_pk))
                     # Clear existing sets and add the selected one
@@ -438,11 +495,11 @@ class ShortcutAdmin(admin.ModelAdmin):
         """Get or create the user's personal set"""
         personal_set, created = ShortcutSet.objects.get_or_create(
             owner=user,
-            set_type='personal',
+            set_type="personal",
             defaults={
-                'name': user.username,
-                'description': f'Personal shortcuts for {user.username}'
-            }
+                "name": user.username,
+                "description": f"Personal shortcuts for {user.username}",
+            },
         )
         return personal_set
 
@@ -452,20 +509,26 @@ class ShortcutAdmin(admin.ModelAdmin):
         - Filter to show only sets the user can access
         - Staff can see: their personal sets + general sets (Birou) + sets shared with them
         """
-        if db_field.name == 'sets':
+        if db_field.name == "sets":
             if request.user.is_superuser:
                 # Superusers see all sets
-                kwargs['queryset'] = ShortcutSet.objects.all().order_by('set_type', 'name')
+                kwargs["queryset"] = ShortcutSet.objects.all().order_by(
+                    "set_type", "name"
+                )
             else:
                 # Staff users see:
                 # - General sets (Birou)
                 # - Their own personal sets ONLY
                 # - Shared sets where they're in visible_to
-                kwargs['queryset'] = ShortcutSet.objects.filter(
-                    Q(set_type='general') |
-                    (Q(set_type='personal') & Q(owner=request.user)) |
-                    (Q(set_type='shared') & Q(visible_to=request.user))
-                ).distinct().order_by('set_type', 'name')
+                kwargs["queryset"] = (
+                    ShortcutSet.objects.filter(
+                        Q(set_type="general")
+                        | (Q(set_type="personal") & Q(owner=request.user))
+                        | (Q(set_type="shared") & Q(visible_to=request.user))
+                    )
+                    .distinct()
+                    .order_by("set_type", "name")
+                )
 
         return super().formfield_for_manytomany(db_field, request, **kwargs)
 
@@ -473,7 +536,7 @@ class ShortcutAdmin(admin.ModelAdmin):
         """Pre-select personal set for new shortcuts"""
         initial = super().get_changeform_initial_data(request)
         personal_set = self.get_personal_set(request.user)
-        initial['sets'] = [personal_set.pk]
+        initial["sets"] = [personal_set.pk]
         return initial
 
     def get_fieldsets(self, request, obj=None):
@@ -483,24 +546,36 @@ class ShortcutAdmin(admin.ModelAdmin):
 
         # Staff users get a simpler view with radio buttons for set selection
         return (
-            ('Shortcut Key', {
-                'fields': ('key',),
-                'description': 'Enter the shortcut key (e.g., /sig, /addr)'
-            }),
-            ('Plain Text Content', {
-                'fields': ('value',),
-                'classes': ('content-type-section', 'text-section'),
-                'description': 'For simple text without formatting.'
-            }),
-            ('Rich Text Content', {
-                'fields': ('html_value',),
-                'classes': ('content-type-section', 'html-section'),
-                'description': 'Use the editor for rich text with formatting. If both fields have content, rich text takes priority.'
-            }),
-            ('Save to Set', {
-                'fields': ('save_to_set',),
-                'description': 'Choose where to save this shortcut.'
-            }),
+            (
+                "Shortcut Key",
+                {
+                    "fields": ("key",),
+                    "description": "Enter the shortcut key (e.g., /sig, /addr)",
+                },
+            ),
+            (
+                "Plain Text Content",
+                {
+                    "fields": ("value",),
+                    "classes": ("content-type-section", "text-section"),
+                    "description": "For simple text without formatting.",
+                },
+            ),
+            (
+                "Rich Text Content",
+                {
+                    "fields": ("html_value",),
+                    "classes": ("content-type-section", "html-section"),
+                    "description": "Use the editor for rich text with formatting. If both fields have content, rich text takes priority.",
+                },
+            ),
+            (
+                "Save to Set",
+                {
+                    "fields": ("save_to_set",),
+                    "description": "Choose where to save this shortcut.",
+                },
+            ),
         )
 
     def get_list_display(self, request):
@@ -519,39 +594,41 @@ class ShortcutAdmin(admin.ModelAdmin):
 
     # ========== Bulk Operations: Import/Export CSV ==========
 
-    actions = ['export_as_csv']
-    change_list_template = 'admin/textsync/shortcut/change_list.html'
+    actions = ["export_as_csv"]
+    change_list_template = "admin/textsync/shortcut/change_list.html"
 
     def get_urls(self):
         """Add custom URL for CSV import"""
         urls = super().get_urls()
         custom_urls = [
             path(
-                'import-csv/',
+                "import-csv/",
                 self.admin_site.admin_view(self.import_csv_view),
-                name='textsync_shortcut_import_csv'
+                name="textsync_shortcut_import_csv",
             ),
         ]
         return custom_urls + urls
 
     def export_as_csv(self, request, queryset):
         """Export selected shortcuts as CSV"""
-        response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = 'attachment; filename="shortcuts_export.csv"'
-        response.write('\ufeff')  # UTF-8 BOM for Excel compatibility
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = 'attachment; filename="shortcuts_export.csv"'
+        response.write("\ufeff")  # UTF-8 BOM for Excel compatibility
 
         writer = csv.writer(response)
-        writer.writerow(['key', 'content_type', 'value', 'html_value', 'sets'])
+        writer.writerow(["key", "content_type", "value", "html_value", "sets"])
 
         for shortcut in queryset:
-            sets_str = '|'.join([s.name for s in shortcut.sets.all()])
-            writer.writerow([
-                shortcut.key,
-                shortcut.content_type,
-                shortcut.value or '',
-                shortcut.html_value or '',
-                sets_str
-            ])
+            sets_str = "|".join([s.name for s in shortcut.sets.all()])
+            writer.writerow(
+                [
+                    shortcut.key,
+                    shortcut.content_type,
+                    shortcut.value or "",
+                    shortcut.html_value or "",
+                    sets_str,
+                ]
+            )
 
         msg = f"Exported {queryset.count()} shortcuts to CSV."
         self.message_user(request, msg, messages.SUCCESS)
@@ -561,19 +638,19 @@ class ShortcutAdmin(admin.ModelAdmin):
 
     def import_csv_view(self, request):
         """Handle CSV import"""
-        if request.method == 'POST':
-            csv_file = request.FILES.get('csv_file')
+        if request.method == "POST":
+            csv_file = request.FILES.get("csv_file")
             if not csv_file:
                 self.message_user(request, "Please select a CSV file.", messages.ERROR)
-                return redirect('..')
+                return redirect("..")
 
-            if not csv_file.name.endswith('.csv'):
+            if not csv_file.name.endswith(".csv"):
                 self.message_user(request, "File must be a CSV.", messages.ERROR)
-                return redirect('..')
+                return redirect("..")
 
             try:
                 # Read and decode CSV
-                decoded_file = csv_file.read().decode('utf-8-sig')
+                decoded_file = csv_file.read().decode("utf-8-sig")
                 reader = csv.DictReader(io.StringIO(decoded_file))
 
                 created_count = 0
@@ -582,39 +659,39 @@ class ShortcutAdmin(admin.ModelAdmin):
 
                 for row_num, row in enumerate(reader, start=2):
                     try:
-                        key = row.get('key', '').strip()
+                        key = row.get("key", "").strip()
                         if not key:
                             errors.append(f"Row {row_num}: Missing key")
                             continue
 
-                        content_type = row.get('content_type', 'text').strip()
-                        if content_type not in ['text', 'html']:
-                            content_type = 'text'
+                        content_type = row.get("content_type", "text").strip()
+                        if content_type not in ["text", "html"]:
+                            content_type = "text"
 
-                        value = row.get('value', '')
-                        html_value = row.get('html_value', '')
-                        sets_str = row.get('sets', '')
+                        value = row.get("value", "")
+                        html_value = row.get("html_value", "")
+                        sets_str = row.get("sets", "")
 
                         # Create or update shortcut
                         shortcut, created = Shortcut.objects.update_or_create(
                             key=key,
                             owner=request.user,
                             defaults={
-                                'content_type': content_type,
-                                'value': value,
-                                'html_value': html_value,
-                                'updated_by': request.user,
-                            }
+                                "content_type": content_type,
+                                "value": value,
+                                "html_value": html_value,
+                                "updated_by": request.user,
+                            },
                         )
 
                         # Handle sets
                         if sets_str:
-                            names = [s.strip() for s in sets_str.split('|')]
+                            names = [s.strip() for s in sets_str.split("|")]
                             set_names = [n for n in names if n]
                             for set_name in set_names:
                                 defaults = {
-                                    'owner': request.user,
-                                    'set_type': 'personal'
+                                    "owner": request.user,
+                                    "set_type": "personal",
                                 }
                                 shortcut_set, _ = ShortcutSet.objects.get_or_create(
                                     name=set_name, defaults=defaults
@@ -649,30 +726,30 @@ class ShortcutAdmin(admin.ModelAdmin):
                 err_msg = f"Error processing CSV: {str(e)}"
                 self.message_user(request, err_msg, messages.ERROR)
 
-            return redirect('..')
+            return redirect("..")
 
         # GET request - show import form
         context = {
             **self.admin_site.each_context(request),
-            'title': 'Import Shortcuts from CSV',
-            'opts': self.model._meta,
+            "title": "Import Shortcuts from CSV",
+            "opts": self.model._meta,
         }
-        return render(request, 'admin/textsync/shortcut/import_csv.html', context)
+        return render(request, "admin/textsync/shortcut/import_csv.html", context)
 
 
-@admin.action(description='Revoca toate token-urile pentru userii selectati')
+@admin.action(description="Revoca toate token-urile pentru userii selectati")
 def revoke_all_tokens_for_user(modeladmin, request, queryset):
     """Bulk-revoke action — for the laptop-lost / device-stolen scenario.
     Deletes every ExpiringToken owned by the selected users; affected users
     will be re-prompted for password on the next sync. Action is restricted
     to superusers via the ModelAdmin permission gates below.
     """
-    user_ids = set(queryset.values_list('user_id', flat=True))
+    user_ids = set(queryset.values_list("user_id", flat=True))
     deleted_count, _ = ExpiringToken.objects.filter(user_id__in=user_ids).delete()
     messages.success(
         request,
-        f'Revocate: {deleted_count} token(s) pentru {len(user_ids)} user(i). '
-        'Userii vor face re-login la urmatorul sync.'
+        f"Revocate: {deleted_count} token(s) pentru {len(user_ids)} user(i). "
+        "Userii vor face re-login la urmatorul sync.",
     )
 
 
@@ -719,6 +796,7 @@ class ExpiringTokenAdmin(admin.ModelAdmin):
 @admin.register(ShortcutUsageLog)
 class ShortcutUsageLogAdmin(admin.ModelAdmin):
     """Admin for viewing shortcut usage logs with analytics."""
+
     list_display = ["shortcut_key", "user", "domain", "used_at"]
     list_filter = ["used_at", "user", "shortcut__sets"]
     search_fields = ["shortcut__key", "user__username", "domain"]
@@ -728,6 +806,7 @@ class ShortcutUsageLogAdmin(admin.ModelAdmin):
 
     def shortcut_key(self, obj):
         return obj.shortcut.key
+
     shortcut_key.short_description = "Shortcut"
     shortcut_key.admin_order_field = "shortcut__key"
 
@@ -772,54 +851,54 @@ class ShortcutUsageLogAdmin(admin.ModelAdmin):
 
         # Top shortcuts (last 30 days)
         top_shortcuts = (
-            ShortcutUsageLog.objects
-            .filter(used_at__gte=month_ago)
-            .values('shortcut__key')
-            .annotate(count=Count('id'))
-            .order_by('-count')[:10]
+            ShortcutUsageLog.objects.filter(used_at__gte=month_ago)
+            .values("shortcut__key")
+            .annotate(count=Count("id"))
+            .order_by("-count")[:10]
         )
 
         # Top users (last 30 days)
         top_users = (
-            ShortcutUsageLog.objects
-            .filter(used_at__gte=month_ago)
-            .values('user__username')
-            .annotate(count=Count('id'))
-            .order_by('-count')[:10]
+            ShortcutUsageLog.objects.filter(used_at__gte=month_ago)
+            .values("user__username")
+            .annotate(count=Count("id"))
+            .order_by("-count")[:10]
         )
 
         # Top domains (last 30 days)
         top_domains = (
-            ShortcutUsageLog.objects
-            .filter(used_at__gte=month_ago)
+            ShortcutUsageLog.objects.filter(used_at__gte=month_ago)
             .exclude(domain__isnull=True)
-            .exclude(domain='')
-            .values('domain')
-            .annotate(count=Count('id'))
-            .order_by('-count')[:10]
+            .exclude(domain="")
+            .values("domain")
+            .annotate(count=Count("id"))
+            .order_by("-count")[:10]
         )
 
-        extra_context.update({
-            'today_count': today_count,
-            'week_count': week_count,
-            'month_count': month_count,
-            'top_shortcuts': list(top_shortcuts),
-            'top_users': list(top_users),
-            'top_domains': list(top_domains),
-            'show_analytics': True,
-        })
+        extra_context.update(
+            {
+                "today_count": today_count,
+                "week_count": week_count,
+                "month_count": month_count,
+                "top_shortcuts": list(top_shortcuts),
+                "top_users": list(top_users),
+                "top_domains": list(top_domains),
+                "show_analytics": True,
+            }
+        )
 
         return super().changelist_view(request, extra_context=extra_context)
 
+
 @admin.register(UserVariable)
 class UserVariableAdmin(admin.ModelAdmin):
-    list_display = ['name', 'user', 'value_preview', 'updated_at']
-    list_filter = ['user']
-    search_fields = ['name', 'user__username', 'value']
-    readonly_fields = ['updated_at']
+    list_display = ["name", "user", "value_preview", "updated_at"]
+    list_filter = ["user"]
+    search_fields = ["name", "user__username", "value"]
+    readonly_fields = ["updated_at"]
 
     def value_preview(self, obj):
-        v = obj.value or ''
-        return (v[:50] + '...') if len(v) > 50 else v
-    value_preview.short_description = 'Value'
+        v = obj.value or ""
+        return (v[:50] + "...") if len(v) > 50 else v
 
+    value_preview.short_description = "Value"

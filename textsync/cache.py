@@ -4,6 +4,7 @@ Cache utilities for AutoText API.
 Provides cache decorators and helpers for shortcuts and sets.
 Uses Redis with graceful degradation when unavailable.
 """
+
 from functools import wraps
 from django.core.cache import cache
 from django.conf import settings
@@ -47,7 +48,7 @@ def invalidate_user_cache(user_id: int) -> None:
     cache.delete_many(base_keys)
 
     # Variant keys set by viewsets with sets_param suffix and bulk_sync
-    delete_pattern = getattr(cache, 'delete_pattern', None)
+    delete_pattern = getattr(cache, "delete_pattern", None)
     if callable(delete_pattern):
         delete_pattern(f"{get_user_shortcuts_key(user_id)}:*")
         delete_pattern(f"bulk_sync:{user_id}:*")
@@ -63,16 +64,16 @@ def cached_shortcuts(timeout: int = None):
             ...
     """
     if timeout is None:
-        timeout = getattr(settings, 'CACHE_TIMEOUTS', {}).get('shortcuts', 300)
+        timeout = getattr(settings, "CACHE_TIMEOUTS", {}).get("shortcuts", 300)
 
     def decorator(func):
         @wraps(func)
         def wrapper(self, request, *args, **kwargs):
             # Skip cache for non-GET requests or when updated_after is used
-            if request.method != 'GET':
+            if request.method != "GET":
                 return func(self, request, *args, **kwargs)
 
-            updated_after = request.query_params.get('updated_after')
+            updated_after = request.query_params.get("updated_after")
             if updated_after:
                 # Delta sync - don't cache partial results
                 return func(self, request, *args, **kwargs)
@@ -86,11 +87,13 @@ def cached_shortcuts(timeout: int = None):
             response = func(self, request, *args, **kwargs)
 
             # Only cache successful responses
-            if hasattr(response, 'status_code') and response.status_code == 200:
+            if hasattr(response, "status_code") and response.status_code == 200:
                 cache.set(cache_key, response, timeout)
 
             return response
+
         return wrapper
+
     return decorator
 
 
@@ -99,12 +102,12 @@ def cached_sets(timeout: int = None):
     Decorator to cache shortcut sets queries per user.
     """
     if timeout is None:
-        timeout = getattr(settings, 'CACHE_TIMEOUTS', {}).get('shortcut_sets', 600)
+        timeout = getattr(settings, "CACHE_TIMEOUTS", {}).get("shortcut_sets", 600)
 
     def decorator(func):
         @wraps(func)
         def wrapper(self, request, *args, **kwargs):
-            if request.method != 'GET':
+            if request.method != "GET":
                 return func(self, request, *args, **kwargs)
 
             cache_key = get_user_sets_key(request.user.id)
@@ -115,9 +118,11 @@ def cached_sets(timeout: int = None):
 
             response = func(self, request, *args, **kwargs)
 
-            if hasattr(response, 'status_code') and response.status_code == 200:
+            if hasattr(response, "status_code") and response.status_code == 200:
                 cache.set(cache_key, response, timeout)
 
             return response
+
         return wrapper
+
     return decorator

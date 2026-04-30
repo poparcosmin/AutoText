@@ -10,6 +10,7 @@ All shortcuts use:
   {{form:Label|default}} for inline customization
   $|$ cursor positioning
 """
+
 import json
 import sqlite3
 from pathlib import Path
@@ -39,7 +40,6 @@ BODY_SHORTCUTS = {
         "[[%s(sig-personal)]]\n$|$",
         [],  # No variants — single CTA pattern, simple is better
     ),
-
     # op-fu2 — Day 10 follow-up (objection preempt: pricing/timing)
     "op-fu2": (
         "[[%s(salut)]]\n\n"
@@ -58,7 +58,6 @@ BODY_SHORTCUTS = {
         "[[%s(sig-personal)]]\n$|$",
         [],
     ),
-
     # op-fu3 — Day 17 BREAKUP (paradox: more replies than 2nd follow-up)
     "op-fu3": (
         "[[%s(salut)]]\n\n"
@@ -79,7 +78,6 @@ BODY_SHORTCUTS = {
         "[[%s(sig-personal)]]\n$|$",
         [],
     ),
-
     # op-accept — Comandă acceptată, transition la implementare
     "op-accept": (
         "[[%s(salut)]]\n\n"
@@ -98,7 +96,6 @@ BODY_SHORTCUTS = {
         "[[%s(sig-personal)]]\n$|$",
         [],
     ),
-
     # op-rej — Comandă refuzată — gather feedback, leave door open
     "op-rej": (
         "[[%s(salut)]]\n\n"
@@ -117,7 +114,6 @@ BODY_SHORTCUTS = {
         "[[%s(sig-personal)]]\n$|$",
         [],
     ),
-
     # proba — Mostre gratuite (door-opener)
     "proba": (
         "[[%s(salut)]]\n\n"
@@ -136,7 +132,6 @@ BODY_SHORTCUTS = {
         "[[%s(sig-personal)]]\n$|$",
         [],
     ),
-
     # urg — Comandă urgentă (priority handling)
     "urg": (
         "[[%s(salut)]]\n\n"
@@ -155,7 +150,6 @@ BODY_SHORTCUTS = {
         "[[%s(sig-personal)]]\n$|$",
         [],
     ),
-
     # ret — Re-engagement client inactiv (>6 luni)
     "ret": (
         "[[%s(salut)]]\n\n"
@@ -221,7 +215,12 @@ BREVITY_PRIMARY_REWRITES = {
 }
 
 
-def upsert_shortcut(con: sqlite3.Connection, key: str, value: str, variants_list: list[str] | None = None):
+def upsert_shortcut(
+    con: sqlite3.Connection,
+    key: str,
+    value: str,
+    variants_list: list[str] | None = None,
+):
     """Insert new or update existing shortcut by key."""
     cur = con.cursor()
     variants_json = json.dumps(variants_list or [], ensure_ascii=False)

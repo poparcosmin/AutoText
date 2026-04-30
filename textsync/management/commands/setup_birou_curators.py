@@ -9,6 +9,7 @@ Examples:
     uv run python manage.py setup_birou_curators cosmin bogdan
     uv run python manage.py setup_birou_curators --list     # show current members
 """
+
 from django.contrib.auth.models import Group, User
 from django.core.management.base import BaseCommand
 
@@ -63,13 +64,15 @@ class Command(BaseCommand):
                 added.append(username)
 
         if added:
-            self.stdout.write(self.style.SUCCESS(
-                f"Added to '{GROUP_NAME}': {', '.join(added)}"
-            ))
+            self.stdout.write(
+                self.style.SUCCESS(f"Added to '{GROUP_NAME}': {', '.join(added)}")
+            )
         else:
-            self.stdout.write("No new members added (all targets were already members).")
+            self.stdout.write(
+                "No new members added (all targets were already members)."
+            )
 
         if missing:
-            self.stdout.write(self.style.WARNING(
-                f"Skipped (no such user): {', '.join(missing)}"
-            ))
+            self.stdout.write(
+                self.style.WARNING(f"Skipped (no such user): {', '.join(missing)}")
+            )

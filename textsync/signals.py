@@ -9,6 +9,7 @@ and signal-driven mutations that views never see.
 Coalesces invalidations via `transaction.on_commit` so one save with N
 related users yields one batch instead of N individual cache hits.
 """
+
 from django.db import transaction
 from django.db.models.signals import post_save, post_delete, m2m_changed, pre_save
 from django.dispatch import receiver
@@ -46,8 +47,8 @@ def invalidate_on_shortcut_change(sender, instance, **kwargs):
     # contain this shortcut — avoids N+1 from iterating sets then visible_to.
     shared_user_ids = ShortcutSet.objects.filter(
         shortcuts=instance,
-        set_type='shared',
-    ).values_list('visible_to__id', flat=True)
+        set_type="shared",
+    ).values_list("visible_to__id", flat=True)
     user_ids.update(shared_user_ids)
     _bulk_invalidate(user_ids)
 
@@ -57,12 +58,14 @@ def invalidate_on_set_change(sender, instance, **kwargs):
     user_ids = set()
     if instance.owner_id:
         user_ids.add(instance.owner_id)
-    user_ids.update(instance.visible_to.values_list('id', flat=True))
+    user_ids.update(instance.visible_to.values_list("id", flat=True))
     _bulk_invalidate(user_ids)
 
 
 @receiver(m2m_changed, sender=ShortcutSet.visible_to.through)
-def invalidate_on_visibility_change(sender, instance, action, pk_set, reverse, **kwargs):
+def invalidate_on_visibility_change(
+    sender, instance, action, pk_set, reverse, **kwargs
+):
     """M2M signals fire from both directions:
 
     - reverse=False: instance is ShortcutSet, pk_set are User IDs
@@ -82,7 +85,7 @@ def invalidate_on_visibility_change(sender, instance, action, pk_set, reverse, *
         owner_ids = ShortcutSet.objects.filter(
             pk__in=pk_set,
             owner__isnull=False,
-        ).values_list('owner_id', flat=True)
+        ).values_list("owner_id", flat=True)
         user_ids.update(owner_ids)
     else:
         # Set-side: instance is ShortcutSet; pk_set are User IDs being added/removed
@@ -116,31 +119,34 @@ def snapshot_shortcut_history(sender, instance, **kwargs):
         return
 
     try:
-        old = Shortcut.objects.only(
-            'key', 'content_type', 'value', 'html_value'
-        ).get(pk=instance.pk)
+        old = Shortcut.objects.only("key", "content_type", "value", "html_value").get(
+            pk=instance.pk
+        )
     except Shortcut.DoesNotExist:
         return
 
     # No-op save (admin clicked save without editing) — skip noise.
-    if (old.key == instance.key
-            and old.content_type == instance.content_type
-            and old.value == instance.value
-            and (old.html_value or '') == (instance.html_value or '')):
+    if (
+        old.key == instance.key
+        and old.content_type == instance.content_type
+        and old.value == instance.value
+        and (old.html_value or "") == (instance.html_value or "")
+    ):
         return
 
     # Only snapshot if the shortcut belongs to at least one general set.
     # `.exists()` is cheap (LIMIT 1) and the membership is the persisted
     # state, not the in-memory one.
-    is_general = old.sets.filter(set_type='general').exists()
+    is_general = old.sets.filter(set_type="general").exists()
     if not is_general:
         return
 
-    last = (ShortcutVersion.objects
-            .filter(shortcut=instance)
-            .order_by('-version_number')
-            .values_list('version_number', flat=True)
-            .first())
+    last = (
+        ShortcutVersion.objects.filter(shortcut=instance)
+        .order_by("-version_number")
+        .values_list("version_number", flat=True)
+        .first()
+    )
     next_version = (last or 0) + 1
 
     ShortcutVersion.objects.create(
@@ -156,9 +162,8 @@ def snapshot_shortcut_history(sender, instance, **kwargs):
     # Prune older snapshots beyond the cap. We delete by PK so the
     # ordering query is deterministic even when timestamps are equal.
     keep_pks = list(
-        ShortcutVersion.objects
-        .filter(shortcut=instance)
-        .order_by('-version_number')
-        .values_list('pk', flat=True)[:SNIPPET_HISTORY_LIMIT]
+        ShortcutVersion.objects.filter(shortcut=instance)
+        .order_by("-version_number")
+        .values_list("pk", flat=True)[:SNIPPET_HISTORY_LIMIT]
     )
     ShortcutVersion.objects.filter(shortcut=instance).exclude(pk__in=keep_pks).delete()

@@ -3,6 +3,7 @@ Input validation and sanitization utilities for AutoText.
 
 Uses bleach library to clean HTML and prevent XSS attacks.
 """
+
 import re
 import bleach
 
@@ -13,38 +14,83 @@ import bleach
 # Removing it would silently strip user-visible colour cues — unfriendly
 # for an internal app where "security average" is the bar.
 ALLOWED_TAGS = [
-    'p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'strike',
-    'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-    'ul', 'ol', 'li',
-    'a', 'span', 'div', 'font',
-    'table', 'thead', 'tbody', 'tr', 'th', 'td',
-    'blockquote', 'pre', 'code',
-    'img', 'hr',
+    "p",
+    "br",
+    "strong",
+    "b",
+    "em",
+    "i",
+    "u",
+    "s",
+    "strike",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "ul",
+    "ol",
+    "li",
+    "a",
+    "span",
+    "div",
+    "font",
+    "table",
+    "thead",
+    "tbody",
+    "tr",
+    "th",
+    "td",
+    "blockquote",
+    "pre",
+    "code",
+    "img",
+    "hr",
 ]
 
 # Allowed attributes per tag
 ALLOWED_ATTRIBUTES = {
-    '*': ['class', 'style'],
-    'a': ['href', 'title', 'target', 'rel'],
-    'img': ['src', 'alt', 'title', 'width', 'height'],
-    'td': ['colspan', 'rowspan'],
-    'th': ['colspan', 'rowspan'],
-    'span': ['data-placeholder'],  # For TinyMCE placeholders
-    'font': ['color', 'face', 'size'],  # legacy TinyMCE colour cues
+    "*": ["class", "style"],
+    "a": ["href", "title", "target", "rel"],
+    "img": ["src", "alt", "title", "width", "height"],
+    "td": ["colspan", "rowspan"],
+    "th": ["colspan", "rowspan"],
+    "span": ["data-placeholder"],  # For TinyMCE placeholders
+    "font": ["color", "face", "size"],  # legacy TinyMCE colour cues
 }
 
 # Allowed CSS properties in style attribute
 ALLOWED_STYLES = [
-    'color', 'background-color', 'font-size', 'font-weight', 'font-style',
-    'text-align', 'text-decoration', 'margin', 'padding',
-    'margin-left', 'margin-right', 'margin-top', 'margin-bottom',
-    'padding-left', 'padding-right', 'padding-top', 'padding-bottom',
-    'border', 'border-color', 'border-width', 'border-style',
-    'width', 'height', 'max-width', 'max-height',
+    "color",
+    "background-color",
+    "font-size",
+    "font-weight",
+    "font-style",
+    "text-align",
+    "text-decoration",
+    "margin",
+    "padding",
+    "margin-left",
+    "margin-right",
+    "margin-top",
+    "margin-bottom",
+    "padding-left",
+    "padding-right",
+    "padding-top",
+    "padding-bottom",
+    "border",
+    "border-color",
+    "border-width",
+    "border-style",
+    "width",
+    "height",
+    "max-width",
+    "max-height",
 ]
 
 # Allowed URL protocols
-ALLOWED_PROTOCOLS = ['http', 'https', 'mailto', 'tel']
+ALLOWED_PROTOCOLS = ["http", "https", "mailto", "tel"]
 
 
 def sanitize_html(html_content: str) -> str:
@@ -63,14 +109,18 @@ def sanitize_html(html_content: str) -> str:
     # First, remove dangerous tags AND their content entirely
     # bleach.clean with strip=True only removes tags, not content
     dangerous_tags_pattern = re.compile(
-        r'<(script|style|noscript|iframe|object|embed|applet)[^>]*>.*?</\1>',
-        re.IGNORECASE | re.DOTALL
+        r"<(script|style|noscript|iframe|object|embed|applet)[^>]*>.*?</\1>",
+        re.IGNORECASE | re.DOTALL,
     )
-    html_content = dangerous_tags_pattern.sub('', html_content)
+    html_content = dangerous_tags_pattern.sub("", html_content)
 
     # Also remove self-closing/unclosed dangerous tags
-    html_content = re.sub(r'<(script|style|noscript|iframe|object|embed|applet)[^>]*/?>',
-                          '', html_content, flags=re.IGNORECASE)
+    html_content = re.sub(
+        r"<(script|style|noscript|iframe|object|embed|applet)[^>]*/?>",
+        "",
+        html_content,
+        flags=re.IGNORECASE,
+    )
 
     # Use bleach to clean the remaining HTML
     cleaned = bleach.clean(
@@ -107,9 +157,12 @@ def validate_shortcut_key(key: str) -> tuple[bool, str]:
         return False, "Shortcut key must be at least 1 character"
 
     # Check for valid characters
-    pattern = r'^[a-zA-Z_][a-zA-Z0-9_\-\.]*$'
+    pattern = r"^[a-zA-Z_][a-zA-Z0-9_\-\.]*$"
     if not re.match(pattern, key):
-        return False, "Shortcut key must start with a letter or underscore and contain only alphanumeric characters, underscores, hyphens, or periods"
+        return (
+            False,
+            "Shortcut key must start with a letter or underscore and contain only alphanumeric characters, underscores, hyphens, or periods",
+        )
 
     return True, ""
 
@@ -151,8 +204,11 @@ def validate_set_name(name: str) -> tuple[bool, str]:
         return False, "Set name must be at least 1 character"
 
     # Check for valid characters
-    pattern = r'^[a-zA-Z0-9][a-zA-Z0-9\s_\-]*$'
+    pattern = r"^[a-zA-Z0-9][a-zA-Z0-9\s_\-]*$"
     if not re.match(pattern, name):
-        return False, "Set name must start with an alphanumeric character and contain only letters, numbers, spaces, underscores, or hyphens"
+        return (
+            False,
+            "Set name must start with an alphanumeric character and contain only letters, numbers, spaces, underscores, or hyphens",
+        )
 
     return True, ""

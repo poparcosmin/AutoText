@@ -8,6 +8,7 @@ Note on accessible_sets: this module preserves the existing bulk-sync rule
 (more permissive than ShortcutViewSet — see audit notes). Do not reconcile
 without an explicit behavior-change ticket.
 """
+
 from typing import Any
 
 import structlog
@@ -39,7 +40,7 @@ def _get_accessible_sets(user: Any, requested_sets: list[str]) -> QuerySet[Short
         accessible_sets = ShortcutSet.objects.all()
     else:
         accessible_sets = ShortcutSet.objects.filter(
-            Q(set_type='general') | Q(owner=user) | Q(visible_to=user)
+            Q(set_type="general") | Q(owner=user) | Q(visible_to=user)
         ).distinct()
 
     if requested_sets:
@@ -61,12 +62,12 @@ def _serialize_shortcuts(
     accessible_sets: QuerySet[ShortcutSet], updated_after: str | None
 ) -> list[dict[str, Any]]:
     shortcuts_qs = Shortcut.objects.filter(sets__in=accessible_sets).distinct()
-    shortcuts_qs = shortcuts_qs.select_related('owner', 'updated_by')
-    shortcuts_qs = shortcuts_qs.prefetch_related('sets', 'aliases')
+    shortcuts_qs = shortcuts_qs.select_related("owner", "updated_by")
+    shortcuts_qs = shortcuts_qs.prefetch_related("sets", "aliases")
     shortcuts_qs = shortcuts_qs.order_by("key")
 
     if updated_after:
-        parsed_updated_after = parse_datetime(updated_after.replace('Z', '+00:00'))
+        parsed_updated_after = parse_datetime(updated_after.replace("Z", "+00:00"))
         if parsed_updated_after:
             if timezone.is_naive(parsed_updated_after):
                 tz = timezone.get_current_timezone()
@@ -96,17 +97,17 @@ def build_bulk_sync_response(
     shortcuts_data = _serialize_shortcuts(accessible_sets, updated_after)
 
     response_data = {
-        'sets': sets_data,
-        'shortcuts': shortcuts_data,
-        'server_time': timezone.now().isoformat(),
-        'count': {
-            'sets': len(sets_data),
-            'shortcuts': len(shortcuts_data),
+        "sets": sets_data,
+        "shortcuts": shortcuts_data,
+        "server_time": timezone.now().isoformat(),
+        "count": {
+            "sets": len(sets_data),
+            "shortcuts": len(shortcuts_data),
         },
     }
 
     if not updated_after:
-        timeout = getattr(settings, 'CACHE_TIMEOUTS', {}).get('shortcuts', 300)
+        timeout = getattr(settings, "CACHE_TIMEOUTS", {}).get("shortcuts", 300)
         cache.set(cache_key, response_data, timeout)
         logger.debug(f"Cache set for bulk sync: user={user.id}")
 
