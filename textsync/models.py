@@ -4,16 +4,33 @@ from django.db import models
 from django.utils import timezone
 from datetime import timedelta
 import binascii
+import hashlib
 import os
 
 
 class ExpiringToken(models.Model):
     """
     Custom token model with expiration.
+
+    Storage model:
+        - `key` holds the SHA-256 hex digest of the plain-text token, NOT
+          the plain token itself. The plain value is shown to the client
+          exactly once (at creation/refresh) and never stored. A DB dump
+          or backup leak therefore cannot be used to impersonate users.
+        - SHA-256 hex is 64 chars; we don't apply a per-token salt because
+          the plain token is already 160 bits of cryptographic randomness
+          (`os.urandom(20)`), which makes rainbow-table or brute-force
+          attacks economically pointless.
+
     Tokens expire after 180 days.
     """
 
-    key: models.CharField = models.CharField(max_length=40, primary_key=True)
+    PLAIN_LENGTH_CHARS = 40  # 20 random bytes hex-encoded
+    HASH_LENGTH_CHARS = 64  # SHA-256 hex digest
+
+    key: models.CharField = models.CharField(
+        max_length=HASH_LENGTH_CHARS, primary_key=True
+    )
     user: models.OneToOneField = models.OneToOneField(
         User, related_name="auth_token", on_delete=models.CASCADE
     )
@@ -26,14 +43,35 @@ class ExpiringToken(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.key:
-            self.key = self.generate_key()
+            # Backstop only: anything calling `save()` without going through
+            # `issue_for_user()` ends up with a hash whose plain value was
+            # never returned, so the token is effectively unusable. The
+            # supported entry point is `issue_for_user()`.
+            self.key = self.hash_plain(self.generate_plain_key())
         if not self.expires_at:
             self.expires_at = timezone.now() + timedelta(days=180)
         return super().save(*args, **kwargs)
 
-    @classmethod
-    def generate_key(cls):
+    @staticmethod
+    def generate_plain_key() -> str:
+        """Return a fresh plain-text token to hand back to the client."""
         return binascii.hexlify(os.urandom(20)).decode()
+
+    @staticmethod
+    def hash_plain(plain: str) -> str:
+        """Return the storage-form digest of a plain token."""
+        return hashlib.sha256(plain.encode("utf-8")).hexdigest()
+
+    @classmethod
+    def issue_for_user(cls, user: User) -> tuple["ExpiringToken", str]:
+        """Create a token for `user` and return (instance, plain_key).
+
+        Callers MUST surface `plain_key` to the client exactly once and
+        then drop it; the database only ever holds the hash.
+        """
+        plain = cls.generate_plain_key()
+        token = cls.objects.create(user=user, key=cls.hash_plain(plain))
+        return token, plain
 
     def is_expired(self):
         return timezone.now() > self.expires_at

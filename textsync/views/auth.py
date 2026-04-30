@@ -49,17 +49,16 @@ def login_view(request):
             {"error": "User account is disabled"}, status=status.HTTP_403_FORBIDDEN
         )
 
-    # Get or create token for user
-    token, created = ExpiringToken.objects.get_or_create(user=user)
-
-    # If token exists but is expired, regenerate it
-    if not created and token.is_expired():
-        token.delete()
-        token = ExpiringToken.objects.create(user=user)
+    # The DB stores only a hash, so we cannot return the existing token's
+    # plain value to a re-logging-in user — issue a fresh token each time
+    # and replace any prior one. This also fixes a pre-hash quirk where
+    # multiple devices shared the same token because of `get_or_create`.
+    ExpiringToken.objects.filter(user=user).delete()
+    token, plain_key = ExpiringToken.issue_for_user(user)
 
     return Response(
         {
-            "token": token.key,
+            "token": plain_key,
             "expires_at": token.expires_at.isoformat(),
             "user": {
                 "id": user.id,
@@ -145,12 +144,13 @@ def refresh_token_view(request):
     time_until_expiry = old_token.expires_at - timezone.now()
 
     if time_until_expiry > refresh_window:
-        # Token is still fresh, no need to refresh
+        # Token is still fresh, no need to refresh. We can no longer
+        # echo the plain token here (DB has only the hash), so just
+        # signal "still valid" — the client already holds the plain key.
         logger.info(f"Token refresh rejected - too early: user={request.user.id}")
         return Response(
             {
                 "message": "Token still valid, refresh not needed",
-                "token": old_token.key,
                 "expires_at": old_token.expires_at.isoformat(),
                 "days_until_expiry": time_until_expiry.days,
             }
@@ -158,13 +158,13 @@ def refresh_token_view(request):
 
     # Delete old token and create new one
     old_token.delete()
-    new_token = ExpiringToken.objects.create(user=request.user)
+    new_token, plain_key = ExpiringToken.issue_for_user(request.user)
 
     logger.info(f"Token refreshed: user={request.user.id}")
 
     return Response(
         {
-            "token": new_token.key,
+            "token": plain_key,
             "expires_at": new_token.expires_at.isoformat(),
             "user": {
                 "id": request.user.id,

@@ -60,8 +60,8 @@ class AuthenticationAPITests(APITestCase):
     def test_logout_success(self):
         """Logout should delete token."""
         # First login
-        token = ExpiringToken.objects.create(user=self.user)
-        self.client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+        _token, plain = ExpiringToken.issue_for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {plain}")
 
         response = self.client.post("/api/auth/logout/")
 
@@ -70,8 +70,8 @@ class AuthenticationAPITests(APITestCase):
 
     def test_verify_token_valid(self):
         """Valid token should return user info."""
-        token = ExpiringToken.objects.create(user=self.user)
-        self.client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+        _token, plain = ExpiringToken.issue_for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {plain}")
 
         response = self.client.get("/api/auth/verify/")
 
@@ -80,11 +80,11 @@ class AuthenticationAPITests(APITestCase):
 
     def test_verify_token_expired(self):
         """Expired token should fail authentication."""
-        token = ExpiringToken.objects.create(user=self.user)
+        token, plain = ExpiringToken.issue_for_user(self.user)
         token.expires_at = timezone.now() - timedelta(days=1)
         token.save()
 
-        self.client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {plain}")
 
         response = self.client.get("/api/auth/verify/")
 
@@ -93,26 +93,26 @@ class AuthenticationAPITests(APITestCase):
 
     def test_refresh_token_within_window(self):
         """Token refresh should work within 30-day window."""
-        token = ExpiringToken.objects.create(user=self.user)
+        token, plain = ExpiringToken.issue_for_user(self.user)
         # Set expiration to 20 days from now (within 30-day refresh window)
         token.expires_at = timezone.now() + timedelta(days=20)
         token.save()
 
-        self.client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {plain}")
 
         response = self.client.post("/api/auth/refresh/")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("token", response.data)
-        # New token should be different
-        self.assertNotEqual(response.data["token"], token.key)
+        # New plain token must differ from the one we just used.
+        self.assertNotEqual(response.data["token"], plain)
 
     def test_refresh_token_too_early(self):
         """Token refresh should be rejected if too early."""
-        token = ExpiringToken.objects.create(user=self.user)
+        _token, plain = ExpiringToken.issue_for_user(self.user)
         # Default is 180 days, so 150 days left is outside 30-day window
 
-        self.client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {plain}")
 
         response = self.client.post("/api/auth/refresh/")
 

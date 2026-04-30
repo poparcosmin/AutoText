@@ -18,16 +18,18 @@ class ExpiringTokenModelTest(TestCase):
         )
 
     def test_token_creation(self):
-        """Token should be created with key and expiration."""
-        token = ExpiringToken.objects.create(user=self.user)
+        """issue_for_user returns a hashed key and a 40-char plain token."""
+        token, plain = ExpiringToken.issue_for_user(self.user)
 
-        self.assertIsNotNone(token.key)
-        self.assertEqual(len(token.key), 40)  # 20 bytes hex = 40 chars
+        self.assertEqual(len(plain), ExpiringToken.PLAIN_LENGTH_CHARS)
+        self.assertEqual(len(token.key), ExpiringToken.HASH_LENGTH_CHARS)
+        self.assertEqual(token.key, ExpiringToken.hash_plain(plain))
+        self.assertNotEqual(token.key, plain)
         self.assertIsNotNone(token.expires_at)
 
     def test_token_expiration_180_days(self):
         """Token should expire after 180 days."""
-        token = ExpiringToken.objects.create(user=self.user)
+        token, _plain = ExpiringToken.issue_for_user(self.user)
 
         expected_expiry = timezone.now() + timedelta(days=180)
         # Allow 1 minute tolerance
@@ -37,12 +39,12 @@ class ExpiringTokenModelTest(TestCase):
 
     def test_is_expired_false_for_new_token(self):
         """New token should not be expired."""
-        token = ExpiringToken.objects.create(user=self.user)
+        token, _ = ExpiringToken.issue_for_user(self.user)
         self.assertFalse(token.is_expired())
 
     def test_is_expired_true_for_old_token(self):
         """Token past expiration should be expired."""
-        token = ExpiringToken.objects.create(user=self.user)
+        token, _ = ExpiringToken.issue_for_user(self.user)
         token.expires_at = timezone.now() - timedelta(days=1)
         token.save()
 
@@ -50,7 +52,7 @@ class ExpiringTokenModelTest(TestCase):
 
     def test_token_string_representation(self):
         """Token __str__ should include username and expiry."""
-        token = ExpiringToken.objects.create(user=self.user)
+        token, _ = ExpiringToken.issue_for_user(self.user)
         str_repr = str(token)
 
         self.assertIn("testuser", str_repr)
@@ -58,10 +60,10 @@ class ExpiringTokenModelTest(TestCase):
 
     def test_one_token_per_user(self):
         """Each user should have at most one token (OneToOne)."""
-        ExpiringToken.objects.create(user=self.user)
+        ExpiringToken.issue_for_user(self.user)
 
         with self.assertRaises(Exception):
-            ExpiringToken.objects.create(user=self.user)
+            ExpiringToken.issue_for_user(self.user)
 
 
 class ShortcutSetModelTest(TestCase):

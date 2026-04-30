@@ -52,8 +52,8 @@ class IntegrationTests(APITestCase):
         """Test typical extension sync workflow."""
         # Setup
         user = User.objects.create_user(username="sync_user", password="pass")
-        token = ExpiringToken.objects.create(user=user)
-        self.client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+        _token, plain = ExpiringToken.issue_for_user(user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {plain}")
 
         # Create sets and shortcuts
         birou = ShortcutSet.objects.create(name="birou", set_type="general", owner=user)

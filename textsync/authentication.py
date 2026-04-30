@@ -33,8 +33,12 @@ class ExpiringTokenAuthentication(authentication.BaseAuthentication):
         return self.authenticate_credentials(token)
 
     def authenticate_credentials(self, key):
+        # The DB stores the SHA-256 hash of the plain token; hash incoming
+        # credentials and look up by digest. Never log or compare the
+        # plain value beyond this hash step.
+        digest = self.model.hash_plain(key)
         try:
-            token = self.model.objects.select_related("user").get(key=key)
+            token = self.model.objects.select_related("user").get(key=digest)
         except self.model.DoesNotExist:
             raise exceptions.AuthenticationFailed("Invalid token.")
 

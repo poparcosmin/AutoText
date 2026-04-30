@@ -16,8 +16,8 @@ class BulkSyncAPITests(APITestCase):
         self.user = User.objects.create_user(
             username="testuser", password="testpass123"
         )
-        self.token = ExpiringToken.objects.create(user=self.user)
-        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.token.key}")
+        self.token, plain = ExpiringToken.issue_for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {plain}")
 
         # Create test data
         self.shortcut_set = ShortcutSet.objects.create(
