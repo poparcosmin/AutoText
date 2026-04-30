@@ -204,7 +204,9 @@ def lint_db() -> list[Issue]:
 
         # Lint variants
         for i, v in enumerate(variants):
-            issues.extend(lint_text(v, key, f"variant {i+1}", all_keys, all_var_names))
+            issues.extend(
+                lint_text(v, key, f"variant {i + 1}", all_keys, all_var_names)
+            )
 
     con.close()
     return issues
