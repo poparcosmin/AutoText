@@ -12,12 +12,12 @@ class ExpiringToken(models.Model):
     Tokens expire after 180 days.
     """
 
-    key = models.CharField(max_length=40, primary_key=True)
-    user = models.OneToOneField(
+    key: models.CharField = models.CharField(max_length=40, primary_key=True)
+    user: models.OneToOneField = models.OneToOneField(
         User, related_name="auth_token", on_delete=models.CASCADE
     )
-    created = models.DateTimeField(auto_now_add=True)
-    expires_at = models.DateTimeField()
+    created: models.DateTimeField = models.DateTimeField(auto_now_add=True)
+    expires_at: models.DateTimeField = models.DateTimeField()
 
     class Meta:
         verbose_name = "Expiring Token"
@@ -49,10 +49,12 @@ class ShortcutSet(models.Model):
         ("personal", "Personal (Utilizator)"),
     ]
 
-    name = models.CharField(max_length=50, unique=True)
-    set_type = models.CharField(max_length=10, choices=SET_TYPES, default="general")
-    description = models.TextField(blank=True)
-    owner = models.ForeignKey(
+    name: models.CharField = models.CharField(max_length=50, unique=True)
+    set_type: models.CharField = models.CharField(
+        max_length=10, choices=SET_TYPES, default="general"
+    )
+    description: models.TextField = models.TextField(blank=True)
+    owner: models.ForeignKey = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         null=True,
@@ -60,13 +62,13 @@ class ShortcutSet(models.Model):
         related_name="owned_sets",
         help_text="User who owns this set. Staff can only see/edit their own sets.",
     )
-    visible_to = models.ManyToManyField(
+    visible_to: models.ManyToManyField = models.ManyToManyField(
         User,
         blank=True,
         related_name="visible_sets",
         help_text="Staff users who can see this set (in addition to the owner). Only superusers can set this.",
     )
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at: models.DateTimeField = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ["set_type", "name"]
@@ -85,16 +87,18 @@ class Shortcut(models.Model):
         ("html", "Rich Text (HTML)"),
     ]
 
-    key = models.CharField(
+    key: models.CharField = models.CharField(
         max_length=50
     )  # Removed unique=True - same key can be in different sets
-    content_type = models.CharField(
+    content_type: models.CharField = models.CharField(
         max_length=10, choices=CONTENT_TYPES, default="text"
     )
-    value = models.TextField(blank=True)
-    html_value = models.TextField(blank=True, null=True)
-    sets = models.ManyToManyField(ShortcutSet, related_name="shortcuts", blank=True)
-    owner = models.ForeignKey(
+    value: models.TextField = models.TextField(blank=True)
+    html_value: models.TextField = models.TextField(blank=True, null=True)
+    sets: models.ManyToManyField = models.ManyToManyField(
+        ShortcutSet, related_name="shortcuts", blank=True
+    )
+    owner: models.ForeignKey = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         null=True,
@@ -102,8 +106,8 @@ class Shortcut(models.Model):
         related_name="owned_shortcuts",
         help_text="User who owns this shortcut. Staff can only see/edit their own shortcuts.",
     )
-    updated_at = models.DateTimeField(auto_now=True)
-    updated_by = models.ForeignKey(
+    updated_at: models.DateTimeField = models.DateTimeField(auto_now=True)
+    updated_by: models.ForeignKey = models.ForeignKey(
         User,
         on_delete=models.SET_NULL,
         null=True,
@@ -111,10 +115,10 @@ class Shortcut(models.Model):
         related_name="updated_shortcuts",
     )
     # Usage tracking
-    usage_count = models.PositiveIntegerField(
+    usage_count: models.PositiveIntegerField = models.PositiveIntegerField(
         default=0, help_text="Total times this shortcut has been expanded"
     )
-    last_used_at = models.DateTimeField(
+    last_used_at: models.DateTimeField = models.DateTimeField(
         null=True, blank=True, help_text="Last time this shortcut was used"
     )
     # Optional alternative bodies the extension picks from at random when
@@ -123,7 +127,7 @@ class Shortcut(models.Model):
     # (text or html); the UI enforces matching format on input. Max 3
     # entries — beyond that the user can't realistically tell variants
     # apart and the random feel becomes noise.
-    variants = models.JSONField(
+    variants: models.JSONField = models.JSONField(
         default=list,
         blank=True,
         help_text="Alternative bodies for random pick at expand time. Max 3.",
@@ -167,17 +171,19 @@ class UserVariable(models.Model):
     fit cleanly inside the [[var:...]] grammar without escaping.
     """
 
-    user = models.ForeignKey(
+    user: models.ForeignKey = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         related_name="variables",
         help_text="Owner — only this user sees + uses this variable",
     )
-    name = models.CharField(
+    name: models.CharField = models.CharField(
         max_length=50, help_text="Variable name (used as [[var:name]] in shortcuts)"
     )
-    value = models.TextField(blank=True, help_text="What the variable expands to")
-    updated_at = models.DateTimeField(auto_now=True)
+    value: models.TextField = models.TextField(
+        blank=True, help_text="What the variable expands to"
+    )
+    updated_at: models.DateTimeField = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ["name"]

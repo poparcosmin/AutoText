@@ -144,14 +144,16 @@ def gmail_to_message(raw: dict, user_email: str) -> Message:
         from_addr.email, [a.email for a in to_addrs], user_email
     )
 
-    headers = Headers(
-        from_=from_addr,
-        to=to_addrs,
-        cc=cc_addrs,
-        subject=subject,
-        in_reply_to=in_reply_to,
-        references=references,
-        message_id_rfc=rfc_msg_id,
+    headers = Headers.model_validate(
+        {
+            "from": from_addr,
+            "to": to_addrs,
+            "cc": cc_addrs,
+            "subject": subject,
+            "in_reply_to": in_reply_to,
+            "references": references,
+            "message_id_rfc": rfc_msg_id,
+        }
     )
 
     return Message(

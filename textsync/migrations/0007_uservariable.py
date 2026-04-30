@@ -6,28 +6,58 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('textsync', '0006_shortcut_textsync_sh_updated_bf3500_idx'),
+        ("textsync", "0006_shortcut_textsync_sh_updated_bf3500_idx"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='UserVariable',
+            name="UserVariable",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(help_text='Variable name (used as [[var:name]] in shortcuts)', max_length=50)),
-                ('value', models.TextField(blank=True, help_text='What the variable expands to')),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('user', models.ForeignKey(help_text='Owner — only this user sees + uses this variable', on_delete=django.db.models.deletion.CASCADE, related_name='variables', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(
+                        help_text="Variable name (used as [[var:name]] in shortcuts)",
+                        max_length=50,
+                    ),
+                ),
+                (
+                    "value",
+                    models.TextField(
+                        blank=True, help_text="What the variable expands to"
+                    ),
+                ),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        help_text="Owner — only this user sees + uses this variable",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="variables",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'User Variable',
-                'verbose_name_plural': 'User Variables',
-                'ordering': ['name'],
-                'indexes': [models.Index(fields=['user', 'name'], name='textsync_us_user_id_617a20_idx')],
-                'unique_together': {('user', 'name')},
+                "verbose_name": "User Variable",
+                "verbose_name_plural": "User Variables",
+                "ordering": ["name"],
+                "indexes": [
+                    models.Index(
+                        fields=["user", "name"], name="textsync_us_user_id_617a20_idx"
+                    )
+                ],
+                "unique_together": {("user", "name")},
             },
         ),
     ]

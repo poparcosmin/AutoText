@@ -179,10 +179,10 @@ def list_threads_for_processing() -> list[Path]:
 
     out = []
     for raw in sorted(RAW_DIR.glob("*/thread-*.json")):
-        rel = raw.relative_to(RAW_DIR)
-        if rel.as_posix() in quarantined:
+        rel_path = raw.relative_to(RAW_DIR)
+        if rel_path.as_posix() in quarantined:
             continue
-        target = ENRICHED_DIR / rel
+        target = ENRICHED_DIR / rel_path
         if not target.exists():
             target.parent.mkdir(parents=True, exist_ok=True)
             with raw.open() as fr:

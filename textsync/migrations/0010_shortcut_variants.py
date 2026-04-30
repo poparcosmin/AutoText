@@ -4,15 +4,18 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('textsync', '0009_shortcutalias'),
+        ("textsync", "0009_shortcutalias"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='shortcut',
-            name='variants',
-            field=models.JSONField(blank=True, default=list, help_text='Alternative bodies for random pick at expand time. Max 3.'),
+            model_name="shortcut",
+            name="variants",
+            field=models.JSONField(
+                blank=True,
+                default=list,
+                help_text="Alternative bodies for random pick at expand time. Max 3.",
+            ),
         ),
     ]

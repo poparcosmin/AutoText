@@ -108,7 +108,7 @@ function _gmailRecipient() {
   }
 
   _gmailFailCount++;
-  if (typeof console !== 'undefined') {
+  if (typeof console !== 'undefined' && !globalThis._SUPPRESS_AUTOTEXT_WARNINGS) {
     console.warn('AutoText: Gmail recipient parser empty (count:', _gmailFailCount, ')');
   }
   // Set the warning flag ONLY if the runtime is still alive. After a

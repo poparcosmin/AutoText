@@ -1,7 +1,9 @@
 // AutoText Content Script - Core text expansion logic
 // Listens for Tab key, detects shortcuts, and replaces with expansions
 
-const DEBUG = true; // TEMP: Enable to debug contenteditable issues
+const DEBUG = (typeof globalThis !== 'undefined' && globalThis._AUTOTEXT_DEBUG !== undefined)
+  ? globalThis._AUTOTEXT_DEBUG
+  : false;
 const debugLog = (...args) => {
   if (DEBUG) {
     console.log(...args);
@@ -546,13 +548,17 @@ const MAX_NESTING_DEPTH = 5;
 function processSnippetNesting(input, shortcutsMap, depth = 0, visited = new Set()) {
   if (!input || typeof input !== 'string') return input;
   if (depth >= MAX_NESTING_DEPTH) {
-    console.warn(`AutoText: nesting depth ${MAX_NESTING_DEPTH} exceeded, stopping`);
+    if (!globalThis._SUPPRESS_AUTOTEXT_WARNINGS) {
+      console.warn(`AutoText: nesting depth ${MAX_NESTING_DEPTH} exceeded, stopping`);
+    }
     return input;
   }
   return input.replace(NESTING_RE, (match, name) => {
     const trimmed = name.trim();
     if (visited.has(trimmed)) {
-      console.warn(`AutoText: nesting cycle detected on "${trimmed}"`);
+      if (!globalThis._SUPPRESS_AUTOTEXT_WARNINGS) {
+        console.warn(`AutoText: nesting cycle detected on "${trimmed}"`);
+      }
       return `[cycle:${trimmed}]`;
     }
     const nested = shortcutsMap && shortcutsMap[trimmed];

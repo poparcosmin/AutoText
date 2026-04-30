@@ -6,32 +6,61 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('textsync', '0007_uservariable'),
+        ("textsync", "0007_uservariable"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='ShortcutVersion',
+            name="ShortcutVersion",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('version_number', models.PositiveIntegerField()),
-                ('key', models.CharField(max_length=50)),
-                ('content_type', models.CharField(max_length=10)),
-                ('value', models.TextField(blank=True)),
-                ('html_value', models.TextField(blank=True, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('created_by', models.ForeignKey(blank=True, help_text='User whose save triggered this snapshot.', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='shortcut_versions', to=settings.AUTH_USER_MODEL)),
-                ('shortcut', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='versions', to='textsync.shortcut')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("version_number", models.PositiveIntegerField()),
+                ("key", models.CharField(max_length=50)),
+                ("content_type", models.CharField(max_length=10)),
+                ("value", models.TextField(blank=True)),
+                ("html_value", models.TextField(blank=True, null=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        blank=True,
+                        help_text="User whose save triggered this snapshot.",
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="shortcut_versions",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "shortcut",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="versions",
+                        to="textsync.shortcut",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Shortcut Version',
-                'verbose_name_plural': 'Shortcut Versions',
-                'ordering': ['-version_number'],
-                'indexes': [models.Index(fields=['shortcut', '-version_number'], name='textsync_sh_shortcu_ffd230_idx')],
-                'unique_together': {('shortcut', 'version_number')},
+                "verbose_name": "Shortcut Version",
+                "verbose_name_plural": "Shortcut Versions",
+                "ordering": ["-version_number"],
+                "indexes": [
+                    models.Index(
+                        fields=["shortcut", "-version_number"],
+                        name="textsync_sh_shortcu_ffd230_idx",
+                    )
+                ],
+                "unique_together": {("shortcut", "version_number")},
             },
         ),
     ]

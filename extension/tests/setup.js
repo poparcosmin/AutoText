@@ -4,6 +4,7 @@
  * Mocks Chrome Extension APIs and provides test utilities.
  */
 
+global.DOMPurify = { sanitize: (html) => html };
 // =============================================================================
 // CHROME API MOCKS
 // =============================================================================
@@ -175,6 +176,8 @@ global.createMockElement = (tagName, attributes = {}) => {
 // =============================================================================
 // TEST UTILITIES
 // =============================================================================
+
+global._SUPPRESS_AUTOTEXT_WARNINGS = true;
 
 // Reset all mocks between tests
 beforeEach(() => {

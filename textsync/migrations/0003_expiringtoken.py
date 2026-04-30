@@ -6,24 +6,33 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('textsync', '0002_shortcutset_alter_shortcut_options_and_more'),
+        ("textsync", "0002_shortcutset_alter_shortcut_options_and_more"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='ExpiringToken',
+            name="ExpiringToken",
             fields=[
-                ('key', models.CharField(max_length=40, primary_key=True, serialize=False)),
-                ('created', models.DateTimeField(auto_now_add=True)),
-                ('expires_at', models.DateTimeField()),
-                ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='auth_token', to=settings.AUTH_USER_MODEL)),
+                (
+                    "key",
+                    models.CharField(max_length=40, primary_key=True, serialize=False),
+                ),
+                ("created", models.DateTimeField(auto_now_add=True)),
+                ("expires_at", models.DateTimeField()),
+                (
+                    "user",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="auth_token",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Expiring Token',
-                'verbose_name_plural': 'Expiring Tokens',
+                "verbose_name": "Expiring Token",
+                "verbose_name_plural": "Expiring Tokens",
             },
         ),
     ]

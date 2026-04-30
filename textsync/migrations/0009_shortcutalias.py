@@ -5,24 +5,38 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('textsync', '0008_shortcutversion'),
+        ("textsync", "0008_shortcutversion"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='ShortcutAlias',
+            name="ShortcutAlias",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('alias_key', models.CharField(max_length=50, unique=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('shortcut', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='aliases', to='textsync.shortcut')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("alias_key", models.CharField(max_length=50, unique=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "shortcut",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="aliases",
+                        to="textsync.shortcut",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Shortcut Alias',
-                'verbose_name_plural': 'Shortcut Aliases',
-                'ordering': ['alias_key'],
+                "verbose_name": "Shortcut Alias",
+                "verbose_name_plural": "Shortcut Aliases",
+                "ordering": ["alias_key"],
             },
         ),
     ]

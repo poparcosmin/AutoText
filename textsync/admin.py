@@ -51,19 +51,17 @@ class ShortcutSetAdmin(admin.ModelAdmin):
         ("Metadata", {"fields": ("created_at",), "classes": ("collapse",)}),
     )
 
+    @admin.display(description="Shortcuts")
     def get_shortcut_count(self, obj):
         return obj.shortcuts.count()
 
-    get_shortcut_count.short_description = "Shortcuts"
-
+    @admin.display(description="Shared With")
     def get_visible_to(self, obj):
         """Display users who can see this set"""
         users = obj.visible_to.all()
         if not users:
             return "-"
         return ", ".join([u.username for u in users])
-
-    get_visible_to.short_description = "Shared With"
 
     def get_readonly_fields(self, request, obj=None):
         """Make owner and visible_to readonly for staff users"""
@@ -234,11 +232,10 @@ class ShortcutVersionInline(admin.TabularInline):
     show_change_link = True
     ordering = ("-version_number",)
 
+    @admin.display(description="Preview")
     def value_preview(self, obj):
         body = obj.value or obj.html_value or ""
         return (body[:60] + "…") if len(body) > 60 else body
-
-    value_preview.short_description = "Preview"
 
     def has_add_permission(self, request, obj=None):
         return False
@@ -362,6 +359,7 @@ class ShortcutAdmin(admin.ModelAdmin):
         js = ("textsync/admin/js/shortcut_toggle.js",)
         css = {"all": ("textsync/admin/css/shortcut_toggle.css",)}
 
+    @admin.display(description="Type")
     def content_type(self, obj):
         """Display content type with icon"""
         if obj.content_type == "text":
@@ -369,8 +367,7 @@ class ShortcutAdmin(admin.ModelAdmin):
         else:
             return format_html('<span style="color: #4285f4;">🎨 HTML</span>')
 
-    content_type.short_description = "Type"
-
+    @admin.display(description="Preview")
     def value_preview(self, obj):
         """Show first 50 chars of value or html_value"""
         if obj.content_type == "text":
@@ -386,8 +383,7 @@ class ShortcutAdmin(admin.ModelAdmin):
             text = re.sub("<[^<]+?>", "", obj.html_value)
             return text[:50] + "..." if len(text) > 50 else text
 
-    value_preview.short_description = "Preview"
-
+    @admin.display(description="Sets")
     def get_sets(self, obj):
         """Display which sets this shortcut belongs to with color coding"""
         sets = obj.sets.all()
@@ -412,8 +408,6 @@ class ShortcutAdmin(admin.ModelAdmin):
             set_badges.append(badge)
 
         return format_html("".join(set_badges))
-
-    get_sets.short_description = "Sets"
 
     def get_queryset(self, request):
         """Filter: staff see own shortcuts + general set shortcuts, superusers see all."""
@@ -609,6 +603,7 @@ class ShortcutAdmin(admin.ModelAdmin):
         ]
         return custom_urls + urls
 
+    @admin.action(description="Export selected shortcuts as CSV")
     def export_as_csv(self, request, queryset):
         """Export selected shortcuts as CSV"""
         response = HttpResponse(content_type="text/csv")
@@ -633,8 +628,6 @@ class ShortcutAdmin(admin.ModelAdmin):
         msg = f"Exported {queryset.count()} shortcuts to CSV."
         self.message_user(request, msg, messages.SUCCESS)
         return response
-
-    export_as_csv.short_description = "Export selected shortcuts as CSV"
 
     def import_csv_view(self, request):
         """Handle CSV import"""
@@ -761,18 +754,15 @@ class ExpiringTokenAdmin(admin.ModelAdmin):
     readonly_fields = ["key", "created", "expires_at"]
     actions = [revoke_all_tokens_for_user]
 
+    @admin.display(description="Token")
     def key_preview(self, obj):
         """Show first 10 chars of token"""
         return f"{obj.key[:10]}..."
 
-    key_preview.short_description = "Token"
-
+    @admin.display(description="Valid", boolean=True)
     def is_valid(self, obj):
         """Check if token is still valid"""
         return not obj.is_expired()
-
-    is_valid.boolean = True
-    is_valid.short_description = "Valid"
 
     # ========== Restrict visibility for staff users ==========
 
@@ -804,11 +794,9 @@ class ShortcutUsageLogAdmin(admin.ModelAdmin):
     date_hierarchy = "used_at"
     ordering = ["-used_at"]
 
+    @admin.display(description="Shortcut", ordering="shortcut__key")
     def shortcut_key(self, obj):
         return obj.shortcut.key
-
-    shortcut_key.short_description = "Shortcut"
-    shortcut_key.admin_order_field = "shortcut__key"
 
     # ========== Restrict visibility for staff users ==========
 
@@ -897,8 +885,7 @@ class UserVariableAdmin(admin.ModelAdmin):
     search_fields = ["name", "user__username", "value"]
     readonly_fields = ["updated_at"]
 
+    @admin.display(description="Value")
     def value_preview(self, obj):
         v = obj.value or ""
         return (v[:50] + "...") if len(v) > 50 else v
-
-    value_preview.short_description = "Value"

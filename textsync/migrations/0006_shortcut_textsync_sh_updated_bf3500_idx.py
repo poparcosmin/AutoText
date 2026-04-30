@@ -5,15 +5,16 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('textsync', '0005_add_usage_tracking'),
+        ("textsync", "0005_add_usage_tracking"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AddIndex(
-            model_name='shortcut',
-            index=models.Index(fields=['updated_at', 'id'], name='textsync_sh_updated_bf3500_idx'),
+            model_name="shortcut",
+            index=models.Index(
+                fields=["updated_at", "id"], name="textsync_sh_updated_bf3500_idx"
+            ),
         ),
     ]

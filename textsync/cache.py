@@ -54,7 +54,7 @@ def invalidate_user_cache(user_id: int) -> None:
         delete_pattern(f"bulk_sync:{user_id}:*")
 
 
-def cached_shortcuts(timeout: int = None):
+def cached_shortcuts(timeout: int | None = None):
     """
     Decorator to cache shortcut queries per user.
 
@@ -97,7 +97,7 @@ def cached_shortcuts(timeout: int = None):
     return decorator
 
 
-def cached_sets(timeout: int = None):
+def cached_sets(timeout: int | None = None):
     """
     Decorator to cache shortcut sets queries per user.
     """

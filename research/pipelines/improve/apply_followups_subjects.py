@@ -14,6 +14,7 @@ All shortcuts use:
 import json
 import sqlite3
 from pathlib import Path
+from typing import Any
 
 DB = Path(__file__).resolve().parents[3] / "db.sqlite3"
 
@@ -22,7 +23,7 @@ DB = Path(__file__).resolve().parents[3] / "db.sqlite3"
 # Layer 1 — Body shortcuts (follow-up + utility)
 # ============================================================
 
-BODY_SHORTCUTS = {
+BODY_SHORTCUTS: dict[str, Any] = {
     # op-fu1 — Day 3 follow-up post-proformă (soft check + value add)
     "op-fu1": (
         "[[%s(salut)]]\n\n"

@@ -60,7 +60,7 @@ class Issue(NamedTuple):
 def lint_text(
     text: str, sc_key: str, location: str, all_keys: set[str], all_var_names: set[str]
 ) -> list[Issue]:
-    issues = []
+    issues: list[Issue] = []
     if not text:
         return issues
 
@@ -83,14 +83,15 @@ def lint_text(
     has_diacritics = bool(re.search(r"[ăâîșțĂÂÎȘȚ]", text))
     if has_diacritics:
         for pattern, suggestion in NON_DIACRITIC_PATTERNS.items():
-            if re.search(pattern, text):
+            match_diag = re.search(pattern, text)
+            if match_diag:
                 issues.append(
                     Issue(
                         "WARN",
                         sc_key,
                         location,
                         "missing-diacritics",
-                        f"Found '{re.search(pattern, text).group(0)}' — should be '{suggestion}'.",
+                        f"Found '{match_diag.group(0)}' — should be '{suggestion}'.",
                     )
                 )
 
@@ -203,9 +204,7 @@ def lint_db() -> list[Issue]:
 
         # Lint variants
         for i, v in enumerate(variants):
-            issues.extend(
-                lint_text(v, key, f"variant {i + 1}", all_keys, all_var_names)
-            )
+            issues.extend(lint_text(v, key, f"variant {i+1}", all_keys, all_var_names))
 
     con.close()
     return issues
