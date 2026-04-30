@@ -99,6 +99,7 @@ MIDDLEWARE = [
 if os.getenv("ENABLE_SILK", "False") == "True":
     try:
         import silk  # noqa: F401
+
         INSTALLED_APPS += ["silk"]
         MIDDLEWARE = ["silk.middleware.SilkyMiddleware"] + MIDDLEWARE
         SILKY_PYTHON_PROFILER = True
@@ -164,9 +165,9 @@ CACHES = {
 }
 
 # Cache timeouts (named constants preferred for new code; dict kept for legacy .get() lookups)
-CACHE_TTL_SHORTCUTS = 60 * 5       # 5 minutes
+CACHE_TTL_SHORTCUTS = 60 * 5  # 5 minutes
 CACHE_TTL_SHORTCUT_SETS = 60 * 10  # 10 minutes
-CACHE_TTL_USER_DATA = 60 * 2       # 2 minutes
+CACHE_TTL_USER_DATA = 60 * 2  # 2 minutes
 
 CACHE_TIMEOUTS = {
     "shortcuts": CACHE_TTL_SHORTCUTS,
@@ -249,9 +250,9 @@ REST_FRAMEWORK = {
         # Authenticated users - general API
         "user": "1000/hour",
         # Specific endpoints with stricter limits
-        "login": "10/minute",      # Prevent brute force
-        "token_refresh": "5/hour", # Prevent token churn
-        "bulk_sync": "60/hour",    # Heavy operation
+        "login": "10/minute",  # Prevent brute force
+        "token_refresh": "5/hour",  # Prevent token churn
+        "bulk_sync": "60/hour",  # Heavy operation
     },
 }
 
@@ -290,8 +291,11 @@ else:
     console_formatter = "json"
 
 # Configure structlog
+# mypy widens the concatenation `shared_processors + final_processors` to
+# `list[object]`; structlog's Processor protocol is a callable, not a base
+# class, so the runtime contract holds even when the static type does not.
 structlog.configure(
-    processors=shared_processors + final_processors,
+    processors=shared_processors + final_processors,  # type: ignore[arg-type]
     wrapper_class=structlog.stdlib.BoundLogger,
     context_class=dict,
     logger_factory=structlog.stdlib.LoggerFactory(),

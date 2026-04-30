@@ -10,6 +10,7 @@ Uses tiered classifier:
 
 Logging: research/corpus/_quarantine.log cu motiv per thread mutat.
 """
+
 from __future__ import annotations
 
 import json
@@ -77,6 +78,7 @@ NEWSLETTER_BODY = re.compile(
     r")",
     re.IGNORECASE,
 )
+
 
 # Heuristic: HTML-heavy bodies (>30% HTML tags) → marketing email
 def html_heavy(body: str) -> bool:
@@ -185,12 +187,14 @@ def is_paff_mention(body: str) -> bool:
     """Check daca mesajul mentioneaza explicit PAFF / produsele lor."""
     if not body or len(body) < 20:
         return False
-    return bool(re.search(
-        r"\b(paff|cutii?\s+(carton|standard|personalizat)|carton\s+(ondulat|microondulat)|"
-        r"separator(i)?|stante?|flexograf|placi de carton|ambalaj\s+(carton|hartie))\b",
-        body,
-        re.IGNORECASE,
-    ))
+    return bool(
+        re.search(
+            r"\b(paff|cutii?\s+(carton|standard|personalizat)|carton\s+(ondulat|microondulat)|"
+            r"separator(i)?|stante?|flexograf|placi de carton|ambalaj\s+(carton|hartie))\b",
+            body,
+            re.IGNORECASE,
+        )
+    )
 
 
 # Foreign-language cold pitches (HU, PL, ES, DE, FR, TR, IT) — fără PAFF mention
@@ -213,13 +217,14 @@ def is_only_signature(body: str) -> bool:
     if not body:
         return True
     text_lines = [
-        l.strip() for l in body.split("\n")
-        if l.strip() and not l.strip().startswith(">")
+        line.strip()
+        for line in body.split("\n")
+        if line.strip() and not line.strip().startswith(">")
     ]
     if not text_lines:
         return True
     # Daca toate liniile sunt < 5 cuvinte si suma < 30 cuvinte = signature only
-    total_words = sum(len(l.split()) for l in text_lines)
+    total_words = sum(len(line.split()) for line in text_lines)
     return total_words < 5  # ex: "OK:O ZIBUNA !" sau "Multumesc, X"
 
 
@@ -255,9 +260,8 @@ def classify_thread(thread: dict) -> ClassifyResult:
     headers = first_inbound.get("headers", {})
     from_h = headers.get("from") or {}
     from_email = (from_h.get("email") or "").strip()
-    from_name = (from_h.get("name") or "").strip()
     subject = (thread.get("subject_root") or "").strip()
-    body = (first_inbound.get("body", {}).get("text_plain") or "")
+    body = first_inbound.get("body", {}).get("text_plain") or ""
 
     # Tier 1: HARD-NOISE domains
     if HARD_NOISE_DOMAINS.search(from_email):
@@ -265,9 +269,13 @@ def classify_thread(thread: dict) -> ClassifyResult:
 
     # Tier 2: NEWSLETTER patterns
     if NEWSLETTER_SUBJECT.search(subject):
-        return ClassifyResult(True, "tier2_newsletter_subject", f"subject={subject[:60]}")
+        return ClassifyResult(
+            True, "tier2_newsletter_subject", f"subject={subject[:60]}"
+        )
     if NEWSLETTER_BODY.search(body[:1000]):
-        return ClassifyResult(True, "tier2_newsletter_body", "body has newsletter pattern")
+        return ClassifyResult(
+            True, "tier2_newsletter_body", "body has newsletter pattern"
+        )
     if html_heavy(body):
         return ClassifyResult(True, "tier2_html_heavy", "body is HTML-heavy marketing")
 
@@ -275,13 +283,17 @@ def classify_thread(thread: dict) -> ClassifyResult:
     if AUTOMATED_DOMAINS.search(from_email):
         return ClassifyResult(True, "tier3_automated", f"domain={from_email}")
     if AUTOMATED_SUBJECT.search(subject):
-        return ClassifyResult(True, "tier3_automated_subject", f"subject={subject[:60]}")
+        return ClassifyResult(
+            True, "tier3_automated_subject", f"subject={subject[:60]}"
+        )
 
     # Tier 4: COLD OUTREACH
     if COLD_OUTREACH_SUBJECT.search(subject):
-        return ClassifyResult(True, "tier4_cold_outreach_subject", f"subject={subject[:60]}")
+        return ClassifyResult(
+            True, "tier4_cold_outreach_subject", f"subject={subject[:60]}"
+        )
     if COLD_OUTREACH_BODY.search(body[:500]):
-        return ClassifyResult(True, "tier4_cold_outreach_body", f"body cold pitch")
+        return ClassifyResult(True, "tier4_cold_outreach_body", "body cold pitch")
 
     # Tier 4b: AUTO-REPLY / surveys / tickets
     if AUTO_REPLY_SUBJECT.search(subject):
@@ -291,7 +303,9 @@ def classify_thread(thread: dict) -> ClassifyResult:
 
     # Tier 5: FOREIGN LANGUAGE pitches without PAFF mention
     if FOREIGN_LANGUAGE_HINT.search(body[:200]) and not is_paff_mention(body):
-        return ClassifyResult(True, "tier5_foreign_pitch", "foreign-language cold pitch")
+        return ClassifyResult(
+            True, "tier5_foreign_pitch", "foreign-language cold pitch"
+        )
 
     # Tier 6: subiect gol sau mesaj de conținut foarte scurt fără PAFF mention
     if (not subject or len(subject.strip()) < 3) and is_only_signature(body):
@@ -308,8 +322,14 @@ def classify_thread(thread: dict) -> ClassifyResult:
     if (
         len(body) > 300
         and not is_paff_mention(body)
-        and re.search(r"\b(manufactur|supplier|producer|wholesale|export)\w*\b", body[:1500], re.IGNORECASE)
-        and re.search(r"\b(catalog|brochure|product line|range of)\b", body[:1500], re.IGNORECASE)
+        and re.search(
+            r"\b(manufactur|supplier|producer|wholesale|export)\w*\b",
+            body[:1500],
+            re.IGNORECASE,
+        )
+        and re.search(
+            r"\b(catalog|brochure|product line|range of)\b", body[:1500], re.IGNORECASE
+        )
     ):
         return ClassifyResult(True, "tier4_cold_pitch_long", "long generic sales pitch")
 
@@ -347,8 +367,11 @@ def main(dry_run: bool = False) -> None:
                 "window": window_dir.name,
                 "tier": result.tier,
                 "reason": result.reason,
-                "from": ((thread["messages"][0].get("headers", {}).get("from") or {})
-                         .get("email", "")),
+                "from": (
+                    (thread["messages"][0].get("headers", {}).get("from") or {}).get(
+                        "email", ""
+                    )
+                ),
                 "subject": (thread.get("subject_root") or "")[:120],
                 "moved_at": datetime.now(timezone.utc).isoformat(),
             }
@@ -379,4 +402,5 @@ def main(dry_run: bool = False) -> None:
 
 if __name__ == "__main__":
     import sys
+
     main(dry_run="--dry-run" in sys.argv)

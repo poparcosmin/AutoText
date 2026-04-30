@@ -1,0 +1,21 @@
+repos:
+-   repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.2
+    hooks:
+    -   id: ruff
+        args: [ --fix ]
+    -   id: ruff-format
+
+-   repo: local
+    hooks:
+    -   id: mypy
+        name: mypy (uv-managed, honours pyproject scope)
+        # Run the mypy from the local uv venv so the hook tracks whatever
+        # version is pinned in pyproject.toml — keeps pre-commit and
+        # `uv run mypy` aligned. The mirrored hook pinned an old rev
+        # (v1.10.0) that fired var-annotated errors on Django fields
+        # already accepted by newer mypy.
+        entry: uv run mypy --config-file=pyproject.toml
+        language: system
+        pass_filenames: false
+        types: [python]
