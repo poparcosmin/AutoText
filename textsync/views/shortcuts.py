@@ -1,5 +1,7 @@
 """Shortcut and ShortcutSet viewsets — CRUD + list endpoints."""
 
+import re
+
 import structlog
 
 from django.conf import settings
@@ -17,6 +19,12 @@ from ..serializers import ShortcutSerializer, ShortcutSetSerializer
 from ..cache import get_user_shortcuts_key, get_user_sets_key
 
 logger = structlog.get_logger(__name__)
+
+# Set names are managed in the admin and follow the same casing as the
+# slug-friendly identifiers in the seed data (`birou`, `cosmin`, etc.).
+# Anything outside this charset is rejected before it touches the cache.
+_SET_NAME_RE = re.compile(r"^[a-z0-9_-]{1,50}$")
+_MAX_SETS_IN_TOKEN = 16
 
 
 class ShortcutSetViewSet(viewsets.ReadOnlyModelViewSet):
@@ -90,6 +98,25 @@ class ShortcutViewSet(viewsets.ModelViewSet):
     serializer_class = ShortcutSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    @staticmethod
+    def _canonical_sets_token(sets_param: str) -> str:
+        """Normalize the `sets` query param into a stable cache-key suffix.
+
+        Drops invalid names silently (the queryset filter is the source of
+        truth for access checks); this canonicalization exists only to
+        prevent unbounded keyspace growth and stray characters in keys.
+        """
+        if not sets_param:
+            return ""
+        names = {
+            name
+            for raw in sets_param.split(",")
+            if (name := raw.strip().lower()) and _SET_NAME_RE.match(name)
+        }
+        if not names:
+            return ""
+        return ",".join(sorted(names)[:_MAX_SETS_IN_TOKEN])
+
     def list(self, request, *args, **kwargs):
         """Override list to add caching (only for full sync, not delta)."""
         updated_after = request.query_params.get("updated_after")
@@ -100,7 +127,13 @@ class ShortcutViewSet(viewsets.ModelViewSet):
             # Delta sync - don't cache partial results
             return super().list(request, *args, **kwargs)
 
-        cache_key = f"{get_user_shortcuts_key(request.user.id)}:{sets_param}"
+        # Canonicalise `sets` before it lands in the cache key. Raw query
+        # input lets a caller balloon the per-user keyspace ("sets=a,b" vs
+        # "sets=b,a" vs "sets=A,B,a" all hit different keys) and slip in
+        # arbitrary characters. We accept only [a-z0-9_-], dedup, sort, and
+        # cap the count + serialized length.
+        cache_sets_token = self._canonical_sets_token(sets_param)
+        cache_key = f"{get_user_shortcuts_key(request.user.id)}:{cache_sets_token}"
         cached_response = cache.get(cache_key)
 
         if cached_response is not None:
@@ -208,10 +241,6 @@ class ShortcutViewSet(viewsets.ModelViewSet):
         non-creator team members with an empty Manage tab even when
         they had legitimate visibility into the shared sets.
         """
-        import logging
-        from django.db.models import Q
-
-        logger = logging.getLogger(__name__)
         try:
             user = request.user
             if user.is_superuser:
@@ -225,10 +254,15 @@ class ShortcutViewSet(viewsets.ModelViewSet):
             queryset = queryset.prefetch_related("sets")
             serializer = self.get_serializer(queryset, many=True)
             return Response(serializer.data)
-        except Exception as e:
-            logger.exception(f"Error in /shortcuts/my/ for user {request.user}: {e}")
+        except Exception:
+            # Log the full traceback server-side; return a generic message
+            # to the client so ORM/DB internals never leak across the wire.
+            logger.exception(
+                "shortcuts.my failed", user_id=getattr(request.user, "id", None)
+            )
             return Response(
-                {"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {"detail": "Internal server error."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
     def create(self, request, *args, **kwargs):

@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 import os
+import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -21,6 +22,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Load environment variables from .env file
 load_dotenv(BASE_DIR / ".env")
 
+# Detect Django's test runner so prod-only hardening (HTTPS redirect, HSTS,
+# secure cookies) doesn't kick in for `manage.py test` when DEBUG=False.
+TESTING = "test" in sys.argv or "pytest" in sys.argv[0]
+
 # Ensure logs directory exists
 LOGS_DIR = BASE_DIR / "logs"
 LOGS_DIR.mkdir(exist_ok=True)
@@ -30,10 +35,20 @@ LOGS_DIR.mkdir(exist_ok=True)
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-secret-key-change-in-production")
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv("DEBUG", "True") == "True"
+# `DJANGO_SECRET_KEY` is mandatory in any environment; the dev fallback
+# is only honoured when `DEBUG=True` AND the env var is missing, which
+# keeps `manage.py runserver` working out-of-the-box without ever
+# leaking the placeholder into production.
+DEBUG = os.getenv("DEBUG", "False") == "True"
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "")
+if not SECRET_KEY:
+    if DEBUG:
+        SECRET_KEY = "dev-secret-key-change-in-production"
+    else:
+        raise RuntimeError(
+            "DJANGO_SECRET_KEY must be set when DEBUG=False. "
+            "Generate one with `python -c 'import secrets; print(secrets.token_urlsafe(64))'`."
+        )
 
 # Conditional ALLOWED_HOSTS based on DEBUG mode
 if DEBUG:
@@ -42,7 +57,7 @@ else:
     ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS_PROD", "autotext.zua.ro").split(",")
 
 # Security Settings for Production
-if not DEBUG:
+if not DEBUG and not TESTING:
     # Force HTTPS
     SECURE_SSL_REDIRECT = True
     # Trust X-Forwarded-Proto header from nginx reverse proxy

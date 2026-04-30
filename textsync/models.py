@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 from datetime import timedelta
@@ -145,6 +146,24 @@ class Shortcut(models.Model):
             # ORDER BY updated_at, id. Verify usage with EXPLAIN QUERY PLAN.
             models.Index(fields=["updated_at", "id"]),
         ]
+
+    # Cap on `variants` enforced at the model level. Direct ORM writes
+    # (admin, management commands, signals) skip the serializer validator,
+    # so this clean() is the last-line guard before save() runs full_clean.
+    MAX_VARIANTS = 3
+
+    def clean(self):
+        super().clean()
+        if self.variants is None:
+            return
+        if not isinstance(self.variants, list):
+            raise ValidationError({"variants": "variants must be a list of strings."})
+        if len(self.variants) > self.MAX_VARIANTS:
+            raise ValidationError(
+                {"variants": f"Maximum {self.MAX_VARIANTS} variants supported."}
+            )
+        if any(not isinstance(v, str) for v in self.variants):
+            raise ValidationError({"variants": "variants must be a list of strings."})
 
     def __str__(self):
         sets_str = (
