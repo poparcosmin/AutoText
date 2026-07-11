@@ -8,7 +8,8 @@ from rest_framework import permissions, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
-from ..models import Shortcut, ShortcutUsageLog
+from ..access import accessible_shortcuts
+from ..models import ShortcutUsageLog
 
 logger = structlog.get_logger(__name__)
 
@@ -36,21 +37,20 @@ def track_usage_view(request):
             {"error": "shortcut_id is required"}, status=status.HTTP_400_BAD_REQUEST
         )
 
-    try:
-        shortcut = Shortcut.objects.get(id=shortcut_id)
-    except Shortcut.DoesNotExist:
+    # Single atomic update — also enforces access control (IDOR guard).
+    # accessible_shortcuts() limits to sets the user can see; returning 404
+    # (not 403) avoids confirming the existence of inaccessible shortcuts.
+    updated = accessible_shortcuts(request.user).filter(id=shortcut_id).update(
+        usage_count=F("usage_count") + 1, last_used_at=timezone.now()
+    )
+    if not updated:
         return Response(
             {"error": "Shortcut not found"}, status=status.HTTP_404_NOT_FOUND
         )
 
-    # Update shortcut usage stats (atomic operation)
-    Shortcut.objects.filter(id=shortcut_id).update(
-        usage_count=F("usage_count") + 1, last_used_at=timezone.now()
-    )
-
     # Create detailed usage log
     ShortcutUsageLog.objects.create(
-        shortcut=shortcut,
+        shortcut_id=shortcut_id,
         user=request.user,
         domain=domain[:255] if domain else None,  # Truncate to field max length
     )

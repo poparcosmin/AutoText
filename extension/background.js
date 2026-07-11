@@ -161,16 +161,23 @@ async function syncUserVariables(authToken) {
   }
 }
 
+// Concurrency guard — prevents periodic alarm and manual/retry triggers
+// from interleaving concurrent chrome.storage.local.set calls.
+let syncInProgress = false;
+
 // Sync shortcuts from Django backend with multi-set support and authentication
 // Uses bulk sync endpoint for better performance (single API call)
 // Supports offline mode - uses cached shortcuts when network unavailable
 async function syncShortcuts() {
+  if (syncInProgress) return;
+  syncInProgress = true;
   debugLog("AutoText Background: syncShortcuts() called");
 
   // Check if we're offline
   if (!navigator.onLine) {
     debugLog("AutoText: Device is offline, skipping sync");
     updateOnlineStatus(false);
+    syncInProgress = false;
     return;
   }
 
@@ -303,6 +310,8 @@ async function syncShortcuts() {
     }
 
     await markSyncFailure(error.message || 'Unknown sync error');
+  } finally {
+    syncInProgress = false;
   }
 }
 
@@ -372,9 +381,12 @@ function mergeShortcutsWithPriority(shortcuts) {
 function initializeListeners() {
   debugLog("AutoText: Initializing event listeners...");
 
-  // Periodic sync every 5 minutes using chrome.alarms (MV3-compliant)
-  // The alarm will wake up the service worker when it fires
-  chrome.alarms.create("syncShortcuts", { periodInMinutes: 5 });
+  // Periodic sync every 5 minutes using chrome.alarms (MV3-compliant).
+  // Guard: only create if it doesn't exist yet — creating unconditionally
+  // resets the countdown on every SW wake, so the alarm never fires.
+  chrome.alarms.get("syncShortcuts", (a) => {
+    if (!a) chrome.alarms.create("syncShortcuts", { periodInMinutes: 5 });
+  });
 }
 
 // Sync on extension startup
@@ -423,8 +435,9 @@ chrome.commands.onCommand.addListener(async (command) => {
     case "toggle-autotext":
       // Toggle AutoText enabled/disabled
       const { autotext_enabled } = await chrome.storage.local.get('autotext_enabled');
-      const newState = autotext_enabled === false ? true : false;
-      await chrome.storage.local.set({ autotext_enabled: !autotext_enabled });
+      const current = autotext_enabled !== false; // default true when undefined
+      const newState = !current;
+      await chrome.storage.local.set({ autotext_enabled: newState });
 
       // Update badge to show state
       if (newState) {

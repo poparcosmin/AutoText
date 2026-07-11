@@ -111,15 +111,15 @@ MIDDLEWARE = [
 
 # django-silk — dev-only profiling. Opt-in via env (ENABLE_SILK=True) so tests
 # stay fast and clean. Access at /silk/ after `uv run python manage.py migrate`.
-if os.getenv("ENABLE_SILK", "False") == "True":
+if os.getenv("ENABLE_SILK") == "True" and DEBUG:
     try:
         import silk  # noqa: F401
 
         INSTALLED_APPS += ["silk"]
         MIDDLEWARE = ["silk.middleware.SilkyMiddleware"] + MIDDLEWARE
         SILKY_PYTHON_PROFILER = True
-        SILKY_AUTHENTICATION = False
-        SILKY_AUTHORISATION = False
+        SILKY_AUTHENTICATION = True
+        SILKY_AUTHORISATION = True
     except ImportError:
         pass
 
@@ -228,8 +228,11 @@ CORS_ALLOWED_ORIGINS = [
 ]
 # Apply CORS only to /api/ — admin pages stay strict-origin.
 CORS_URLS_REGEX = r"^/api/.*$"
-# Match any HTTPS or chrome-extension origin for /api/ calls. Token auth
-# is the real gate.
+# Match any HTTPS or chrome-extension origin for /api/ calls. Token auth is
+# the real gate: /api/ uses ExpiringTokenAuthentication only (no session/
+# cookie auth), so an open origin can't forge an authenticated request — the
+# token lives in the extension's chrome.storage, not a cookie. Kept permissive
+# because content scripts POST /track-usage/ from arbitrary host-page origins.
 CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^https://.+$",
     r"^chrome-extension://.+$",
@@ -269,6 +272,9 @@ REST_FRAMEWORK = {
         "token_refresh": "5/hour",  # Prevent token churn
         "bulk_sync": "60/hour",  # Heavy operation
     },
+    # Trust exactly one reverse proxy (nginx) for client IP; prevents
+    # X-Forwarded-For spoofing that would bypass throttle rate limits.
+    "NUM_PROXIES": 1,
 }
 
 # Application Version (used in health checks)

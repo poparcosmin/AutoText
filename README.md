@@ -48,16 +48,10 @@ AutoText/
 
 ### Backend Setup
 
-1. **Clone and setup virtual environment:**
+1. **Clone and install dependencies:**
    ```bash
    cd AutoText
-   python -m venv .venv
-   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-   ```
-
-2. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
+   uv sync
    ```
 
 3. **Configure environment:**

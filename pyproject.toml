@@ -18,6 +18,7 @@ dependencies = [
     "django-redis==5.4.0",
     "bleach==6.2.0",
     "structlog==24.4.0",
+    "tinycss2>=1.5.1",
 ]
 
 [dependency-groups]
@@ -25,6 +26,9 @@ dev = [
     "ruff>=0.14",
     "mypy>=1.11",
     "django-silk>=5.5.0",
+    "pytest>=9.1.1",
+    "pytest-django>=4.12.0",
+    "pre-commit>=4.6.0",
 ]
 research = [
     "google-auth-oauthlib>=1.2.0",
@@ -36,6 +40,10 @@ research = [
     "pandas>=2.2.0",
     "structlog>=24.4.0",
 ]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+python_files = ["test_*.py"]
 
 [tool.mypy]
 python_version = "3.13"

@@ -261,8 +261,7 @@ scp /home/cosmin/Work/AutoText/db.sqlite3 user@autotext.zua.ro:/var/www/autotext
 
 #### 7. Instalează Gunicorn
 ```bash
-source .venv/bin/activate
-pip install gunicorn
+uv sync
 ```
 
 #### 8. Creează Gunicorn Service

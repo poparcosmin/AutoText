@@ -9,7 +9,7 @@ from rest_framework.test import APIClient, APITestCase
 @override_settings(
     REST_FRAMEWORK={
         "DEFAULT_THROTTLE_RATES": {
-            "login": "2/minute",
+            "login": "10/minute",
             "token_refresh": "2/hour",
             "bulk_sync": "2/hour",
         }

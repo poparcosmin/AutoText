@@ -84,11 +84,9 @@ class Command(BaseCommand):
             )
             return
 
-        # Link shortcuts to set
-        linked_count = 0
-        for shortcut in unlinked_shortcuts:
-            shortcut.sets.add(target_set)
-            linked_count += 1
+        # Link shortcuts to set — single M2M batch instead of N inserts
+        target_set.shortcuts.add(*unlinked_shortcuts)
+        linked_count = unlinked_count
 
         self.stdout.write(
             self.style.SUCCESS(

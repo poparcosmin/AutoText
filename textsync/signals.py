@@ -43,11 +43,10 @@ def invalidate_on_shortcut_change(sender, instance, **kwargs):
     user_ids = set()
     if instance.owner_id:
         user_ids.add(instance.owner_id)
-    # Single query collects all visible_to user IDs across shared sets that
+    # Single query collects all visible_to user IDs across all sets that
     # contain this shortcut — avoids N+1 from iterating sets then visible_to.
     shared_user_ids = ShortcutSet.objects.filter(
         shortcuts=instance,
-        set_type="shared",
     ).values_list("visible_to__id", flat=True)
     user_ids.update(shared_user_ids)
     _bulk_invalidate(user_ids)
@@ -141,29 +140,31 @@ def snapshot_shortcut_history(sender, instance, **kwargs):
     if not is_general:
         return
 
-    last = (
-        ShortcutVersion.objects.filter(shortcut=instance)
-        .order_by("-version_number")
-        .values_list("version_number", flat=True)
-        .first()
-    )
-    next_version = (last or 0) + 1
+    with transaction.atomic():
+        last = (
+            ShortcutVersion.objects.select_for_update()
+            .filter(shortcut=instance)
+            .order_by("-version_number")
+            .values_list("version_number", flat=True)
+            .first()
+        )
+        next_version = (last or 0) + 1
 
-    ShortcutVersion.objects.create(
-        shortcut=instance,
-        version_number=next_version,
-        key=old.key,
-        content_type=old.content_type,
-        value=old.value,
-        html_value=old.html_value,
-        created_by=instance.updated_by,
-    )
+        ShortcutVersion.objects.create(
+            shortcut=instance,
+            version_number=next_version,
+            key=old.key,
+            content_type=old.content_type,
+            value=old.value,
+            html_value=old.html_value,
+            created_by=instance.updated_by,
+        )
 
-    # Prune older snapshots beyond the cap. We delete by PK so the
-    # ordering query is deterministic even when timestamps are equal.
-    keep_pks = list(
-        ShortcutVersion.objects.filter(shortcut=instance)
-        .order_by("-version_number")
-        .values_list("pk", flat=True)[:SNIPPET_HISTORY_LIMIT]
-    )
-    ShortcutVersion.objects.filter(shortcut=instance).exclude(pk__in=keep_pks).delete()
+        # Prune older snapshots beyond the cap. We delete by PK so the
+        # ordering query is deterministic even when timestamps are equal.
+        keep_pks = list(
+            ShortcutVersion.objects.filter(shortcut=instance)
+            .order_by("-version_number")
+            .values_list("pk", flat=True)[:SNIPPET_HISTORY_LIMIT]
+        )
+        ShortcutVersion.objects.filter(shortcut=instance).exclude(pk__in=keep_pks).delete()

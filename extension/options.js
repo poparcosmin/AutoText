@@ -310,29 +310,44 @@ function createSetOption(set) {
     div.classList.add('selected');
   }
 
-  div.innerHTML = `
-    <input type="checkbox"
-           id="set-${set.name}"
-           value="${set.name}"
-           ${isSelected ? 'checked' : ''}>
-    <div class="set-info">
-      <div class="set-name">${set.name}</div>
-      <div class="set-description">${set.description || 'No description'}</div>
-    </div>
-    <span class="set-count">${set.shortcut_count} shortcuts</span>
-  `;
+  // Build inner DOM via DOM API — no innerHTML to avoid XSS on server data
+  const checkbox = document.createElement('input');
+  checkbox.type = 'checkbox';
+  checkbox.setAttribute('id', 'set-' + set.name);
+  checkbox.setAttribute('value', set.name);
+  if (isSelected) checkbox.checked = true;
+
+  const setInfoDiv = document.createElement('div');
+  setInfoDiv.className = 'set-info';
+
+  const setNameDiv = document.createElement('div');
+  setNameDiv.className = 'set-name';
+  setNameDiv.textContent = set.name;
+
+  const setDescDiv = document.createElement('div');
+  setDescDiv.className = 'set-description';
+  setDescDiv.textContent = set.description || 'No description';
+
+  setInfoDiv.appendChild(setNameDiv);
+  setInfoDiv.appendChild(setDescDiv);
+
+  const setCountSpan = document.createElement('span');
+  setCountSpan.className = 'set-count';
+  setCountSpan.textContent = set.shortcut_count + ' shortcuts';
+
+  div.appendChild(checkbox);
+  div.appendChild(setInfoDiv);
+  div.appendChild(setCountSpan);
 
   // Click on div also toggles checkbox
   div.addEventListener('click', (e) => {
     if (e.target.tagName !== 'INPUT') {
-      const checkbox = div.querySelector('input');
       checkbox.checked = !checkbox.checked;
       checkbox.dispatchEvent(new Event('change'));
     }
   });
 
   // Handle checkbox change
-  const checkbox = div.querySelector('input');
   checkbox.addEventListener('change', (e) => {
     e.stopPropagation();
 

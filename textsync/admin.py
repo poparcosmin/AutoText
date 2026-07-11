@@ -19,6 +19,7 @@ from .models import (
     ShortcutVersion,
     ShortcutAlias,
 )
+from .validators import sanitize_html
 
 
 @admin.register(ShortcutSet)
@@ -181,7 +182,6 @@ class ShortcutSetFilter(admin.SimpleListFilter):
             sets = ShortcutSet.objects.filter(
                 Q(set_type="general")
                 | (Q(set_type="personal") & Q(owner=request.user))
-                | (Q(set_type="shared") & Q(visible_to=request.user))
             ).distinct()
 
         return [
@@ -518,7 +518,6 @@ class ShortcutAdmin(admin.ModelAdmin):
                     ShortcutSet.objects.filter(
                         Q(set_type="general")
                         | (Q(set_type="personal") & Q(owner=request.user))
-                        | (Q(set_type="shared") & Q(visible_to=request.user))
                     )
                     .distinct()
                     .order_by("set_type", "name")
@@ -662,7 +661,7 @@ class ShortcutAdmin(admin.ModelAdmin):
                             content_type = "text"
 
                         value = row.get("value", "")
-                        html_value = row.get("html_value", "")
+                        html_value = sanitize_html(row.get("html_value", ""))
                         sets_str = row.get("sets", "")
 
                         # Create or update shortcut

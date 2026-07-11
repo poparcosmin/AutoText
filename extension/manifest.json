@@ -75,15 +75,5 @@
       },
       "description": "Open command palette (inline shortcut search)"
     }
-  },
-  "web_accessible_resources": [
-    {
-      "resources": [
-        "lib/tinymce/*"
-      ],
-      "matches": [
-        "<all_urls>"
-      ]
-    }
-  ]
+  }
 }

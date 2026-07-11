@@ -18,6 +18,7 @@ from django.db.models import Q, Count, QuerySet
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
+from ..access import accessible_sets_q
 from ..models import Shortcut, ShortcutSet
 from ..serializers import ShortcutSerializer, ShortcutSetSerializer
 
@@ -40,7 +41,7 @@ def _get_accessible_sets(user: Any, requested_sets: list[str]) -> QuerySet[Short
         accessible_sets = ShortcutSet.objects.all()
     else:
         accessible_sets = ShortcutSet.objects.filter(
-            Q(set_type="general") | Q(owner=user) | Q(visible_to=user)
+            accessible_sets_q(user)
         ).distinct()
 
     if requested_sets:
@@ -93,7 +94,9 @@ def build_bulk_sync_response(
             return cached_response
 
     accessible_sets = _get_accessible_sets(user, requested_sets)
-    sets_data = _serialize_sets(accessible_sets)
+    # Delta sync: extension already has the full set list from the last full
+    # sync, so skip re-serializing sets and return an empty list instead.
+    sets_data = [] if updated_after else _serialize_sets(accessible_sets)
     shortcuts_data = _serialize_shortcuts(accessible_sets, updated_after)
 
     response_data = {

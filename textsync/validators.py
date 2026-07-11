@@ -6,6 +6,7 @@ Uses bleach library to clean HTML and prevent XSS attacks.
 
 import re
 import bleach
+from bleach.css_sanitizer import CSSSanitizer
 
 
 # Allowed HTML tags for rich text shortcuts.
@@ -123,12 +124,14 @@ def sanitize_html(html_content: str) -> str:
     )
 
     # Use bleach to clean the remaining HTML
+    css_sanitizer = CSSSanitizer(allowed_css_properties=ALLOWED_STYLES)
     cleaned = bleach.clean(
         html_content,
         tags=ALLOWED_TAGS,
         attributes=ALLOWED_ATTRIBUTES,
         protocols=ALLOWED_PROTOCOLS,
         strip=True,  # Strip disallowed tags instead of escaping
+        css_sanitizer=css_sanitizer,
     )
 
     return cleaned

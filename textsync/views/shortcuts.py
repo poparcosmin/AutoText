@@ -14,6 +14,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import ParseError, PermissionDenied
 from rest_framework.response import Response
 
+from ..access import accessible_sets_q
 from ..models import Shortcut, ShortcutSet
 from ..serializers import ShortcutSerializer, ShortcutSetSerializer
 from ..cache import get_user_shortcuts_key, get_user_sets_key
@@ -64,17 +65,11 @@ class ShortcutSetViewSet(viewsets.ReadOnlyModelViewSet):
         base_qs = base_qs.prefetch_related("visible_to")
         base_qs = base_qs.annotate(shortcut_count=Count("shortcuts", distinct=True))
 
-        # Business rule (applies to ALL users including superusers):
-        # - General sets: visible to everyone
-        # - Personal sets: visible ONLY to owner
-        # - Shared sets: visible to those in visible_to
-        # Note: Superusers can use Django Admin to manage all sets
+        # Business rule: general sets are visible to all; personal sets only to
+        # the owner; sets explicitly shared via visible_to are also accessible.
+        # Note: Superusers can use Django Admin to manage all sets.
         return (
-            base_qs.filter(
-                Q(set_type="general")
-                | (Q(set_type="personal") & Q(owner=user))
-                | (Q(set_type="shared") & Q(visible_to=user))
-            )
+            base_qs.filter(accessible_sets_q(user))
             .distinct()
             .order_by("set_type", "name")
         )
@@ -158,14 +153,8 @@ class ShortcutViewSet(viewsets.ModelViewSet):
         if user.is_superuser:
             accessible_sets = ShortcutSet.objects.all()
         else:
-            # User can access:
-            # - General sets: visible to everyone
-            # - Personal sets: ONLY their own (not via visible_to)
-            # - Shared sets: via visible_to
             accessible_sets = ShortcutSet.objects.filter(
-                Q(set_type="general")
-                | (Q(set_type="personal") & Q(owner=user))
-                | (Q(set_type="shared") & Q(visible_to=user))
+                accessible_sets_q(user)
             ).distinct()
 
         # Filter by sets parameter (if provided)
@@ -251,7 +240,7 @@ class ShortcutViewSet(viewsets.ModelViewSet):
                     | Q(sets__visible_to=user)
                     | Q(sets__set_type="general")
                 ).distinct()
-            queryset = queryset.prefetch_related("sets")
+            queryset = queryset.select_related("owner", "updated_by").prefetch_related("sets", "aliases")
             serializer = self.get_serializer(queryset, many=True)
             return Response(serializer.data)
         except Exception:

@@ -148,6 +148,10 @@ celerybeat.pid
 # SageMath parsed files
 *.sage.py
 
+# Certificates & private keys (never commit secrets)
+*.pem
+*.key
+
 # Environments
 .env
 .envrc

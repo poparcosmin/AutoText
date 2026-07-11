@@ -67,18 +67,24 @@ class Command(BaseCommand):
 
             fields = item["fields"]
 
-            # Create or update shortcut
-            shortcut, is_new = Shortcut.objects.update_or_create(
-                key=fields["key"],
-                defaults={
-                    "value": fields["value"],
-                    "html_value": fields["html_value"],
-                    "updated_at": timezone.now(),
-                },
-            )
-
-            # Add to birou set
-            shortcut.sets.add(birou_set)
+            # Create or update shortcut, scoped to birou_set to avoid
+            # MultipleObjectsReturned when the same key exists in multiple sets
+            shortcut = birou_set.shortcuts.filter(key=fields["key"]).first()
+            if shortcut is None:
+                shortcut = Shortcut.objects.create(
+                    key=fields["key"],
+                    value=fields["value"],
+                    html_value=fields["html_value"],
+                    updated_at=timezone.now(),
+                )
+                shortcut.sets.add(birou_set)
+                is_new = True
+            else:
+                shortcut.value = fields["value"]
+                shortcut.html_value = fields["html_value"]
+                shortcut.updated_at = timezone.now()
+                shortcut.save(update_fields=["value", "html_value", "updated_at"])
+                is_new = False
 
             if is_new:
                 created += 1

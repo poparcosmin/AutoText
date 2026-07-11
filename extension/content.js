@@ -226,7 +226,10 @@ async function trackShortcutUsage(shortcutKey, shortcutId) {
 
     await chrome.storage.local.set({ shortcutStats: stats });
 
-    // Send usage data to server for analytics (fire-and-forget)
+    // Send usage data to server for analytics (fire-and-forget).
+    // Skip telemetry from cross-origin iframes to avoid leaking third-party
+    // hostnames that the content script cannot read safely.
+    if (window !== window.top) return;
     sendUsageToServer(shortcutId, window.location.hostname);
   } catch (error) {
     // Stats tracking failed, non-critical
@@ -399,7 +402,7 @@ function safeHTML(dirty, opts = {}) {
     return DOMPurify.sanitize(dirty, {
       USE_PROFILES: { html: true },
       FORBID_TAGS: ['style', 'script'],
-      FORBID_ATTR: ['onerror', 'onload', 'onclick'],
+      FORBID_ATTR: ['onerror', 'onload', 'onclick', 'style'],
       // Caller can extend the attribute allowlist (e.g. data-at-cursor for
       // the cursor marker span). Always passed through; never trusted to
       // override the FORBID_* list above.
@@ -1590,7 +1593,12 @@ if (typeof module !== "undefined" && module.exports) {
     _setEnabled: (v) => { autotextEnabled = v; },
   };
 } else {
-  // Browser content script — attach listeners and boot
+  // Browser content script — attach listeners and boot.
+  // Skip non-editable iframes (payment pages, banking widgets, ads) to
+  // prevent consuming Tab and running expansion logic where it has no business.
+  if (window !== window.top && !document.body?.isContentEditable) {
+    // Do nothing; top-frame functionality is unaffected.
+  } else {
   document.addEventListener("keydown", handleTriggerKey, true);
 
   // Command palette: opened via keyboard shortcut (Alt+Shift+P), routed from
@@ -1619,4 +1627,5 @@ if (typeof module !== "undefined" && module.exports) {
   });
 
   initialize();
+  } // end else (non-editable iframe guard)
 }
