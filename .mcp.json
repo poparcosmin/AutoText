@@ -1,12 +1,15 @@
 {
   "mcpServers": {
     "c7": {
-      "command": "npx",
-      "args": ["-y", "@upstash/context7-mcp"],
+      "command": "/home/cosmin/.local/bin/env-run",
+      "args": [
+        "/home/cosmin/.secrets",
+        "--",
+        "npx",
+        "-y",
+        "@upstash/context7-mcp"
+      ],
       "env": {
-        "UPSTASH_REDIS_REST_URL": "https://apt-ewe-14850.upstash.io",
-        "UPSTASH_REDIS_REST_TOKEN": "ce60d270-e9c4-4c3e-af47-069ca848553e",
-        "CONTEXT7_API_KEY": "ctx7sk-cb3c5f23-0a69-4284-ad70-0f233c02b5e9",
         "DOCUMENTATION_SOURCES": "django,python,javascript,bootstrap,redis,pnpm,nodejs,htmx",
         "CONTEXT_NAMESPACE": "dev_documentation",
         "AUTO_UPDATE": "true",
@@ -22,7 +25,11 @@
     },
     "fs": {
       "command": "npx",
-      "args": [ "-y", "@modelcontextprotocol/server-filesystem", "/home/cosmin/Work/The_Project" ]
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/home/cosmin/Work/The_Project"
+      ]
     },
     "qdrant": {
       "command": "python3",
